@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Filo Race - A Alegoria da Caverna de Platão</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      margin: 0 auto;
+      position: relative;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      padding: 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 10;
+      background-color: #1a1a1a;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      color: #ffd700;
+      text-align: center;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.3rem; }
+
+    .card {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .card ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+
+    .card li {
+      margin-bottom: 8px;
+    }
+
+    .teacher-help {
+      background-color: #3a2e00;
+      border: 1px solid #ffd700;
+      color: #fff3a0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #ffd700 0%, #cca100 100%);
+      color: #000;
+      border: none;
+      padding: 14px 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-top: auto;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    /* TELA DO JOGO */
+    #screen-game {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: calc(100% - 100px);
+      background-color: #222;
+      display: block;
+    }
+
+    #game-controls {
+      height: 100px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 2px solid #333;
+      padding: 0 20px;
+    }
+
+    .ctrl-btn {
+      width: 80px;
+      height: 60px;
+      background: #333;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      font-size: 1.8rem;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ctrl-btn:active {
+      background: #ffd700;
+      color: #000;
+    }
+
+    #game-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hud-box {
+      background: rgba(0,0,0,0.7);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #ffd700;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .speed-badge {
+      background: rgba(231, 76, 60, 0.8);
+      color: #fff;
+      border-color: #ff6b6b;
+    }
+
+    /* MODAL DE CHECKPOINT / PERGUNTA */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #222;
+      border: 2px solid #ffd700;
+      border-radius: 15px;
+      padding: 20px;
+      width: 100%;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      color: #2ecc71;
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .modal-text {
+      font-size: 1rem;
+      line-height: 1.4;
+      margin-bottom: 15px;
+      background: #111;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #2ecc71;
+    }
+
+    .question-title {
+      font-size: 0.95rem;
+      color: #ffd700;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .option-btn {
+      width: 100%;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      text-align: left;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .option-btn:active {
+      background: #444;
+    }
+
+    /* SIMULADO */
+    .quiz-question {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 1px solid #444;
+    }
+
+    .quiz-q-title {
+      font-size: 1rem;
+      color: #ffd700;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    .quiz-option input {
+      margin-right: 10px;
+    }
+
+    /* GABARITO */
+    .result-item {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 5px solid #ff4d4d;
+    }
+
+    .result-item.correct {
+      border-left-color: #2ecc71;
+    }
+
+    .result-status {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .status-correct { color: #2ecc71; }
+    .status-wrong { color: #ff4d4d; }
+
+    .ans-detail {
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    .ans-user { color: #ff4d4d; }
+    .ans-correct { color: #2ecc71; }
+
+    .final-teacher-msg {
+      background: #ffd700;
+      color: #000;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 1rem;
+      margin: 15px 0;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- TELA 1: APRENDIZADO -->
+  <div id="screen-learning" class="screen active">
+    <h1>Filo Race</h1>
+    <h2>Alegoria da Caverna</h2>
+    
+    <div class="card">
+      <p><strong>Aprenda do zero com Platão:</strong></p>
+      <ul>
+        <li>A história da Caverna de Platão.</li>
+        <li>A diferença entre ilusões (sombras) e a verdade (luz).</li>
+        <li>Como a Filosofia nos ensina a pensar com liberdade.</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-rules')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 2: REGRAS -->
+  <div id="screen-rules" class="screen">
+    <h2>Regras da Corrida</h2>
+
+    <div class="card">
+      <ul>
+        <li><strong>Controles:</strong> Use as setas ou botões para mover o templo rapidamente.</li>
+        <li><strong>Dificuldade Progressiva:</strong> A cada dica coletada, a corrida fica mais rápida e desafiadora!⚡</li>
+        <li><strong>Livros Verdes:</strong> Pegue 12 dicas curtas de leitura.</li>
+        <li><strong>Círculos Vermelhos:</strong> Desvie das distrações (fazem você rodopiar 3 vezes).</li>
+        <li><strong>Simulado Final:</strong> Faça 6 questões ao terminar e mostre o gabarito ao professor!</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="startGame()">INICIAR FILO RACE 🏁</button>
+  </div>
+
+  <!-- TELA 3: JOGO -->
+  <div id="screen-game" class="screen">
+    <div id="game-hud">
+      <div class="hud-box">Dicas: <span id="hud-clues">0</span>/12</div>
+      <div class="hud-box speed-badge">Velocidade: <span id="hud-speed">1x</span></div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="game-controls">
+      <div class="ctrl-btn" id="btn-left">◀</div>
+      <div class="ctrl-btn" id="btn-right">▶</div>
+    </div>
+
+    <!-- MODAL DE CHECKPOINT -->
+    <div id="game-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-title" id="modal-clue-title">Dica Encontrada!</div>
+        <div class="modal-text" id="modal-clue-text">Texto da dica...</div>
+        
+        <div id="modal-question-box">
+          <div class="question-title" id="modal-q-title">Verificação de Leitura:</div>
+          <div id="modal-options"></div>
+        </div>
+
+        <div class="teacher-help">
+          Não entendeu? Procure o professor.
+        </div>
+
+        <button id="modal-continue-btn" class="btn" style="display:none; width:100%; margin-top:10px;" onclick="closeModal()">CONTINUAR CORRIDA ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA INTERMEDIÁRIA (FIM DO JOGO) -->
+  <div id="screen-game-end" class="screen">
+    <h2>Vitória!</h2>
+    <div class="card" style="text-align: center;">
+      <p style="font-size: 1.3rem; color: #2ecc71; font-weight: bold; margin-bottom: 10px;">
+        Parabéns! Você venceu a Filo Race! 🏆
+      </p>
+      <p>Você coletou todas as 12 dicas e dominou a aceleração máxima da caverna!</p>
+      <p style="margin-top: 15px; font-weight: bold; color: #ffd700;">
+        Faça o simulado a seguir.
+      </p>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-simulado')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 4: SIMULADO -->
+  <div id="screen-simulado" class="screen">
+    <h2>Simulado Final</h2>
+    <p style="text-align: center; font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Responda às 6 questões com base nas dicas coletadas:</p>
+
+    <div id="simulado-container">
+      <!-- As 6 questões serão inseridas aqui via JavaScript -->
+    </div>
+
+    <button class="btn" onclick="finishSimulado()" style="margin-top: 10px;">FINALIZAR E VERIFICAR O GABARITO ➔</button>
+  </div>
+
+  <!-- TELA 5: GABARITO -->
+  <div id="screen-gabarito" class="screen">
+    <h2>Gabarito Final</h2>
+
+    <div id="gabarito-container">
+      <!-- O resultado será inserido via JavaScript -->
+    </div>
+
+    <div class="final-teacher-msg">
+      Mostre essa tela do gabarito para o professor. Se não mostrar, não ganhará o ponto da aula!
+    </div>
+
+    <button class="btn" onclick="resetAll()">REINICIAR JOGO ↺</button>
+  </div>
+
+</div>
+
+<script>
+  // --- DADOS PEDAGÓGICOS (12 DICAS + 6 QUESTÕES) ---
+  const CLUES_DATA = [
+    {
+      id: 1,
+      text: "Platão criou a 'Alegoria da Caverna'. Nela, imagine pessoas presas desde crianças dentro de uma caverna escura, sem conseguir se mexer.",
+      q: "Onde as pessoas da história de Platão estavam presas?",
+      options: [
+        { text: "Dentro de uma caverna escura.", correct: true },
+        { text: "Em um navio no oceano.", correct: false }
+      ]
+    },
+    {
+      id: 2,
+      text: "Acorrentadas, essas pessoas só conseguem olhar para a parede do fundo. Elas enxergam apenas sombras de objetos e acham que as sombras são a única realidade.",
+      q: "O que os prisioneiros viam na parede e achavam ser a realidade?",
+      options: [
+        { text: "Televisores modernos.", correct: false },
+        { text: "Sombras projetadas na parede.", correct: true }
+      ]
+    },
+    {
+      id: 3,
+      text: "As sombras representam a 'opinião falsa' ou 'boatos'. Quem fica preso à caverna acredita em qualquer coisa que ouve, sem checar se é verdade.",
+      q: "Na história, o que as sombras da caverna representam?",
+      options: [
+        { text: "Ilusões, boatos e falsas aparências.", correct: true },
+        { text: "Verdades científicas provadas.", correct: false }
+      ]
+    },
+    {
+      id: 4,
+      text: "Aceitar as coisas sem questionar é viver na escuridão da mente. A Filosofia serve exatamente para nos ensinar a fazer perguntas.",
+      q: "Para que serve a Filosofia segundo a história?",
+      options: [
+        { text: "Para nos fazer aceitar tudo sem pensar.", correct: false },
+        { text: "Para nos ensinar a questionar e buscar a verdade.", correct: true }
+      ]
+    },
+    {
+      id: 5,
+      text: "Um dia, um dos prisioneiros consegue se libertar das correntes! Ele decide subir o caminho para tentar sair da caverna.",
+      q: "O que o prisioneiro libertado decide fazer?",
+      options: [
+        { text: "Subir o caminho em direção à saída.", correct: true },
+        { text: "Voltar a dormir no escuro.", correct: false }
+      ]
+    },
+    {
+      id: 6,
+      text: "A subida para fora da caverna é íngreme e difícil. Isso mostra que aprender coisas novas exige esforço e dedicação da nossa mente.",
+      q: "Por que a subida para fora da caverna é difícil?",
+      options: [
+        { text: "Porque aprender de verdade exige esforço da mente.", correct: true },
+        { text: "Porque ele estava com sapatos pesados.", correct: false }
+      ]
+    },
+    {
+      id: 7,
+      text: "Ao sair da caverna, a luz do Sol é tão forte que machuca os olhos do prisioneiro no começo. Ele precisa de um tempo para se acostumar.",
+      q: "O que acontece com os olhos do prisioneiro ao ver a luz do Sol?",
+      options: [
+        { text: "Eles doem no começo por não estarentes acostumados.", correct: true },
+        { text: "Ele enxerga perfeitamente na mesma hora.", correct: false }
+      ]
+    },
+    {
+      id: 8,
+      text: "O Sol representa a 'Luz da Verdade' e da sabedoria. Ele ilumina o mundo como ele realmente é, sem mentiras ou sombras.",
+      q: "O que a luz do Sol representa no mundo fora da caverna?",
+      options: [
+        { text: "A escuridão e o medo.", correct: false },
+        { text: "A Luz da Verdade e do Conhecimento real.", correct: true }
+      ]
+    },
+    {
+      id: 9,
+      text: "Agora sabendo a verdade, o ex-prisioneiro sente compaixão e decide voltar para o fundo da caverna escura.",
+      q: "Depois de ver o Sol, para onde o filósofo decide ir?",
+      options: [
+        { text: "Decide voltar para dentro da caverna.", correct: true },
+        { text: "Foge para bem longe para nunca mais voltar.", correct: false }
+      ]
+    },
+    {
+      id: 10,
+      text: "Ele volta para a escuridão com um objetivo nobre: tentar libertar os seus antigos companheiros e mostrar o mundo iluminado.",
+      q: "Por que o ex-prisioneiro aceita voltar para o escuro?",
+      options: [
+        { text: "Para ajudar os outros prisioneiros a se libertarem.", correct: true },
+        { text: "Porque ele perdeu a memória.", correct: false }
+      ]
+    },
+    {
+      id: 11,
+      text: "Ao contar sobre o Sol, os prisioneiros não acreditam nele! Eles zombam do colega e dizem que ele ficou louco por subir.",
+      q: "Como os prisioneiros reagiram quando o colega contou sobre o Sol?",
+      options: [
+        { text: "Comemoraram com alegria.", correct: false },
+        { text: "Debocharam e não acreditaram nele.", correct: true }
+      ]
+    },
+    {
+      id: 12,
+      text: "Isso mostra que muitas pessoas preferem o conforto de uma mentira conhecida do que o desafio de buscar e aceitar a verdade.",
+      q: "O que essa reação dos prisioneiros nos ensina?",
+      options: [
+        { text: "Que algumas pessoas preferem mentiras confortáveis.", correct: true },
+        { text: "Que todo mundo adora mudar de ideia rapidamente.", correct: false }
+      ]
+    }
+  ];
+
+  const SIMULADO_QUESTIONS = [
+    {
+      id: 1,
+      title: "Questão 1: O que as pessoas no fundo da caverna enxergavam?",
+      options: [
+        "A) A luz do sol brilhando no céu.",
+        "B) Apenas sombras de objetos projetadas na parede.",
+        "C) Carros e prédios modernos.",
+        "D) Imagens de livros de filosofia."
+      ],
+      correct: 1
+    },
+    {
+      id: 2,
+      title: "Questão 2: O que as 'sombras' da caverna representam no nosso cotidiano?",
+      options: [
+        "A) Ciência e verdades confirmadas.",
+        "B) Fatos históricos provados.",
+        "C) Boatos, aparências falsas e mentiras em que acreditamos sem pensar.",
+        "D) O sol e a luz da natureza."
+      ],
+      correct: 2
+    },
+    {
+      id: 3,
+      title: "Questão 3: O que significa a difícil subida do prisioneiro para fora da caverna?",
+      options: [
+        "A) O esforço necessário para estudar, pensar e buscar a verdade.",
+        "B) Uma corrida de atletismo nas olimpíadas.",
+        "C) O medo que temos de aprender coisas novas.",
+        "D) A vontade de continuar vivendo na escuridão."
+      ],
+      correct: 0
+    },
+    {
+      id: 4,
+      title: "Questão 4: Na história de Platão, o que a luz do SOL representa?",
+      options: [
+        "A) O fogo que queima a caverna.",
+        "B) A escuridão da ignorância.",
+        "C) A sabedoria, a verdade e o conhecimento real.",
+        "D) Uma ilusão ainda pior que as sombras."
+      ],
+      correct: 2
+    },
+    {
+      id: 5,
+      title: "Questão 5: Por que o prisioneiro libertado aceitou voltar para a caverna escura?",
+      options: [
+        "A) Porque ele não gostou do Sol.",
+        "B) Para ajudar seus amigos a se libertarem e verem a verdade.",
+        "C) Para se esconder das pessoas.",
+        "D) Porque ele esqueceu o caminho de fora."
+      ],
+      correct: 1
+    },
+    {
+      id: 6,
+      title: "Questão 6: Como os prisioneiros reagiram às explicações do colega que viu o Sol?",
+      options: [
+        "A) Acreditaram de primeira e saíram correndo.",
+        "B) Fizeram uma grande festa de agradecimento.",
+        "C) Zombaram dele e disseram que ele estava louco.",
+        "D) Escreveram um livro juntos."
+      ],
+      correct: 2
+    }
+  ];
+
+  // --- VARIÁVEIS DE ESTADO ---
+  let currentClueIndex = 0;
+  let collectedCluesCount = 0;
+  let userAnswers = {};
+  let isSpinning = false;
+  let spinAngle = 0;
+
+  // --- PARÂMETROS DE VELOCIDADE PROGRESSIVA ---
+  let baseScrollSpeed = 3.5;
+  let baseCarSpeed = 8;
+  let scrollSpeed = 3.5;
+  let carSpeed = 8;
+
+  function updateDifficulty() {
+    // Aumenta a velocidade da pista e do movimento a cada dica coletada
+    scrollSpeed = baseScrollSpeed + (collectedCluesCount * 0.75); // De 3.5 até 11.75
+    carSpeed = baseCarSpeed + (collectedCluesCount * 0.8);        // De 8 até 16.8
+    
+    // Atualiza o HUD
+    const speedMultiplier = (1 + (collectedCluesCount * 0.2)).toFixed(1);
+    document.getElementById('hud-speed').innerText = `${speedMultiplier}x`;
+  }
+
+  // --- NAVEGAÇÃO ---
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // --- LÓGICA DA CANVAS ---
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let carX = 0;
+  let carY = 0;
+  let roadOffset = 0;
+  let items = [];
+  let isMovingLeft = false;
+  let isMovingRight = false;
+  let animationFrameId = null;
+
+  function initCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    carX = canvas.width / 2 - 15;
+    carY = canvas.height - 90;
+    updateDifficulty();
+    spawnItems();
+  }
+
+  function spawnItems() {
+    items = [];
+    // Livro verde (dica)
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -100,
+      type: 'green'
+    });
+    // Obstáculo vermelho
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -320,
+      type: 'red'
+    });
+  }
+
+  function startGame() {
+    showScreen('screen-game');
+    initCanvas();
+    if (!animationFrameId) {
+      gameLoop();
+    }
+  }
+
+  function gameLoop() {
+    updateGame();
+    drawGame();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function updateGame() {
+    if (isSpinning) {
+      spinAngle += 0.35;
+      if (spinAngle >= Math.PI * 6) { // 3 giros rápidos
+        isSpinning = false;
+        spinAngle = 0;
+      }
+      return;
+    }
+
+    // Movimentação horizontal com velocidade adaptativa
+    if (isMovingLeft && carX > 20) carX -= carSpeed;
+    if (isMovingRight && carX < canvas.width - 50) carX += carSpeed;
+
+    // Rolagem vertical da pista adaptativa
+    roadOffset = (roadOffset + (scrollSpeed * 1.2)) % 40;
+
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      item.y += scrollSpeed;
+
+      // Colisão
+      if (Math.abs(carX + 15 - item.x) < 25 && Math.abs(carY + 25 - item.y) < 25) {
+        if (item.type === 'green') {
+          item.y = -9999;
+          triggerCheckpoint();
+          break;
+        } else if (item.type === 'red') {
+          item.y = -9999;
+          isSpinning = true;
+          spinAngle = 0;
+          break;
+        }
+      }
+
+      if (item.y > canvas.height + 50) {
+        item.y = -180 - Math.random() * 150;
+        item.x = Math.random() * (canvas.width - 60) + 30;
+      }
+    }
+  }
+
+  function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(10, 0, 5, canvas.height);
+    ctx.fillRect(canvas.width - 15, 0, 5, canvas.height);
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([20, 20]);
+    ctx.lineDashOffset = -roadOffset;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    items.forEach(item => {
+      if (item.y < -500) return;
+      ctx.save();
+      if (item.type === 'green') {
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 10, item.y - 12, 20, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(item.x - 7, item.y - 9, 14, 18);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 5, item.y - 6, 10, 3);
+        ctx.fillRect(item.x - 5, item.y, 10, 3);
+      } else {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', item.x, item.y);
+      }
+      ctx.restore();
+    });
+
+    // Desenha Carrinho Templo
+    ctx.save();
+    ctx.translate(carX + 15, carY + 25);
+    if (isSpinning) {
+      ctx.rotate(spinAngle);
+    }
+
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(-15, -25, 30, 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-12, -20, 5, 40);
+    ctx.fillRect(-2, -20, 4, 40);
+    ctx.fillRect(7, -20, 5, 40);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-18, -20, 4, 10);
+    ctx.fillRect(14, -20, 4, 10);
+    ctx.fillRect(-18, 10, 4, 10);
+    ctx.fillRect(14, 10, 4, 10);
+
+    ctx.restore();
+  }
+
+  // Controles
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+
+  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+  btnLeft.addEventListener('mousedown', () => isMovingLeft = true);
+  btnLeft.addEventListener('mouseup', () => isMovingLeft = false);
+
+  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; });
+  btnRight.addEventListener('mousedown', () => isMovingRight = true);
+  btnRight.addEventListener('mouseup', () => isMovingRight = false);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = true;
+    if (e.key === 'ArrowRight') isMovingRight = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = false;
+    if (e.key === 'ArrowRight') isMovingRight = false;
+  });
+
+  // --- CHECKPOINT DE 1 ÚNICA DICA ---
+  function triggerCheckpoint() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    document.getElementById('modal-clue-title').innerText = `DICA ${currentClueIndex + 1} DE 12`;
+    document.getElementById('modal-clue-text').innerText = clueData.text;
+    document.getElementById('modal-q-title').innerText = clueData.q;
+
+    const optionsContainer = document.getElementById('modal-options');
+    optionsContainer.innerHTML = '';
+
+    clueData.options.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => answerCheckpoint(opt.correct);
+      optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('modal-question-box').style.display = 'block';
+    document.getElementById('modal-continue-btn').style.display = 'none';
+    document.getElementById('game-modal').style.display = 'flex';
+  }
+
+  function answerCheckpoint(isCorrect) {
+    if (isCorrect) {
+      collectedCluesCount++;
+      currentClueIndex++;
+      document.getElementById('hud-clues').innerText = collectedCluesCount;
+      updateDifficulty();
+
+      if (collectedCluesCount >= 12) {
+        document.getElementById('game-modal').style.display = 'none';
+        showScreen('screen-game-end');
+        return;
+      }
+
+      document.getElementById('modal-clue-title').innerText = "RESPOSTA CORRETA! ⚡";
+      document.getElementById('modal-clue-text').innerText = `Muito bem! A velocidade aumentou para ${ (1 + (collectedCluesCount * 0.2)).toFixed(1) }x! Prepare-se para acelerar ainda mais!`;
+      document.getElementById('modal-question-box').style.display = 'none';
+      document.getElementById('modal-continue-btn').style.display = 'block';
+    } else {
+      document.getElementById('modal-clue-title').innerText = "OPS! RESPOSTA INCORRETA";
+      document.getElementById('modal-clue-text').innerText = "Não tem problema! Tente prestar atenção para a próxima leitura!";
+      document.getElementById('modal-question-box').style.display = 'none';
+      document.getElementById('modal-continue-btn').style.display = 'block';
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    spawnItems();
+  }
+
+  // --- SIMULADO ---
+  function renderSimulado() {
+    const container = document.getElementById('simulado-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach((q) => {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+
+      let optionsHTML = '';
+      q.options.forEach((opt, oIdx) => {
+        optionsHTML += `
+          <label class="quiz-option">
+            <input type="radio" name="q_${q.id}" value="${oIdx}">
+            <span>${opt}</span>
+          </label>
+        `;
+      });
+
+      qDiv.innerHTML = `
+        <div class="quiz-q-title">${q.title}</div>
+        <div>${optionsHTML}</div>
+        <div class="teacher-help">
+          Não entendeu? Procure o professor.
+        </div>
+      `;
+      container.appendChild(qDiv);
+    });
+  }
+
+  function finishSimulado() {
+    userAnswers = {};
+    let allAnswered = true;
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+      if (selected) {
+        userAnswers[q.id] = parseInt(selected.value);
+      } else {
+        allAnswered = false;
+      }
+    });
+
+    if (!allAnswered) {
+      alert("Por favor, responda a todas as 6 questões antes de finalizar!");
+      return;
+    }
+
+    renderGabarito();
+    showScreen('screen-gabarito');
+  }
+
+  // --- GABARITO ---
+  function renderGabarito() {
+    const container = document.getElementById('gabarito-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const userAns = userAnswers[q.id];
+      const isCorrect = userAns === q.correct;
+
+      const itemDiv = document.createElement('div');
+      itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+
+      if (isCorrect) {
+        itemDiv.innerHTML = `
+          <div class="result-status status-correct">✓ ${q.title}</div>
+          <div style="font-weight: bold; color: #2ecc71;">Acertou!</div>
+        `;
+      } else {
+        itemDiv.innerHTML = `
+          <div class="result-status status-wrong">✕ ${q.title}</div>
+          <div class="ans-detail ans-user"><strong>Sua resposta:</strong> ${q.options[userAns]}</div>
+          <div class="ans-detail ans-correct"><strong>Resposta correta:</strong> ${q.options[q.correct]}</div>
+        `;
+      }
+
+      container.appendChild(itemDiv);
+    });
+  }
+
+  function resetAll() {
+    currentClueIndex = 0;
+    collectedCluesCount = 0;
+    userAnswers = {};
+    document.getElementById('hud-clues').innerText = '0';
+    updateDifficulty();
+    showScreen('screen-learning');
+  }
+
+  renderSimulado();
+</script>
+</body>
+</html>
