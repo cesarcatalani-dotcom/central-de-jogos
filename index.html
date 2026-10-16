@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
-  <title>Tarefa SP 4</title>
+  <title>Portal de Jogos Educativos</title>
   <style>
     * {
       box-sizing: border-box;
@@ -27,7 +27,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       max-width: 600px;
       width: 100%;
     }
@@ -51,26 +51,26 @@
       max-width: 580px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .game-card {
       background: #1e293b;
-      border: 3px solid #facc15;
-      border-radius: 14px;
-      padding: 20px;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       text-decoration: none;
       color: inherit;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       transition: transform 0.2s, border-color 0.2s;
     }
 
     .game-card:active, .game-card:hover {
       transform: scale(0.98);
-      border-color: #ffffff;
+      border-color: #facc15;
     }
 
     .game-info {
@@ -79,33 +79,27 @@
     }
 
     .game-info h2 {
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       color: #facc15;
-      margin-bottom: 6px;
-    }
-
-    .game-info p {
-      font-size: 0.9rem;
-      color: #cbd5e1;
-      line-height: 1.3;
+      margin-bottom: 4px;
     }
 
     .btn-play {
       background: #facc15;
       color: #000000;
       font-weight: bold;
-      padding: 12px 20px;
+      padding: 10px 16px;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
       white-space: nowrap;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
       text-align: center;
     }
 
     footer {
       margin-top: auto;
-      padding-top: 32px;
+      padding-top: 24px;
       color: #64748b;
       font-size: 0.8rem;
       text-align: center;
@@ -115,17 +109,56 @@
 <body>
 
   <header>
-    <h1>Portal Educativo 🎮</h1>
-    <p>Clique abaixo para iniciar o jogo:</p>
+    <h1>Portal de Jogos Educativos 🎮</h1>
+    <p>Escolha um jogo para iniciar a atividade:</p>
   </header>
 
   <div class="container">
     
-    <!-- Link para o arquivo tarefa-sp-quatro.html -->
+    <!-- Filo Race Alienação -->
+    <a href="filo-race-alienacao.html" class="game-card">
+      <div class="game-info">
+        <h2>Filo Race Alienação</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Mário Empatia -->
+    <a href="mario-empatia.html" class="game-card">
+      <div class="game-info">
+        <h2>Mário Empatia</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Revisão Provão 3 -->
+    <a href="revisao-provao-3.html" class="game-card">
+      <div class="game-info">
+        <h2>Revisão Provão 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 3 -->
+    <a href="tarefa-sp-3.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 2 -->
+    <a href="tarefa-sp-dois.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 2</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 4 -->
     <a href="tarefa-sp-quatro.html" class="game-card">
       <div class="game-info">
-        <h2>Tarefa SP 4 🎓</h2>
-        <p>Clique aqui para jogar o Tarefa SP 4.</p>
+        <h2>Tarefa SP 4</h2>
       </div>
       <span class="btn-play">JOGAR ➔</span>
     </a>
