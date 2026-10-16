@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Filo Race - Trabalho e Alienação</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      margin: 0 auto;
+      position: relative;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      padding: 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 10;
+      background-color: #1a1a1a;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      color: #ffd700;
+      text-align: center;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.3rem; }
+
+    .card {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+    }
+
+    .card ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+
+    .card li {
+      margin-bottom: 8px;
+    }
+
+    .teacher-help {
+      background-color: #3a2e00;
+      border: 1px solid #ffd700;
+      color: #fff3a0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #ffd700 0%, #cca100 100%);
+      color: #000;
+      border: none;
+      padding: 14px 20px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-top: auto;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    /* TELA DO JOGO */
+    #screen-game {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: calc(100% - 100px);
+      background-color: #222;
+      display: block;
+    }
+
+    #game-controls {
+      height: 100px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 2px solid #333;
+      padding: 0 20px;
+    }
+
+    .ctrl-btn {
+      width: 80px;
+      height: 60px;
+      background: #333;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      font-size: 1.8rem;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ctrl-btn:active {
+      background: #ffd700;
+      color: #000;
+    }
+
+    #game-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hud-box {
+      background: rgba(0,0,0,0.7);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #ffd700;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .speed-badge {
+      background: rgba(231, 76, 60, 0.8);
+      color: #fff;
+      border-color: #ff6b6b;
+    }
+
+    /* MODAL DE CHECKPOINT / PERGUNTA */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #222;
+      border: 2px solid #ffd700;
+      border-radius: 15px;
+      padding: 20px;
+      width: 100%;
+      max-height: 90%;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      color: #2ecc71;
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .modal-text {
+      font-size: 1rem;
+      line-height: 1.4;
+      margin-bottom: 15px;
+      background: #111;
+      padding: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #2ecc71;
+    }
+
+    .question-title {
+      font-size: 0.95rem;
+      color: #ffd700;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .option-btn {
+      width: 100%;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      text-align: left;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .option-btn:active {
+      background: #444;
+    }
+
+    /* SIMULADO */
+    .quiz-question {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 1px solid #444;
+    }
+
+    .quiz-q-title {
+      font-size: 1rem;
+      color: #ffd700;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      border: 1px solid #333;
+      cursor: pointer;
+    }
+
+    .quiz-option input {
+      margin-right: 10px;
+    }
+
+    /* GABARITO */
+    .result-item {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 5px solid #ff4d4d;
+    }
+
+    .result-item.correct {
+      border-left-color: #2ecc71;
+    }
+
+    .result-status {
+      font-weight: bold;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+    }
+
+    .status-correct { color: #2ecc71; }
+    .status-wrong { color: #ff4d4d; }
+
+    .ans-detail {
+      font-size: 0.85rem;
+      margin-top: 5px;
+    }
+
+    .ans-user { color: #ff4d4d; }
+    .ans-correct { color: #2ecc71; }
+
+    .final-teacher-msg {
+      background: #ffd700;
+      color: #000;
+      padding: 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 1rem;
+      margin: 15px 0;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- TELA 1: APRENDIZADO -->
+  <div id="screen-learning" class="screen active">
+    <h1>Filo Race</h1>
+    <h2>Trabalho e Alienação</h2>
+    
+    <div class="card">
+      <p><strong>O que você vai aprender hoje:</strong></p>
+      <ul>
+        <li>Para que serve o trabalho na nossa vida.</li>
+        <li>O que significa a palavra "Alienação" (quando o trabalhador não aproveita o que produz).</li>
+        <li>Como o trabalho muda as cidades e a sociedade onde vivemos.</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-rules')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 2: REGRAS -->
+  <div id="screen-rules" class="screen">
+    <h2>Regras da Corrida</h2>
+
+    <div class="card">
+      <ul>
+        <li><strong>Controles:</strong> Use as setas para mover para a esquerda ou direita.</li>
+        <li><strong>Velocidade:</strong> A cada dica pega, a corrida fica mais rápida!⚡</li>
+        <li><strong>Livros Verdes:</strong> Pegue 12 dicas fáceis de ler.</li>
+        <li><strong>Círculos Vermelhos:</strong> Desvie deles para não rodopiar.</li>
+        <li><strong>Simulado Final:</strong> Responda a 6 perguntas no final e mostre o resultado ao professor!</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="startGame()">INICIAR FILO RACE 🏁</button>
+  </div>
+
+  <!-- TELA 3: JOGO -->
+  <div id="screen-game" class="screen">
+    <div id="game-hud">
+      <div class="hud-box">Dicas: <span id="hud-clues">0</span>/12</div>
+      <div class="hud-box speed-badge">Velocidade: <span id="hud-speed">1x</span></div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="game-controls">
+      <div class="ctrl-btn" id="btn-left">◀</div>
+      <div class="ctrl-btn" id="btn-right">▶</div>
+    </div>
+
+    <!-- MODAL DE CHECKPOINT -->
+    <div id="game-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-title" id="modal-clue-title">Dica Encontrada!</div>
+        <div class="modal-text" id="modal-clue-text">Texto da dica...</div>
+        
+        <div id="modal-question-box">
+          <div class="question-title" id="modal-q-title">Verificação de Leitura:</div>
+          <div id="modal-options"></div>
+        </div>
+
+        <div class="teacher-help">
+          Não entendeu? Procure o professor.
+        </div>
+
+        <button id="modal-continue-btn" class="btn" style="display:none; width:100%; margin-top:10px;" onclick="closeModal()">VOLTAR À CORRIDA ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA INTERMEDIÁRIA (FIM DO JOGO) -->
+  <div id="screen-game-end" class="screen">
+    <h2>Vitória!</h2>
+    <div class="card" style="text-align: center;">
+      <p style="font-size: 1.3rem; color: #2ecc71; font-weight: bold; margin-bottom: 10px;">
+        Parabéns! Você venceu a corrida! 🏆
+      </p>
+      <p>Você pegou todas as 12 dicas sobre o mundo do trabalho!</p>
+      <p style="margin-top: 15px; font-weight: bold; color: #ffd700;">
+        Agora responda ao simulado curto abaixo.
+      </p>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-simulado')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 4: SIMULADO -->
+  <div id="screen-simulado" class="screen">
+    <h2>Simulado Final</h2>
+    <p style="text-align: center; font-size: 0.85rem; color: #aaa; margin-bottom: 15px;">Responda às 6 perguntas usando o que você aprendeu:</p>
+
+    <div id="simulado-container">
+      <!-- As 6 questões serão inseridas aqui via JavaScript -->
+    </div>
+
+    <button class="btn" onclick="finishSimulado()" style="margin-top: 10px;">FINALIZAR E VERIFICAR O GABARITO ➔</button>
+  </div>
+
+  <!-- TELA 5: GABARITO -->
+  <div id="screen-gabarito" class="screen">
+    <h2>Gabarito Final</h2>
+
+    <div id="gabarito-container">
+      <!-- O resultado será inserido via JavaScript -->
+    </div>
+
+    <div class="final-teacher-msg">
+      Mostre essa tela do gabarito para o professor. Se não mostrar, não ganhará o ponto da aula!
+    </div>
+
+    <button class="btn" onclick="resetAll()">REINICIAR JOGO ↺</button>
+  </div>
+
+</div>
+
+<script>
+  // --- DADOS PEDAGÓGICOS (12 DICAS, CADA UMA COM 3 PERGUNTAS DIFERENTES) ---
+  const CLUES_DATA = [
+    {
+      id: 1,
+      text: "O trabalho é muito importante. Quando a gente trabalha, transforma a natureza e cria coisas novas, aprendendo e evoluindo ao mesmo tempo.",
+      questions: [
+        {
+          q: "O que o trabalho faz além de transformar as coisas da natureza?",
+          options: [
+            { text: "Ajuda o ser humano a aprender e evoluir.", correct: true },
+            { text: "Faz o ser humano esquecer de tudo.", correct: false }
+          ]
+        },
+        {
+          q: "Segundo o texto, o que criamos quando trabalhamos?",
+          options: [
+            { text: "Criamos coisas novas e transformamos a natureza.", correct: true },
+            { text: "Criamos apenas problemas e sujeira.", correct: false }
+          ]
+        },
+        {
+          q: "Como o ser humano muda enquanto realiza um trabalho?",
+          options: [
+            { text: "Ele aprende coisas novas e evolui.", correct: true },
+            { text: "Ele fica parado sem aprender nada.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 2,
+      text: "Em sua ideia original, o trabalho serve para dar liberdade e permitir que a gente desenvolva nossos talentos e capacidades.",
+      questions: [
+        {
+          q: "Para que o trabalho deveria servir na nossa vida?",
+          options: [
+            { text: "Para dar liberdade e desenvolver nossos talentos.", correct: true },
+            { text: "Para prender e cansar a pessoa sem motivo.", correct: false }
+          ]
+        },
+        {
+          q: "Qual é o objetivo verdadeiro e original do trabalho humano?",
+          options: [
+            { text: "Desenvolver nossas capacidades com liberdade.", correct: true },
+            { text: "Proibir as pessoas de usarem a inteligência.", correct: false }
+          ]
+        },
+        {
+          q: "Se o trabalho seguir sua ideia original, o que a pessoa ganha?",
+          options: [
+            { text: "Desenvolvimento de habilidades e liberdade.", correct: true },
+            { text: "Apenas obrigações sem sentido.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 3,
+      text: "O filósofo Lukács diz que, muitas vezes, o trabalho vira 'alienado'. Isso acontece quando o trabalhador cria um objeto, mas ele não é dono daquilo.",
+      questions: [
+        {
+          q: "O que significa 'trabalho alienado'?",
+          options: [
+            { text: "Quando o trabalhador constrói algo, mas o produto não é dele.", correct: true },
+            { text: "Quando o trabalhador ganha tudo o que é feito na fábrica.", correct: false }
+          ]
+        },
+        {
+          q: "No trabalho alienado, de quem é o produto construído?",
+          options: [
+            { text: "Pertence a outra pessoa ou empresa, e não a quem fez.", correct: true },
+            { text: "Pertence ao próprio operário que montou.", correct: false }
+          ]
+        },
+        {
+          q: "Segundo o filósofo Lukács, quando surge a alienação no trabalho?",
+          options: [
+            { text: "Quando o trabalhador não é dono do que produziu.", correct: true },
+            { text: "Quando todos trabalham felizes e juntos.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 4,
+      text: "No trabalho alienado, as coisas que o ser humano cria (como máquinas ou sistemas) passam a mandar na rotina do próprio trabalhador.",
+      questions: [
+        {
+          q: "O que acontece quando o trabalho fica alienado?",
+          options: [
+            { text: "A máquina e a rotina passam a mandar no trabalhador.", correct: true },
+            { text: "O trabalhador faz o que quer na fábrica.", correct: false }
+          ]
+        },
+        {
+          q: "Quem assume o controle na rotina do trabalho alienado?",
+          options: [
+            { text: "As máquinas e o sistema de produção.", correct: true },
+            { text: "O próprio trabalhador com total liberdade.", correct: false }
+          ]
+        },
+        {
+          q: "O que acontece com as criações humanas (como máquinas) na alienação?",
+          options: [
+            { text: "Elas passam a dominar quem as criou.", correct: true },
+            { text: "Elas ajudam o trabalhador a descansar o dia todo.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 5,
+      text: "Lukács fala da palavra 'Reificação' (que significa virar coisa). As pessoas passam a se tratar como se fossem mercadorias ou números.",
+      questions: [
+        {
+          q: "O que significa a palavra 'Reificação'?",
+          options: [
+            { text: "Tratar pessoas como se fossem coisas ou mercadorias.", correct: true },
+            { text: "Dar presentes de aniversário aos amigos.", correct: false }
+          ]
+        },
+        {
+          q: "O que acontece com as relações humanas no processo de reificação?",
+          options: [
+            { text: "Pessoas passam a ser tratadas como números ou mercadorias.", correct: true },
+            { text: "As pessoas ficam mais unidas e amáveis.", correct: false }
+          ]
+        },
+        {
+          q: "A palavra 'Reificação' está ligada a qual ideia?",
+          options: [
+            { text: "Ideia de virar 'coisa' ou objeto.", correct: true },
+            { text: "Ideia de virar um super-herói.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 6,
+      text: "Na reificação, o dinheiro e as coisas têm muito valor, enquanto a vida e o sentimento das pessoas são deixados de lado.",
+      questions: [
+        {
+          q: "Na reificação, o que vale mais na sociedade?",
+          options: [
+            { text: "O dinheiro e as mercadorias.", correct: true },
+            { text: "A amizade e o carinho entre as pessoas.", correct: false }
+          ]
+        },
+        {
+          q: "O que é deixado de lado quando a reificação acontece?",
+          options: [
+            { text: "A vida, o respeito e o sentimento das pessoas.", correct: true },
+            { text: "O valor dos carros e dos celulares.", correct: false }
+          ]
+        },
+        {
+          q: "Como a sociedade reificada enxerga um ser humano?",
+          options: [
+            { text: "Como algo menos importante do que o dinheiro.", correct: true },
+            { text: "Como o bem mais precioso de todos.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 7,
+      text: "Muitas charges mostram operários que passam a vida montando carros caros, mas ganham tão pouco que jamais poderão comprar um.",
+      questions: [
+        {
+          q: "O que a charge do operário que não pode comprar o carro mostra?",
+          options: [
+            { text: "Uma injustiça do trabalho alienado.", correct: true },
+            { text: "Que todos os operários têm carros de luxo.", correct: false }
+          ]
+        },
+        {
+          q: "Por que o operário da fábrica não consegue comprar o carro que montou?",
+          options: [
+            { text: "Porque seu salário é baixo e o produto é muito caro.", correct: true },
+            { text: "Porque ele não gosta de andar de carro.", correct: false }
+          ]
+        },
+        {
+          q: "Essa situação da fábrica com os operários ilustra qual problema?",
+          options: [
+            { text: "O trabalhador ser separado daquilo que ele mesmo produziu.", correct: true },
+            { text: "O sucesso das vendas de veículos no Brasil.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 8,
+      text: "Isso mostra uma contradição: quem constrói as coisas bonitas do mundo muitas vezes é impedido de aproveitar aquilo que fez.",
+      questions: [
+        {
+          q: "Qual é a contradição do trabalho alienado?",
+          options: [
+            { text: "O trabalhador cria a riqueza, mas continua sem ter as coisas.", correct: true },
+            { text: "O trabalhador não precisa mais trabalhar para viver.", correct: false }
+          ]
+        },
+        {
+          q: "O que acontece com quem constrói os bens e produtos da sociedade?",
+          options: [
+            { text: "Muitas vezes é impedido de usar o que construiu.", correct: true },
+            { text: "Recebe todos os produtos de graça no final do mês.", correct: false }
+          ]
+        },
+        {
+          q: "Por que dizemos que há uma 'contradição' no trabalho de hoje?",
+          options: [
+            { text: "Porque quem produz tudo fica sem o produto no final.", correct: true },
+            { text: "Porque o trabalho é muito divertido todos os dias.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 9,
+      text: "É através do trabalho que a gente constrói pontes, prédios e cidades. O trabalho transforma todo o território ao nosso redor.",
+      questions: [
+        {
+          q: "De que forma o trabalho muda o lugar onde vivemos?",
+          options: [
+            { text: "Construindo cidades, estradas e prédios.", correct: true },
+            { text: "Deixando a cidade do mesmo jeito sem mudar nada.", correct: false }
+          ]
+        },
+        {
+          q: "O que acontece com o território quando as pessoas trabalham?",
+          options: [
+            { text: "Ele é transformado e ganha novas construções.", correct: true },
+            { text: "Ele desaparece completamente do mapa.", correct: false }
+          ]
+        },
+        {
+          q: "Quem é o responsável por construir as pontes e prédios das cidades?",
+          options: [
+            { text: "O trabalho humano acumulado ao longo do tempo.", correct: true },
+            { text: "A natureza sozinha sem ajuda de ninguém.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 10,
+      text: "Para a sociedade ser justa, o trabalho e a construção da cidade devem servir para melhorar a vida de todas as pessoas, não só de poucas.",
+      questions: [
+        {
+          q: "Para que deve servir a construção das cidades e indústrias?",
+          options: [
+            { text: "Para melhorar a vida de todas as pessoas.", correct: true },
+            { text: "Apenas para dar lucro para poucas pessoas.", correct: false }
+          ]
+        },
+        {
+          q: "Quando uma cidade e sua produção são consideradas justas?",
+          options: [
+            { text: "Quando atendem às necessidades de toda a população.", correct: true },
+            { text: "Quando só os donos de fábricas ficam felizes.", correct: false }
+          ]
+        },
+        {
+          q: "A transformação do espaço pelo trabalho deve priorizar o quê?",
+          options: [
+            { text: "O bem-estar e a vida de toda a comunidade.", correct: true },
+            { text: "O lucro exagerado acima das pessoas.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 11,
+      text: "Só dar um aumento pequeno de salário não resolve a alienação. É preciso dar respeito e controle do trabalho ao operário.",
+      questions: [
+        {
+          q: "Só dar um aumento pequeno de salário resolve o problema da alienação?",
+          options: [
+            { text: "Não, é preciso mudar a forma como o trabalho é feito.", correct: true },
+            { text: "Sim, resolve absolutamente tudo.", correct: false }
+          ]
+        },
+        {
+          q: "O que o trabalhador precisa ter para não ser alienado?",
+          options: [
+            { text: "Respeito e controle sobre o seu próprio trabalho.", correct: true },
+            { text: "Apenas mais horas de descanso no fim do ano.", correct: false }
+          ]
+        },
+        {
+          q: "Por que um pequeno aumento salarial não acaba com a alienação?",
+          options: [
+            { text: "Porque o trabalhador continua sem mandar no seu trabalho.", correct: true },
+            { text: "Porque ninguém gosta de receber dinheiro.", correct: false }
+          ]
+        }
+      ]
+    },
+    {
+      id: 12,
+      text: "A palavra 'Práxis' significa unir a ação prática com a reflexão. Pensar e agir juntos ajuda a construir um mundo melhor.",
+      questions: [
+        {
+          q: "O que significa ter uma 'Práxis' na vida?",
+          options: [
+            { text: "Pensar sobre a vida e agir de verdade para mudar as coisas.", correct: true },
+            { text: "Ficar parado sem fazer nada o dia todo.", correct: false }
+          ]
+        },
+        {
+          q: "A 'Práxis' junta quais duas coisas importantes?",
+          options: [
+            { text: "A ação prática com a reflexão (pensamento).", correct: true },
+            { text: "A preguiça com a dúvida constante.", correct: false }
+          ]
+        },
+        {
+          q: "Para que serve a Práxis segundo a Filosofia?",
+          options: [
+            { text: "Para nos ajudar a transformar o mundo de forma consciente.", correct: true },
+            { text: "Para fazer as pessoas aceitarem tudo sem reclamar.", correct: false }
+          ]
+        }
+      ]
+    }
+  ];
+
+  const SIMULADO_QUESTIONS = [
+    {
+      id: 1,
+      title: "Questão 1: Em sua ideia original, para que serve o trabalho?",
+      options: [
+        "A) Para prender a pessoa e tirar a sua saúde.",
+        "B) Para ajudar o ser humano a desenvolver seus talentos e ter liberdade.",
+        "C) Para proibir as pessoas de viverem em sociedade.",
+        "D) Para destruir tudo sem pensar no futuro."
+      ],
+      correct: 1
+    },
+    {
+      id: 2,
+      title: "Questão 2: O que é o 'Trabalho Alienado' segundo o filósofo Lukács?",
+      options: [
+        "A) Quando o trabalhador é dono de tudo na fábrica.",
+        "B) Quando as máquinas param de funcionar de repente.",
+        "C) Quando a pessoa constrói algo, mas o produto e o controle não são dela.",
+        "D) Quando o trabalho vira uma brincadeira de criança."
+      ],
+      correct: 2
+    },
+    {
+      id: 3,
+      title: "Questão 3: Uma charge mostra um trabalhador montando carros, mas ele não tem dinheiro para comprar o carro que fez. O que isso representa?",
+      options: [
+        "A) Uma contradição do trabalho alienado, onde quem cria não aproveita o que fez.",
+        "B) Uma história de alegria onde todos ganham carros de graça.",
+        "C) Que o trabalhador não gosta de andar de carro.",
+        "D) Que não existem mais diferenças de dinheiro no mundo."
+      ],
+      correct: 0
+    },
+    {
+      id: 4,
+      title: "Questão 4: O que significa 'Reificação' (virar coisa)?",
+      options: [
+        "A) Tratar as pessoas com muito carinho e respeito.",
+        "B) Tratar seres humanos como se fossem objetos ou mercadorias.",
+        "C) Comprar brinquedos velhos na feira.",
+        "D) Aumentar a amizade entre os trabalhadores."
+      ],
+      correct: 1
+    },
+    {
+      id: 5,
+      title: "Questão 5: O que é necessário para acabar com a alienação do trabalho?",
+      options: [
+        "A) Dar apenas um pequeno aumento de salário sem mudar nada.",
+        "B) Deixar robôs fazendo tudo e fechar as escolas.",
+        "C) Mudar o trabalho com consciência, dando respeito e valor ao trabalhador.",
+        "D) Aceitar que nada pode mudar na sociedade."
+      ],
+      correct: 2
+    },
+    {
+      id: 6,
+      title: "Questão 6: O trabalho ajuda a construir as cidades. Uma cidade justa deve ser feita para:",
+      options: [
+        "A) Dar lucro apenas para poucas empresas ricas.",
+        "B) Impedir que as pessoas estudem e passeiem.",
+        "C) Garantir o bem-estar e uma vida boa para todas as pessoas.",
+        "D) Fazer as pessoas brigarem umas com as outras."
+      ],
+      correct: 2
+    }
+  ];
+
+  // --- VARIÁVEIS DE ESTADO ---
+  let currentClueIndex = 0;
+  let currentQuestionIndexInClue = 0;
+  let collectedCluesCount = 0;
+  let userAnswers = {};
+  let isSpinning = false;
+  let spinAngle = 0;
+
+  // --- PARÂMETROS DE VELOCIDADE PROGRESSIVA ---
+  let baseScrollSpeed = 3.5;
+  let baseCarSpeed = 8;
+  let scrollSpeed = 3.5;
+  let carSpeed = 8;
+
+  function updateDifficulty() {
+    scrollSpeed = baseScrollSpeed + (collectedCluesCount * 0.75);
+    carSpeed = baseCarSpeed + (collectedCluesCount * 0.8);
+    
+    const speedMultiplier = (1 + (collectedCluesCount * 0.2)).toFixed(1);
+    document.getElementById('hud-speed').innerText = `${speedMultiplier}x`;
+  }
+
+  // --- NAVEGAÇÃO ---
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // --- LÓGICA DA CANVAS ---
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let carX = 0;
+  let carY = 0;
+  let roadOffset = 0;
+  let items = [];
+  let isMovingLeft = false;
+  let isMovingRight = false;
+  let animationFrameId = null;
+
+  function initCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    carX = canvas.width / 2 - 15;
+    carY = canvas.height - 90;
+    updateDifficulty();
+    spawnItems();
+  }
+
+  function spawnItems() {
+    items = [];
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -100,
+      type: 'green'
+    });
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -320,
+      type: 'red'
+    });
+  }
+
+  function startGame() {
+    showScreen('screen-game');
+    initCanvas();
+    if (!animationFrameId) {
+      gameLoop();
+    }
+  }
+
+  function gameLoop() {
+    updateGame();
+    drawGame();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function updateGame() {
+    if (isSpinning) {
+      spinAngle += 0.35;
+      if (spinAngle >= Math.PI * 6) {
+        isSpinning = false;
+        spinAngle = 0;
+      }
+      return;
+    }
+
+    if (isMovingLeft && carX > 20) carX -= carSpeed;
+    if (isMovingRight && carX < canvas.width - 50) carX += carSpeed;
+
+    roadOffset = (roadOffset + (scrollSpeed * 1.2)) % 40;
+
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      item.y += scrollSpeed;
+
+      if (Math.abs(carX + 15 - item.x) < 25 && Math.abs(carY + 25 - item.y) < 25) {
+        if (item.type === 'green') {
+          item.y = -9999;
+          triggerCheckpoint();
+          break;
+        } else if (item.type === 'red') {
+          item.y = -9999;
+          isSpinning = true;
+          spinAngle = 0;
+          break;
+        }
+      }
+
+      if (item.y > canvas.height + 50) {
+        item.y = -180 - Math.random() * 150;
+        item.x = Math.random() * (canvas.width - 60) + 30;
+      }
+    }
+  }
+
+  function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(10, 0, 5, canvas.height);
+    ctx.fillRect(canvas.width - 15, 0, 5, canvas.height);
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([20, 20]);
+    ctx.lineDashOffset = -roadOffset;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    items.forEach(item => {
+      if (item.y < -500) return;
+      ctx.save();
+      if (item.type === 'green') {
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 10, item.y - 12, 20, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(item.x - 7, item.y - 9, 14, 18);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 5, item.y - 6, 10, 3);
+        ctx.fillRect(item.x - 5, item.y, 10, 3);
+      } else {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', item.x, item.y);
+      }
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.translate(carX + 15, carY + 25);
+    if (isSpinning) {
+      ctx.rotate(spinAngle);
+    }
+
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(-15, -25, 30, 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-12, -20, 5, 40);
+    ctx.fillRect(-2, -20, 4, 40);
+    ctx.fillRect(7, -20, 5, 40);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-18, -20, 4, 10);
+    ctx.fillRect(14, -20, 4, 10);
+    ctx.fillRect(-18, 10, 4, 10);
+    ctx.fillRect(14, 10, 4, 10);
+
+    ctx.restore();
+  }
+
+  // Controles
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+
+  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+  btnLeft.addEventListener('mousedown', () => isMovingLeft = true);
+  btnLeft.addEventListener('mouseup', () => isMovingLeft = false);
+
+  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; });
+  btnRight.addEventListener('mousedown', () => isMovingRight = true);
+  btnRight.addEventListener('mouseup', () => isMovingRight = false);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = true;
+    if (e.key === 'ArrowRight') isMovingRight = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = false;
+    if (e.key === 'ArrowRight') isMovingRight = false;
+  });
+
+  // --- CHECKPOINT DE 1 ÚNICA DICA ---
+  function triggerCheckpoint() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    // Sorteia uma das 3 perguntas da dica atual
+    currentQuestionIndexInClue = Math.floor(Math.random() * clueData.questions.length);
+    const qObj = clueData.questions[currentQuestionIndexInClue];
+
+    document.getElementById('modal-clue-title').innerText = `DICA ${currentClueIndex + 1} DE 12`;
+    document.getElementById('modal-clue-text').innerText = clueData.text;
+    document.getElementById('modal-q-title').innerText = qObj.q;
+
+    const optionsContainer = document.getElementById('modal-options');
+    optionsContainer.innerHTML = '';
+
+    qObj.options.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => answerCheckpoint(opt.correct);
+      optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('modal-question-box').style.display = 'block';
+    document.getElementById('modal-continue-btn').style.display = 'none';
+    document.getElementById('game-modal').style.display = 'flex';
+  }
+
+  function answerCheckpoint(isCorrect) {
+    if (isCorrect) {
+      collectedCluesCount++;
+      currentClueIndex++;
+      document.getElementById('hud-clues').innerText = collectedCluesCount;
+      updateDifficulty();
+
+      if (collectedCluesCount >= 12) {
+        document.getElementById('game-modal').style.display = 'none';
+        showScreen('screen-game-end');
+        return;
+      }
+
+      document.getElementById('modal-clue-title').innerText = "RESPOSTA CORRETA! ⚡";
+      document.getElementById('modal-clue-text').innerText = `Muito bem! A velocidade aumentou para ${ (1 + (collectedCluesCount * 0.2)).toFixed(1) }x! Prepare-se para acelerar ainda mais!`;
+      document.getElementById('modal-question-box').style.display = 'none';
+      document.getElementById('modal-continue-btn').style.display = 'block';
+    } else {
+      document.getElementById('modal-clue-title').innerText = "OPS! RESPOSTA INCORRETA";
+      document.getElementById('modal-clue-text').innerText = "Não tem problema! Tente prestar atenção para a próxima leitura!";
+      document.getElementById('modal-question-box').style.display = 'none';
+      document.getElementById('modal-continue-btn').style.display = 'block';
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    spawnItems();
+  }
+
+  // --- SIMULADO ---
+  function renderSimulado() {
+    const container = document.getElementById('simulado-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach((q) => {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+
+      let optionsHTML = '';
+      q.options.forEach((opt, oIdx) => {
+        optionsHTML += `
+          <label class="quiz-option">
+            <input type="radio" name="q_${q.id}" value="${oIdx}">
+            <span>${opt}</span>
+          </label>
+        `;
+      });
+
+      qDiv.innerHTML = `
+        <div class="quiz-q-title">${q.title}</div>
+        <div>${optionsHTML}</div>
+        <div class="teacher-help">
+          Não entendeu? Procure o professor.
+        </div>
+      `;
+      container.appendChild(qDiv);
+    });
+  }
+
+  function finishSimulado() {
+    userAnswers = {};
+    let allAnswered = true;
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+      if (selected) {
+        userAnswers[q.id] = parseInt(selected.value);
+      } else {
+        allAnswered = false;
+      }
+    });
+
+    if (!allAnswered) {
+      alert("Por favor, responda a todas as 6 perguntas antes de finalizar!");
+      return;
+    }
+
+    renderGabarito();
+    showScreen('screen-gabarito');
+  }
+
+  // --- GABARITO ---
+  function renderGabarito() {
+    const container = document.getElementById('gabarito-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const userAns = userAnswers[q.id];
+      const isCorrect = userAns === q.correct;
+
+      const itemDiv = document.createElement('div');
+      itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+
+      if (isCorrect) {
+        itemDiv.innerHTML = `
+          <div class="result-status status-correct">✓ ${q.title}</div>
+          <div style="font-weight: bold; color: #2ecc71;">Acertou!</div>
+        `;
+      } else {
+        itemDiv.innerHTML = `
+          <div class="result-status status-wrong">✕ ${q.title}</div>
+          <div class="ans-detail ans-user"><strong>Sua resposta:</strong> ${q.options[userAns]}</div>
+          <div class="ans-detail ans-correct"><strong>Resposta correta:</strong> ${q.options[q.correct]}</div>
+        `;
+      }
+
+      container.appendChild(itemDiv);
+    });
+  }
+
+  function resetAll() {
+    currentClueIndex = 0;
+    collectedCluesCount = 0;
+    userAnswers = {};
+    document.getElementById('hud-clues').innerText = '0';
+    updateDifficulty();
+    showScreen('screen-learning');
+  }
+
+  renderSimulado();
+</script>
+</body>
+</html>
