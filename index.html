@@ -160,12 +160,51 @@
 
   </main>
 
+  <!-- Banner/Botão de Instalação PWA -->
+  <div id="pwa-install-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 440px; background: #ffd700; color: #000; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 10000; text-align: center; flex-direction: column; gap: 10px;">
+    <p style="color: #000; font-weight: bold; font-size: 1.1rem; margin: 0;">Deseja instalar o app Jogos Filosóficos no seu celular?</p>
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 5px;">
+      <button id="btn-install-pwa" style="background: #000; color: #ffd700; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 1rem; cursor: pointer;">Instalar Agora 📲</button>
+      <button id="btn-dismiss-pwa" style="background: transparent; color: #333; border: 1px solid #333; padding: 10px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">Agora não</button>
+    </div>
+  </div>
+
   <script>
+    // 1. Registro do Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
       });
     }
+
+    // 2. Captura do evento de instalação do PWA
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwa-install-banner');
+    const installBtn = document.getElementById('btn-install-pwa');
+    const dismissBtn = document.getElementById('btn-dismiss-pwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBanner.style.display = 'flex';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBanner.style.display = 'none';
+    });
+
+    dismissBtn.addEventListener('click', () => {
+      installBanner.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBanner.style.display = 'none';
+      deferredPrompt = null;
+    });
   </script>
 
 </body>
