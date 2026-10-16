@@ -2,210 +2,144 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Jogos Filosóficos</title>
-  
-  <!-- Vinculação com o Manifest do App -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#121212">
-
-  <!-- Ícones do Aplicativo -->
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192-v2.png">
-  <link rel="apple-touch-icon" href="icons/icon-192-v2.png">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hub de Jogos Filosóficos & Educativos</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
-      background-color: #121212;
-      color: #ffffff;
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      padding: 16px;
+      padding: 24px 16px;
     }
 
     header {
       text-align: center;
-      margin-top: 15px;
-      margin-bottom: 20px;
+      margin-bottom: 32px;
+      max-width: 600px;
     }
 
     h1 {
-      color: #ffd700;
-      font-size: 1.8rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
+      color: #facc15;
+      font-size: 2rem;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
-    p {
-      color: #aaa;
-      font-size: 0.95rem;
+    p.subtitle {
+      color: #94a3b8;
+      font-size: 1rem;
     }
 
-    .container-jogos {
+    .container {
       width: 100%;
-      max-width: 480px;
+      max-width: 600px;
       display: flex;
       flex-direction: column;
       gap: 16px;
-      padding-bottom: 30px;
     }
 
-    .card-jogo {
-      background: #2a2a2a;
-      border: 2px solid #ffd700;
-      border-radius: 16px;
-      padding: 18px;
-      text-decoration: none;
-      color: #ffffff;
+    .game-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      transition: transform 0.2s, background-color 0.2s;
-    }
-
-    .card-jogo:active {
-      transform: scale(0.97);
-      background-color: #333333;
-    }
-
-    .titulo-jogo {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: #ffd700;
-      display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      transition: transform 0.2s, border-color 0.2s;
+      text-decoration: none;
+      color: inherit;
     }
 
-    .descricao-jogo {
+    .game-card:hover {
+      transform: translateY(-2px);
+      border-color: #facc15;
+    }
+
+    .game-info h2 {
+      font-size: 1.25rem;
+      color: #f8fafc;
+      margin-bottom: 6px;
+    }
+
+    .game-info p {
       font-size: 0.9rem;
-      color: #cccccc;
-      line-height: 1.4;
+      color: #cbd5e1;
     }
 
-    .tag-play {
-      align-self: flex-end;
-      background: #ffd700;
-      color: #000000;
+    .btn-play {
+      background: #facc15;
+      color: #0f172a;
       font-weight: bold;
-      font-size: 0.8rem;
-      padding: 6px 14px;
-      border-radius: 20px;
-      margin-top: 4px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.95rem;
       text-transform: uppercase;
+      white-space: nowrap;
+      margin-left: 12px;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 32px;
+      color: #64748b;
+      font-size: 0.85rem;
+      text-align: center;
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Jogos Filosóficos</h1>
-    <p>Escolha um jogo para começar a aprender:</p>
+    <h1>Portal de Jogos Educativos 🎮</h1>
+    <p class="subtitle">Selecione uma das jornadas filosóficas para jogar:</p>
   </header>
 
-  <main class="container-jogos">
-
-    <!-- JOGO 1: MÁRIO E EMPATIA -->
-    <a href="jogos/mario-empatia.html" class="card-jogo">
-      <div class="titulo-jogo">🍄 Mário & Empatia</div>
-      <div class="descricao-jogo">Aventura filosófica sobre empatia, escolhas e respeito às diferenças!</div>
-      <div class="tag-play">Jogar ➔</div>
+  <div class="container">
+    
+    <!-- Novo Jogo Adicionado -->
+    <a href="tarefa-sp-dois.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 2 🌿🍄</h2>
+        <p>A Retomada da Terra (Michel Serres, Ailton Krenak e Nego Bispo)</p>
+      </div>
+      <span class="btn-play">Jogar ➔</span>
     </a>
 
-    <!-- JOGO 2: FILO RACE (CAVERNA) -->
-    <a href="jogos/filo-race.html" class="card-jogo">
-      <div class="titulo-jogo">🏎️ Filo Race</div>
-      <div class="descricao-jogo">Alegoria da Caverna de Platão - Corra, colete dicas e responda ao simulado!</div>
-      <div class="tag-play">Jogar ➔</div>
+    <!-- Exemplo de jogos anteriores se existirem no seu projeto -->
+    <a href="jornada-guardiao.html" class="game-card">
+      <div class="game-info">
+        <h2>Super Guardião Bros 🛡️</h2>
+        <p>Jornada de Aprendizado e Plataforma</p>
+      </div>
+      <span class="btn-play">Jogar ➔</span>
     </a>
 
-    <!-- JOGO 3: FILO RACE (TRABALHO E ALIENAÇÃO) -->
-    <a href="jogos/filo-race-alienacao.html" class="card-jogo">
-      <div class="titulo-jogo">🏎️ Filo Race: Alienação</div>
-      <div class="descricao-jogo">Trabalho e Alienação em Lukács - Desvie dos obstáculos, reflita e faça o simulado!</div>
-      <div class="tag-play">Jogar ➔</div>
-    </a>
-
-    <!-- JOGO 4: TAREFA SP 3 -->
-    <a href="jogos/tarefa-sp-3.html" class="card-jogo">
-      <div class="titulo-jogo">🧬 Tarefa SP 3</div>
-      <div class="descricao-jogo">Super Mário Ético: O Dilema da Vida — Bioética, tecnologia e decisões éticas!</div>
-      <div class="tag-play">Jogar ➔</div>
-    </a>
-
-    <!-- JOGO 5: TAREFA SP 4 -->
-    <a href="jogos/tarefa-sp-quatro.html" class="card-jogo">
-      <div class="titulo-jogo">📱 Tarefa SP 4</div>
-      <div class="descricao-jogo">Sociedade Hipermoderna e do Cansaço — Hiperconsumo, autoexploração e Burnout (Lipovetsky e Han)!</div>
-      <div class="tag-play">Jogar ➔</div>
-    </a>
-
-    <!-- JOGO 6: REVISÃO PROVÃO 3 -->
-    <a href="jogos/revisao-provao-3.html" class="card-jogo">
-      <div class="titulo-jogo">📝 Revisão Provão 3</div>
-      <div class="descricao-jogo">Revisão preparatória para o Provão Paulista da 3ª Série com questões comentadas!</div>
-      <div class="tag-play">Jogar ➔</div>
-    </a>
-
-  </main>
-
-  <!-- Banner/Botão de Instalação PWA -->
-  <div id="pwa-install-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 440px; background: #ffd700; color: #000; padding: 16px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.6); z-index: 10000; text-align: center; flex-direction: column; gap: 10px;">
-    <p style="color: #000; font-weight: bold; font-size: 1.1rem; margin: 0;">Deseja instalar o app Jogos Filosóficos no seu celular?</p>
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 5px;">
-      <button id="btn-install-pwa" style="background: #000; color: #ffd700; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 1rem; cursor: pointer;">Instalar Agora 📲</button>
-      <button id="btn-dismiss-pwa" style="background: transparent; color: #333; border: 1px solid #333; padding: 10px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; cursor: pointer;">Agora não</button>
-    </div>
   </div>
 
+  <footer>
+    Plataforma Educativa Offline & PWA • 2026
+  </footer>
+
   <script>
-    // 1. Registro do Service Worker
+    // Registro do Service Worker para suporte Offline (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+          .catch(err => console.error('Erro ao registrar Service Worker:', err));
       });
     }
-
-    // 2. Captura do evento de instalação do PWA
-    let deferredPrompt;
-    const installBanner = document.getElementById('pwa-install-banner');
-    const installBtn = document.getElementById('btn-install-pwa');
-    const dismissBtn = document.getElementById('btn-dismiss-pwa');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBanner.style.display = 'flex';
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      installBanner.style.display = 'none';
-    });
-
-    dismissBtn.addEventListener('click', () => {
-      installBanner.style.display = 'none';
-    });
-
-    window.addEventListener('appinstalled', () => {
-      installBanner.style.display = 'none';
-      deferredPrompt = null;
-    });
   </script>
-
 </body>
 </html>
