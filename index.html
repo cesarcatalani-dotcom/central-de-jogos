@@ -27,7 +27,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: 100vh;
       padding: 20px;
     }
@@ -72,10 +72,11 @@
 
     .container-jogos {
       width: 100%;
-      max-width: 450px;
+      max-width: 480px;
       display: flex;
       flex-direction: column;
       gap: 18px;
+      padding-bottom: 30px;
     }
 
     .card-jogo {
@@ -151,13 +152,27 @@
     <!-- JOGO 3: FILO RACE (TRABALHO E ALIENAÇÃO) -->
     <a href="jogos/filo-race-alienacao.html" class="card-jogo">
       <div class="titulo-jogo">🏎️ Filo Race: Alienação</div>
-      <div class="descricao-jogo">Trabalho e Alienação em Lukács - Aprenda sobre o mundo do trabalho, reificação e faça o simulado!</div>
+      <div class="descricao-jogo">Trabalho e Alienação em Lukács - Desvie dos obstáculos, reflita e faça o simulado!</div>
+      <div class="tag-play">Jogar ➔</div>
+    </a>
+
+    <!-- JOGO 4: TAREFA SP 3 -->
+    <a href="jogos/tarefa-sp-3.html" class="card-jogo">
+      <div class="titulo-jogo">🧬 Tarefa SP 3</div>
+      <div class="descricao-jogo">Super Mário Ético: O Dilema da Vida — Bioética, tecnologia e decisões éticas!</div>
+      <div class="tag-play">Jogar ➔</div>
+    </a>
+
+    <!-- JOGO 5: REVISÃO PROVÃO 3 -->
+    <a href="jogos/revisao-provao-3.html" class="card-jogo">
+      <div class="titulo-jogo">📝 Revisão Provão 3</div>
+      <div class="descricao-jogo">Revisão preparatória para o Provão Paulista da 3ª Série com questões comentadas!</div>
       <div class="tag-play">Jogar ➔</div>
     </a>
 
   </main>
 
-  <!-- Script necessário para habilitar a opção de baixar/instalar o App -->
+  <!-- Script para registrar o Service Worker PWA -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
