@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Super Mariofia: A Sociedade Pós-Moderna</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+        
+        html, body {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background: #090d16;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+        }
+
+        /* TELA DE INÍCIO / REGISTRO DE NOME */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            width: 100dvw;
+            height: 100dvh;
+            background: #0f172a;
+            z-index: 1000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #start-card {
+            background: #1e293b;
+            border: 3px solid #facc15;
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #start-card h1 {
+            color: #facc15;
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px #000;
+        }
+
+        #student-name {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #facc15;
+            background: #0f172a;
+            color: #fff;
+            margin-bottom: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            background: #facc15;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* LAYOUT INTEGRAL DO JOGO */
+        #game-layout {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            flex-direction: row;
+            background: #111827;
+            z-index: 999999;
+        }
+
+        #canvas-wrapper {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            background: #38bdf8;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #hud-top {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+
+        .hud-badge {
+            background: rgba(0, 0, 0, 0.85);
+            color: #facc15;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #facc15;
+        }
+
+        /* CONTROLES FIXOS À DIREITA */
+        #controls-sidebar {
+            width: 140px;
+            height: 100%;
+            background: #0f172a;
+            border-left: 3px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 8px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .ctrl-title {
+            color: #facc15;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            width: 100%;
+        }
+
+        .controls-pad {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .dir-row {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: #1e293b;
+            color: #ffffff;
+            border: 2px solid #facc15;
+            border-radius: 8px;
+            padding: 18px 0;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action:active {
+            background: #facc15;
+            color: #000;
+        }
+
+        .btn-jump-action {
+            background: #ef4444;
+            border-color: #ffffff;
+            font-size: 14px;
+            padding: 16px 0;
+            width: 100%;
+        }
+
+        .btn-jump-action:active {
+            background: #f87171;
+        }
+
+        /* MODAIS DE DICAS E PERGUNTAS (SEM ROLAGEM) */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000001;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 3px solid #facc15;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 480px;
+            padding: 16px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-header {
+            color: #facc15;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .modal-body {
+            background: #1e293b;
+            border-left: 4px solid #facc15;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .prof-note {
+            background: #334155;
+            color: #facc15;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-opt {
+            background: #1e293b;
+            border: 1px solid #64748b;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .btn-opt:hover {
+            border-color: #facc15;
+            background: #334155;
+        }
+
+        .btn-next {
+            background: #facc15;
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .btn-error-reset {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* NOTIFICAÇÕES TOAST */
+        #toast {
+            display: none;
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #ef4444;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000002;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE INÍCIO -->
+    <div id="start-screen">
+        <div id="start-card">
+            <h1>Super Mariofia 🍄👁️</h1>
+            <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 15px;">Aprenda Filosofia Jogando!</p>
+            <input type="text" id="student-name" placeholder="Digite seu nome aqui..." maxlength="30">
+            <button class="btn-main" onclick="startGame()">Começar Jogo ➔</button>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DO JOGO -->
+    <div id="game-layout">
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <div id="hud-top">
+                <div class="hud-badge" id="hud-name">Aluno: --</div>
+                <div class="hud-badge" id="hud-score">Dicas: 0 / 12</div>
+            </div>
+        </div>
+
+        <!-- CONTROLES FIXOS À DIREITA -->
+        <div id="controls-sidebar">
+            <div class="ctrl-title">CONTROLES</div>
+            <div class="controls-pad">
+                <div class="dir-row">
+                    <button class="btn-action" id="btn-left">◀</button>
+                    <button class="btn-action" id="btn-right">▶</button>
+                </div>
+                <button class="btn-action btn-jump-action" id="btn-up">🚀 PULAR</button>
+            </div>
+            <div style="font-size: 9px; color: #64748b; text-align: center;">Teclado: ◄ ► ▲</div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DICA E PERGUNTA (2 ETAPAS) -->
+    <div id="modal-overlay">
+        <div class="modal-box" id="modal-content"></div>
+    </div>
+
+    <div id="toast"></div>
+
+<script>
+// BASE DE DADOS DAS 12 LIÇÕES FACILITADAS (5 VARIAÇÕES DE PERGUNTAS POR LIÇÃO)
+const database = [
+    {
+        lesson: "📖 Lição 1: No mundo atual (pós-moderno), NÃO existe apenas uma história única sobre as coisas. Existem VÁRIAS VERSÕES da mesma realidade.",
+        questions: [
+            { q: "No mundo atual, existe apenas uma explicação para tudo?", options: ["Não, existem várias versões sobre o mesmo assunto", "Sim, todo mundo pensa exatamente igual", "Sim, só a televisão fala a verdade"], correct: 0 },
+            { q: "O que acontece nas redes sociais quando vemos várias opiniões?", options: ["Mostra que existem diferentes versões da realidade", "Prova que o celular está quebrado", "Significa que ninguém deve usar a internet"], correct: 0 },
+            { q: "O pensamento pós-moderno aceita que:", options: ["Existem diferentes pontos de vista", "Existe apenas uma regra para todos", "Não devemos estudar nada"], correct: 0 },
+            { q: "Quando abandonamos histórias únicas que explicam tudo, aceitamos:", options: ["Várias perspectivas diferentes", "Apenas uma ideia antiga", "A proibição dos livros"], correct: 0 },
+            { q: "Como é a realidade no mundo pós-moderno?", options: ["Ela tem vários lados e versões", "Ela é 100% igual para todos", "Ela não existe de jeito nenhum"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 2: Para entender o mundo de hoje, precisamos misturar diferentes assuntos: como Arte, Ciência e Tecnologia.",
+        questions: [
+            { q: "Como podemos entender assuntos difíceis hoje?", options: ["Conectando e misturando diferentes matérias", "Estudando só uma coisa para sempre", "Ignorando a ciência e a arte"], correct: 0 },
+            { q: "Juntar Arte, Ciência e Comunicação em uma pesquisa ajuda a:", options: ["Compreender melhor o mundo de hoje", "Deixar tudo mais confuso sem motivo", "Proibir o uso de computadores"], correct: 0 },
+            { q: "A reorganização das matérias no mundo de hoje busca:", options: ["Fazer conexões entre assuntos diferentes", "Separar tudo para ninguém conversar", "Apagar os livros velhos"], correct: 0 },
+            { q: "O que é importante para estudar os problemas atuais?", options: ["Fazer conexões entre várias áreas", "Usar só a matemática e nada mais", "Não fazer perguntas"], correct: 0 },
+            { q: "Misturar conhecimentos diferentes nos ajuda a:", options: ["Aprender de forma mais completa", "Esquecer tudo o que lemos", "Fazer apenas tarefas simples"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 3: A VIGILÂNCIA é muito antiga, mas hoje os ALGORITMOS e celulares observam nosso comportamento para pegar nossos DADOS.",
+        questions: [
+            { q: "O que os algoritmos e aplicativos fazem no nosso celular?", options: ["Observam nosso comportamento e pegam nossos dados", "Apenas desligam o telefone à noite", "Lavam a tela do celular sozinhos"], correct: 0 },
+            { q: "A vigilância é algo totalmente novo?", options: ["Não, ela é antiga, mas hoje usa tecnologia", "Sim, começou ontem à tarde", "Sim, nunca existiu vigilância antes"], correct: 0 },
+            { q: "Hoje em dia, a vigilância no celular acontece de forma:", options: ["Automática e discreta por algoritmos", "Apenas quando um guarda aparece na tela", "Através de cartas de papel"], correct: 0 },
+            { q: "Por que as redes sociais acompanham o que fazemos?", options: ["Para coletar nossos dados e preferências", "Para apagar nossas fotos antigas", "Para gastar a bateria de propósito"], correct: 0 },
+            { q: "Como os algoritmos 'vigiam' as pessoas hoje?", options: ["Guardando informação sobre o que curtimos e pesquisamos", "Olhando pela janela da nossa casa", "Contando quantos passos damos na rua"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 4: A escola e a fábrica usam a DISCIPLINA para ensinar regras e fazer as pessoas agirem com COMPORTAMENTOS PADRONIZADOS.",
+        questions: [
+            { q: "Para que serve a disciplina na escola e nas fábricas?", options: ["Para ensinar regras e padronizar comportamentos", "Para fazer todo mundo brincar o tempo todo", "Para proibir a leitura de livros"], correct: 0 },
+            { q: "Qual o objetivo do poder disciplinar nas instituições?", options: ["Fazer as pessoas seguirem regras e horários iguais", "Deixar cada um fazer o que quiser", "Cancelar o ano letivo"], correct: 0 },
+            { q: "Usar uniforme e ter horários certos para tudo ajuda a:", options: ["Organizar e padronizar o comportamento", "Eliminar a vontade de aprender", "Destruir os prédios da escola"], correct: 0 },
+            { q: "Como a escola ensina o comportamento certo?", options: ["Através de regras, rotinas e hábitos diários", "Usando feitiçaria e magia", "Apenas no dia da formatura"], correct: 0 },
+            { q: "A disciplina serve para transformar as atitudes das pessoas em:", options: ["Hábitos organizados conforme a norma", "Confusão e bagunça diária", "Jogos de futebol sem fim"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 5: A disciplina funciona melhor quando a gente APRENDE A REGRA e segue ela sozinho, mesmo sem ter ninguém olhando.",
+        questions: [
+            { q: "Quando a disciplina funciona de verdade?", options: ["Quando a pessoa aprende a regra e se comporta mesmo sozinha", "Só quando tem um inspetor do lado", "Quando todo mundo sai correndo"], correct: 0 },
+            { q: "O que é 'internalizar' uma regra?", options: ["Aprender a regra por dentro e seguir por conta própria", "Escrever a regra na mão com caneta", "Esquecer a regra no dia seguinte"], correct: 0 },
+            { q: "Se você se comporta bem mesmo sem o professor na sala, você:", options: ["Internalizou a regra de comportamento", "Ficou com medo sem motivo", "Não aprendeu nada"], correct: 0 },
+            { q: "A verdadeira disciplina não precisa de:", options: ["Uma pessoa vigiando o tempo todo", "Regras e horários na escola", "Respeito entre os alunos"], correct: 0 },
+            { q: "O poder disciplinar ensina o aluno a fazer o quê?", options: ["Se controlar e respeitar as regras cotidianas", "Gritar bem alto no corredor", "Ignorar todos os avisos"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 6: Ver um desenho ou quadro de VÁRIOS ÂNGULOS mostra que existem MÚLTIPLAS PERSPECTIVAS sobre a mesma coisa.",
+        questions: [
+            { q: "O que significa ver algo de 'múltiplas perspectivas'?", options: ["Olhar a mesma coisa por diferentes lados e pontos de vista", "Ver tudo no escuro sem enxergar nada", "Olhar só para um ponto sem mexer a cabeça"], correct: 0 },
+            { q: "Desenhar um objeto mostrando vários lados ao mesmo tempo nos ensina que:", options: ["Existem diferentes formas de enxergar o mundo", "O objeto não existe de verdade", "Todo mundo vê exatamente a mesma imagem"], correct: 0 },
+            { q: "Ter várias perspectivas sobre um fato significa que:", options: ["Podemos aprender vendo de vários ângulos", "Ninguém sabe nada", "Só existe uma opinião certa"], correct: 0 },
+            { q: "A pós-modernidade gosta da ideia de que as coisas têm:", options: ["Vários pontos de vista diferentes", "Apenas uma cor e um formato", "Nenhum valor"], correct: 0 },
+            { q: "Quando aceitamos mais de uma perspectiva, nós:", options: ["Entendemos o mundo de jeito mais rico e amplo", "Ficamos bravos com os colegas", "Esquecemos o que estudamos"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 7: Pensar de forma moderna é aceitar as DIFERENÇAS e o diálogo, sem achar que todo mundo precisa ser IGUAL (homogêneo).",
+        questions: [
+            { q: "O que é 'homogêneo'?", options: ["Coisas que são todas iguais e padronizadas", "Coisas muito diferentes umas das outras", "Coisas que não funcionam"], correct: 0 },
+            { q: "O pensamento atual prefere o quê?", options: ["Respeitar as diferenças e a diversidade", "Obrigar todos a pensar igualzinho", "Proibir as pessoas de conversarem"], correct: 0 },
+            { q: "Achar que só existe um jeito 'certo' de ser é criticado porque:", options: ["Ignora a variedade e as diferenças das pessoas", "Ajuda todo mundo a aprender", "É muito moderno"], correct: 0 },
+            { q: "A diversidade de opiniões é boa porque:", options: ["Traz ideias novas e respeita as pessoas", "Cria regras muito duras", "Impede o uso da internet"], correct: 0 },
+            { q: "Em vez de exigir que todos sejam iguais, o mundo hoje busca:", options: ["Aceitar a pluralidade e a variedade", "Padronizar o cabelo de todo mundo", "Fechar as escolas"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 8: Para resolver grandes problemas (como uma doença ou pandemia), precisamos juntar a SAÚDE com a SOCIOLOGIA e a EDUCAÇÃO.",
+        questions: [
+            { q: "Como resolvemos problemas grandes da sociedade como uma pandemia?", options: ["Juntando médicos, cientistas, professores e sociólogos", "Deixando só uma pessoa tentar resolver tudo sozinha", "Ignorando os conselhos dos especialistas"], correct: 0 },
+            { q: "O que é 'interdisciplinaridade'?", options: ["Unir matérias diferentes para resolver um problema", "Separar as matérias para elas nunca se juntarem", "Ficar sem estudar nenhuma matéria"], correct: 0 },
+            { q: "Estudar uma doença olhando também o lado da sociedade ajuda a:", options: ["Proteger melhor a vida de todos", "Deixar os remédios mais caros", "Esconder a verdade do povo"], correct: 0 },
+            { q: "A cooperação entre ciência e sociedade é importante para:", options: ["Encontrar soluções completas e eficientes", "Fazer brincadeiras na internet", "Parar a produção das fábricas"], correct: 0 },
+            { q: "Juntar várias matérias em um projeto serve para:", options: ["Aprender a olhar o problema de vários lados", "Gastar mais papel nas provas", "Complicar a vida do estudante"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 9: O PANÓPTICO é o nome de uma PRISÃO em forma de anel com uma TORRE NO MEIO para observar todos os lados.",
+        questions: [
+            { q: "O que é o Panóptico?", options: ["Uma prisão com uma torre no meio para observar todos", "Um brinquedo de parque de diversões", "Um tipo de celular antigo"], correct: 0 },
+            { q: "Onde fica o observador na estrutura do Panóptico?", options: ["Em uma torre central no meio do prédio", "Do lado de fora na rua", "Escondido debaixo da terra"], correct: 0 },
+            { q: "Quem inventou a ideia da construção do Panóptico?", options: ["Jeremy Bentham (e estudado por Foucault)", "Super Mário", "Os cientistas de robôs"], correct: 0 },
+            { q: "Qual o formato do prédio do Panóptico?", options: ["Um anel/círculo com a torre no centro", "Um triângulo sem janelas", "Uma linha reta comprida"], correct: 0 },
+            { q: "O Panóptico foi feito para ser um modelo de:", options: ["Vigilância e controle visual", "Hotel de luxo na praia", "Escola de música ao ar livre"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 10: Na torre do Panóptico, os presos não veem quem está lá dentro. Por isso, acham que estão SENDO VISTOS O TEMPO TODO.",
+        questions: [
+            { q: "Por que os presos no Panóptico se comportavam bem?", options: ["Porque achavam que tinham alguém olhando para eles o tempo todo", "Porque a torre dava doces para eles", "Porque as celas não tinham portas"], correct: 0 },
+            { q: "Mesmo que a torre estivesse vazia, os presos sabiam disso?", options: ["Não, eles não conseguiam ver o vigia por causa do vidro", "Sim, eles conversavam com o guarda todo dia", "Sim, a torre era transparente"], correct: 0 },
+            { q: "O segredo do Panóptico é que o olhar da torre é:", options: ["Constante na mente de quem está sendo vigiado", "Inexistente de verdade", "Apenas um desenho na parede"], correct: 0 },
+            { q: "Essa dúvida de 'será que tem alguém me olhando?' faz a pessoa:", options: ["Se comportar de acordo com a regra", "Gritar sem parar na cela", "Fugir pelo teto"], correct: 0 },
+            { q: "O Panóptico faz a pessoa se controlar sozinha porque:", options: ["Ela sente que a vigilância é permanente", "Ela recebe aula de teatro", "Ela fica sem luz à noite"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 11: Hoje, as redes sociais e celulares funcionam como um 'PANÓPTICO DIGITAL', guardando tudo o que a gente digita.",
+        questions: [
+            { q: "Por que o celular é chamado de 'Panóptico Digital'?", options: ["Porque os aplicativos acompanham e guardam o que fazemos", "Porque ele tem formato de torre de pedra", "Porque ele não funciona sem fio"], correct: 0 },
+            { q: "O que os aplicativos fazem quando usamos a internet?", options: ["Registram nossas buscas, curtidas e localização", "Apenas limpam a tela do telefone", "Mandam mensagens para quem não conhecemos"], correct: 0 },
+            { q: "Na internet de hoje, nossa navegação é:", options: ["Monitorada por programas automatizados (algoritmos)", "Totalmente invisível e secreta", "Apagada pelo governo a cada 1 hora"], correct: 0 },
+            { q: "Guardar o histórico do que pesquisamos serve para os aplicativos:", options: ["Entenderem nosso gosto e mostrarem anúncios/vídeos", "Bloquearem o chip do celular", "Desligarem o Wi-Fi da casa"], correct: 0 },
+            { q: "A vigilância digital hoje acontece de forma:", options: ["Silenciosa, contínua e automatizada", "Com barulho de alarme alto no telefone", "Apenas quando tiramos fotos"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 12: RESUMO: Respeitar VÁRIOS PONTOS DE VISTA + Entender que a REGRAS e a VIGILÂNCIA (no celular) moldam nosso comportamento.",
+        questions: [
+            { q: "O que aprendemos sobre a sociedade hoje?", options: ["Existem diferentes opiniões e estamos conectados à tecnologia", "Tudo é muito simples e nada mudou no mundo", "Não precisamos respeitar as regras e o conhecimento"], correct: 0 },
+            { q: "O Panóptico nos ensina sobre:", options: ["Como a vigilância faz as pessoas seguirem regras", "Como construir casas de madeira", "Como consertar celulares quebrados"], correct: 0 },
+            { q: "A ideia de aceitar várias perspectivas nos ajuda a:", options: ["Ter mais empatia e entender opiniões diferentes", "Brigar com quem pensa diferente", "Não conversar com os colegas"], correct: 0 },
+            { q: "Os algoritmos do celular acompanham nossa rotina para:", options: ["Coletar dados e oferecer conteúdos", "Desligar a internet de todo mundo", "Apagar os vídeos do YouTube"], correct: 0 },
+            { q: "Juntar várias matérias (como história, ciência e arte) serve para:", options: ["Aprender de verdade e resolver problemas reais", "Passar o tempo sem pensar", "Deixar os livros mais pesados"], correct: 0 }
+        ]
+    }
+];
+
+// VARIÁVEIS DE ESTADO
+let studentName = "";
+let currentStep = 0;
+let currentLessonIdx = null;
+let currentQuestionObj = null;
+
+let canvas, ctx;
+let gameState = 'START';
+let hitCount = 0;
+let unlockedTips = new Array(12).fill(false);
+
+let cameraX = 0;
+let cameraY = 0;
+let shakeTime = 0;
+
+// JOGADOR
+const player = {
+    x: 40,
+    y: 350,
+    width: 24,
+    height: 32,
+    vx: 0,
+    vy: 0,
+    speed: 4.2,
+    jumpPower: -11.5,
+    grounded: false
+};
+
+const keys = { right: false, left: false, up: false };
+
+let platforms = [];
+let enemy = null; // EXATAMENTE 1 INIMIGO
+
+function initWorld() {
+    platforms = [
+        { x: 0, y: 400, width: 6000, height: 60, type: 'ground' },
+
+        // 12 BLOCOS COM DICA + 24 BLOCOS VAZIOS INTERCALADOS
+        { x: 220, y: 290, width: 34, height: 34, type: 'block', id: 0, hit: false },
+        { x: 300, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 420, y: 290, width: 34, height: 34, type: 'block', id: 1, hit: false },
+        { x: 500, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 620, y: 290, width: 34, height: 34, type: 'block', id: 2, hit: false },
+        { x: 700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        // ELEVAÇÃO (1 Pedra) -> Bloco Dica 4
+        { x: 820, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 833, y: 190, width: 34, height: 34, type: 'block', id: 3, hit: false },
+        { x: 920, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1040, y: 290, width: 34, height: 34, type: 'block', id: 4, hit: false },
+        { x: 1120, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1240, y: 290, width: 34, height: 34, type: 'block', id: 5, hit: false },
+        { x: 1320, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        // ELEVAÇÃO (1 Pedra) -> Bloco Dica 7
+        { x: 1440, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 1453, y: 190, width: 34, height: 34, type: 'block', id: 6, hit: false },
+        { x: 1540, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1660, y: 290, width: 34, height: 34, type: 'block', id: 7, hit: false },
+        { x: 1740, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        // ELEVAÇÃO (2 Pedras Empilhadas) -> Bloco Dica 9
+        { x: 1860, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 1920, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 1933, y: 120, width: 34, height: 34, type: 'block', id: 8, hit: false },
+
+        { x: 2080, y: 290, width: 34, height: 34, type: 'block', id: 9, hit: false },
+        { x: 2160, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2280, y: 290, width: 34, height: 34, type: 'block', id: 10, hit: false },
+        { x: 2360, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        // ELEVAÇÃO (2 Pedras Empilhadas) -> Bloco Dica 12
+        { x: 2480, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 2540, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 2553, y: 120, width: 34, height: 34, type: 'block', id: 11, hit: false },
+
+        // PEDRAS ADICIONAIS VAZIAS E ELEVADAS
+        { x: 2700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+        { x: 2800, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2813, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2950, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2963, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 3100, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 3160, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 3173, y: 120, width: 34, height: 34, type: 'empty', hit: false },
+
+        // BANDEIRA DE CHEGADA
+        { x: 3400, y: 200, width: 10, height: 200, type: 'pole' },
+        { x: 3410, y: 200, width: 45, height: 30, type: 'flag' }
+    ];
+
+    // APENAS 1 INIMIGO PERCORRENDO DEVAGAR TODO O CENÁRIO (DA DIREITA PARA A ESQUERDA E VICE-VERSA)
+    enemy = {
+        x: 3300,
+        y: 376,
+        width: 24,
+        height: 24,
+        speed: -1.2,
+        minX: 100,
+        maxX: 3350
+    };
+}
+
+// EVENTOS DE TECLADO E TOQUE
+window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+        if (!keys.up && player.grounded && gameState === 'PLAYING') {
+            player.vy = player.jumpPower;
+            player.grounded = false;
+        }
+        keys.up = true;
+    }
+});
+
+window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.up = false;
+});
+
+function bindTouchBtn(id, keyName) {
+    const btn = document.getElementById(id);
+    const press = (e) => {
+        e.preventDefault();
+        if (keyName === 'up') {
+            if (player.grounded && gameState === 'PLAYING') {
+                player.vy = player.jumpPower;
+                player.grounded = false;
+            }
+        }
+        keys[keyName] = true;
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+}
+
+bindTouchBtn('btn-left', 'left');
+bindTouchBtn('btn-right', 'right');
+bindTouchBtn('btn-up', 'up');
+
+function startGame() {
+    const input = document.getElementById('student-name').value.trim();
+    if (!input) {
+        alert("Por favor, digite seu nome antes de começar!");
+        return;
+    }
+    studentName = input;
+    document.getElementById('hud-name').innerText = `Aluno: ${studentName}`;
+
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-layout').style.display = 'flex';
+
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    initWorld();
+    gameState = 'PLAYING';
+    gameLoop();
+}
+
+function resizeCanvas() {
+    if (!canvas) return;
+    const wrapper = document.getElementById('canvas-wrapper');
+    canvas.width = wrapper.clientWidth;
+    canvas.height = wrapper.clientHeight;
+}
+
+function update() {
+    if (gameState !== 'PLAYING') return;
+
+    if (keys.right) player.vx = player.speed;
+    else if (keys.left) player.vx = -player.speed;
+    else player.vx = 0;
+
+    player.vy += 0.52;
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x < 0) player.x = 0;
+
+    player.grounded = false;
+
+    platforms.forEach(p => {
+        if (player.x < p.x + p.width &&
+            player.x + player.width > p.x &&
+            player.y < p.y + p.height &&
+            player.y + player.height > p.y) {
+
+            if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 12) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+            else if (player.vy < 0 && player.y - player.vy >= p.y + p.height - 12) {
+                player.y = p.y + p.height;
+                player.vy = 0;
+
+                if (p.type === 'block' && !p.hit) {
+                    p.hit = true;
+                    openLessonModal(p.id);
+                } else if (p.type === 'empty' && !p.hit) {
+                    p.hit = true;
+                    showToast("Nenhuma dica aqui!");
+                }
+            }
+            else if (p.type === 'pole' && hitCount < 12) {
+                if (player.vx > 0) player.x = p.x - player.width;
+            }
+        }
+    });
+
+    // 1 INIMIGO PERCORRE TODO O CENÁRIO (VAI E VOLTA)
+    if (enemy) {
+        enemy.x += enemy.speed;
+        if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) {
+            enemy.speed *= -1;
+        }
+
+        if (player.x < enemy.x + enemy.width &&
+            player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height &&
+            player.y + player.height > enemy.y) {
+            
+            showToast("Tente novamente!");
+            player.x = Math.max(40, player.x - 150);
+            player.y = 300;
+        }
+    }
+
+    cameraX = player.x - canvas.width * 0.35;
+    if (cameraX < 0) cameraX = 0;
+
+    cameraY = player.y - canvas.height * 0.65;
+    if (cameraY > 100) cameraY = 100;
+
+    if (player.x >= 3410 && hitCount >= 12 && gameState !== 'WIN') {
+        gameState = 'WIN';
+    }
+
+    if (gameState === 'WIN') shakeTime += 0.2;
+}
+
+function draw() {
+    if (!ctx) return;
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, -cameraY);
+
+    platforms.forEach(p => {
+        if (p.type === 'ground') {
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(p.x, p.y, p.width, 8);
+        } else if (p.type === 'stone') {
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#0f172a';
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'block' || p.type === 'empty') {
+            ctx.fillStyle = p.hit ? '#78350f' : '#facc15';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+            if (!p.hit) {
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText('?', p.x + 11, p.y + 24);
+            }
+        } else if (p.type === 'pole') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'flag') {
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.width, p.y + p.height / 2);
+            ctx.lineTo(p.x, p.y + p.height);
+            ctx.fill();
+        }
+    });
+
+    // UNICO INIMIGO
+    if (enemy) {
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(enemy.x + 4, enemy.y + 4, 4, 4);
+        ctx.fillRect(enemy.x + 14, enemy.y + 4, 4, 4);
+    }
+
+    // PERSONAGEM (MÁRIO)
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(player.x + 2, player.y + 16, player.width - 4, 12);
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillRect(player.x + 4, player.y + 6, 16, 10);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(player.x + 6, player.y + 12, 12, 3);
+
+    ctx.restore();
+
+    if (gameState === 'WIN') {
+        let shakeX = Math.sin(shakeTime * 10) * 8;
+        let shakeY = Math.cos(shakeTime * 10) * 8;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2 + shakeX, canvas.height * 0.35 + shakeY);
+        ctx.font = '900 48px Arial, sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 5;
+        ctx.strokeText('Farmei!', 0, 0);
+        ctx.fillText('Farmei!', 0, 0);
+        ctx.restore();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillStyle = '#22c55e';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Farmou, ${studentName}! Vá até o professor para receber o ponto!`, canvas.width / 2, canvas.height * 0.55 + 35);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function openLessonModal(idx) {
+    gameState = 'PAUSED';
+    currentLessonIdx = idx;
+    currentStep = 0;
+
+    const item = database[idx];
+    const qRandIdx = Math.floor(Math.random() * item.questions.length);
+    currentQuestionObj = item.questions[qRandIdx];
+
+    renderModalContent();
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function renderModalContent() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = '';
+
+    if (currentStep === 0) {
+        box.innerHTML = `
+            <div class="modal-header">Lição ${currentLessonIdx + 1} de 12</div>
+            <div class="modal-body">${database[currentLessonIdx].lesson}</div>
+            <div class="prof-note">💬 Não entendeu? Pergunte ao professor.</div>
+            <button class="btn-next" onclick="goToStep2()">Avançar ➔</button>
+        `;
+    } else {
+        let opts = currentQuestionObj.options.map((opt, i) => ({
+            text: opt,
+            isCorrect: i === currentQuestionObj.correct
+        }));
+
+        for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+
+        let optsHTML = opts.map(o => `
+            <button class="btn-opt" onclick="answerQuestion(${o.isCorrect})">${o.text}</button>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="modal-header">Verificação de Leitura 📝</div>
+            <div style="font-size: 14px; font-weight: bold; color: #fff;">${currentQuestionObj.q}</div>
+            <div class="options-list">${optsHTML}</div>
+        `;
+    }
+}
+
+function goToStep2() {
+    currentStep = 1;
+    renderModalContent();
+}
+
+function answerQuestion(isCorrect) {
+    if (isCorrect) {
+        document.getElementById('modal-overlay').style.display = 'none';
+        if (!unlockedTips[currentLessonIdx]) {
+            unlockedTips[currentLessonIdx] = true;
+            hitCount++;
+            document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+        }
+        gameState = 'PLAYING';
+    } else {
+        showErrorScreen();
+    }
+}
+
+function showErrorScreen() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = `
+        <div class="modal-header" style="color: #ef4444;">Atenção! ⚠️</div>
+        <div class="modal-body" style="border-left-color: #ef4444; font-weight: bold; text-align: center;">
+            Você errou! Volte 2 perguntas e leia as Lições com atenção!
+        </div>
+        <button class="btn-error-reset" onclick="confirmPenalizeTwoQuestions()">CONTINUAR ➔</button>
+    `;
+}
+
+function confirmPenalizeTwoQuestions() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    penalizeTwoQuestions();
+}
+
+function penalizeTwoQuestions() {
+    let currentBlock = platforms.find(p => p.type === 'block' && p.id === currentLessonIdx);
+    if (currentBlock) currentBlock.hit = false;
+
+    let targetIdx = Math.max(0, currentLessonIdx - 2);
+
+    for (let i = targetIdx; i <= currentLessonIdx; i++) {
+        if (unlockedTips[i]) {
+            unlockedTips[i] = false;
+            hitCount = Math.max(0, hitCount - 1);
+        }
+        let blockToReset = platforms.find(p => p.type === 'block' && p.id === i);
+        if (blockToReset) blockToReset.hit = false;
+    }
+
+    document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+
+    let targetBlock = platforms.find(p => p.type === 'block' && p.id === targetIdx);
+    if (targetBlock) {
+        player.x = Math.max(40, targetBlock.x - 80);
+        player.y = 350;
+    } else {
+        player.x = 40;
+        player.y = 350;
+    }
+
+    player.vx = 0;
+    player.vy = 0;
+    gameState = 'PLAYING';
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => {
+        t.style.display = 'none';
+    }, 1800);
+}
+</script>
+</body>
+</html>
