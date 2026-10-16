@@ -1,23 +1,21 @@
-const CACHE_NAME = 'jogos-filosoficos-v5';
+const CACHE_NAME = 'tarefa-sp-4-v1';
 
-// Lista com todos os 6 jogos para salvar em cache e funcionar offline
+// Ficheiros armazenados em cache exclusivamente para o Tarefa SP 4
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './filo-race-alienacao.html',
-  './mario-empatia.html',
-  './revisao-provao-3.html',
-  './tarefa-sp-dois.html',
-  './tarefa-sp-3.html',
-  './tarefa-sp-quatro.html'
+  'index.html',
+  'tarefa-sp-quatro.html'
 ];
 
-// Instalação do Service Worker e salvamento dos arquivos no cache
+// Instalação do Service Worker
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Armazenando arquivos no cache...');
-      return cache.addAll(ASSETS_TO_CACHE);
+      console.log('[Service Worker] A guardar o jogo Tarefa SP 4 em cache...');
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => console.warn(`Aviso: Não foi possível carregar ${url}:`, err))
+        )
+      );
     }).then(() => self.skipWaiting())
   );
 });
@@ -29,7 +27,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Deletando cache antigo:', cache);
+            console.log('[Service Worker] A eliminar cache antigo:', cache);
             return caches.delete(cache);
           }
         })
@@ -38,26 +36,30 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptação das requisições de rede (Cache First)
+// Interceção de pedidos de rede (Rede primeiro, fallback para Cache se estiver offline)
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (event.request.method === 'GET' && networkResponse.status === 200) {
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
         return networkResponse;
-      });
-    }).catch(() => {
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('index.html');
+          }
+        });
+      })
   );
 });
