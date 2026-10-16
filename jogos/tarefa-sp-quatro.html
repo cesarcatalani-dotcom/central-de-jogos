@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Filo Race - Tarefa SP 4</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 520px;
+      height: 100%;
+      margin: 0 auto;
+      position: relative;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      padding: 24px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 10;
+      background-color: #1a1a1a;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      color: #ffd700;
+      text-align: center;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    h1 { font-size: 2.1rem; }
+    h2 { font-size: 1.7rem; }
+
+    .card {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      line-height: 1.6;
+      font-size: 1.2rem;
+    }
+
+    .card ul {
+      margin-left: 24px;
+      margin-top: 10px;
+    }
+
+    .card li {
+      margin-bottom: 10px;
+    }
+
+    .teacher-help {
+      background-color: #3a2e00;
+      border: 1px solid #ffd700;
+      color: #fff3a0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 12px 0;
+    }
+
+    .question-hint-box {
+      background-color: #0d2b45;
+      border: 2px dashed #29b6f6;
+      color: #e0f7fa;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      line-height: 1.4;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #ffd700 0%, #cca100 100%);
+      color: #000;
+      border: none;
+      padding: 16px 24px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-top: auto;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    /* TELA DO JOGO */
+    #screen-game {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: calc(100% - 110px);
+      background-color: #222;
+      display: block;
+    }
+
+    #game-controls {
+      height: 110px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 2px solid #333;
+      padding: 0 20px;
+    }
+
+    .ctrl-btn {
+      width: 90px;
+      height: 70px;
+      background: #333;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      font-size: 2.2rem;
+      border-radius: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ctrl-btn:active {
+      background: #ffd700;
+      color: #000;
+    }
+
+    #game-hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hud-box {
+      background: rgba(0,0,0,0.85);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #ffd700;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .speed-badge {
+      background: rgba(231, 76, 60, 0.9);
+      color: #fff;
+      border-color: #ff6b6b;
+    }
+
+    /* MODAL DE CHECKPOINT / PERGUNTA */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.92);
+      z-index: 100;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #222;
+      border: 2px solid #ffd700;
+      border-radius: 16px;
+      padding: 22px;
+      width: 100%;
+      max-height: 92%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-title {
+      color: #2ecc71;
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .modal-text {
+      font-size: 1.25rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      background: #111;
+      padding: 16px;
+      border-radius: 10px;
+      border-left: 5px solid #2ecc71;
+    }
+
+    .question-title {
+      font-size: 1.25rem;
+      color: #ffd700;
+      margin-bottom: 14px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .option-btn {
+      width: 100%;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      text-align: left;
+      font-size: 1.15rem;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .option-btn:active {
+      background: #555;
+    }
+
+    /* SIMULADO */
+    .quiz-question {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 22px;
+      border: 1px solid #444;
+    }
+
+    .quiz-q-title {
+      font-size: 1.25rem;
+      color: #ffd700;
+      margin-bottom: 12px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      background: #1e1e1e;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #333;
+      cursor: pointer;
+      font-size: 1.15rem;
+      line-height: 1.4;
+    }
+
+    .quiz-option input {
+      margin-right: 12px;
+      transform: scale(1.3);
+    }
+
+    /* DRAG AND DROP - LACUNAS E ORDENAÇÃO */
+    .word-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: #121212;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px dashed #ffd700;
+      margin-bottom: 15px;
+      min-height: 50px;
+      align-items: center;
+    }
+
+    .draggable-word {
+      background: #29b6f6;
+      color: #000;
+      font-weight: bold;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: grab;
+      font-size: 1.05rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    .drop-zone {
+      display: inline-block;
+      min-width: 130px;
+      height: 38px;
+      border-bottom: 2px solid #ffd700;
+      background: #1a1a1a;
+      margin: 0 4px;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 36px;
+      color: #00e676;
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 0 8px;
+    }
+
+    .drag-order-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .drag-order-item {
+      background-color: #1e1e1e;
+      padding: 14px;
+      border-radius: 8px;
+      border: 2px solid #29b6f6;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .drag-handle {
+      color: #ffd700;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      background-color: #121212;
+      color: #FFFFFF;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.1rem;
+      margin-top: 12px;
+      resize: vertical;
+    }
+
+    /* GABARITO ESTILIZADO */
+    .result-item {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+      border-left: 6px solid #ff4d4d;
+      font-size: 1.15rem;
+    }
+
+    .result-item.correct {
+      border-left-color: #2ecc71;
+    }
+
+    .result-status {
+      font-weight: bold;
+      font-size: 1.3rem;
+      margin-bottom: 8px;
+    }
+
+    .status-correct-text {
+      color: #2ecc71;
+      font-weight: bold;
+      font-size: 1.4rem;
+    }
+
+    .status-wrong-text {
+      color: #ff4d4d;
+      font-weight: bold;
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+    }
+
+    .stem-normal {
+      color: #ffffff;
+      font-weight: normal;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .ans-detail {
+      font-size: 1.1rem;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .ans-user { color: #ff4d4d; }
+    .ans-correct { color: #2ecc71; }
+
+    .final-teacher-msg {
+      background: #ffd700;
+      color: #000;
+      padding: 18px;
+      border-radius: 12px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 1.25rem;
+      margin: 18px 0;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- TELA 1: APRENDIZADO -->
+  <div id="screen-learning" class="screen active">
+    <h1>Filo Race</h1>
+    <h2>Tarefa SP 4: Sociedade Hipermoderna e do Cansaço</h2>
+    
+    <div class="card">
+      <p><strong>Aprenda do zero com Lipovetsky e Byung-Chul Han:</strong></p>
+      <ul>
+        <li><strong>O Hiperconsumo de Experiências:</strong> como as redes sociais nos fazem querer comprar momentos, viagens e estilo de vida, e não apenas objetos físicos.</li>
+        <li><strong>Felicidade Paradoxal:</strong> a falsa sensação de liberdade ao escolher produtos versus a dependência constante de consumir para se sentir bem.</li>
+        <li><strong>A Sociedade do Cansaço:</strong> como a pressão e a autocobrança por produtividade e desempenho substituíram as velhas regras e proibições externas.</li>
+        <li><strong>A Autoexploração e o Esgotamento:</strong> como transformar o lazer em trabalho gera ansiedade, <em>Burnout</em> e o esgotamento da nossa mente.</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-rules')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 2: REGRAS -->
+  <div id="screen-rules" class="screen">
+    <h2>Regras da Corrida</h2>
+
+    <div class="card">
+      <ul>
+        <li><strong>Controles:</strong> Use as setas ou botões para mover o templo rapidamente.</li>
+        <li><strong>Dificuldade Progressiva:</strong> A cada dica coletada, a corrida fica mais rápida e desafiadora!⚡</li>
+        <li><strong>Livros Verdes:</strong> Pegue 12 dicas curtas de leitura sobre Lipovetsky e Byung-Chul Han.</li>
+        <li><strong>Círculos Vermelhos:</strong> Desvie das distrações (fazem você rodopiar 3 vezes).</li>
+        <li><strong>Simulado Final:</strong> Faça as 6 questões oficiais ao terminar e mostre o gabarito ao professor!</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="startGame()">INICIAR FILO RACE 🏁</button>
+  </div>
+
+  <!-- TELA 3: JOGO -->
+  <div id="screen-game" class="screen">
+    <div id="game-hud">
+      <div class="hud-box">Dicas: <span id="hud-clues">0</span>/12</div>
+      <div class="hud-box speed-badge">Velocidade: <span id="hud-speed">1x</span></div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="game-controls">
+      <div class="ctrl-btn" id="btn-left">◀</div>
+      <div class="ctrl-btn" id="btn-right">▶</div>
+    </div>
+
+    <!-- MODAL DE CHECKPOINT -->
+    <div id="game-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-title" id="modal-clue-title">DICA ENCONTRADA!</div>
+        
+        <!-- Etapa 1: Leitura da Dica -->
+        <div id="modal-step-reading">
+          <div class="modal-text" id="modal-clue-text">Texto da dica...</div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+          <button class="btn" style="width:100%; margin-top:10px;" onclick="goToQuestionStep()">PROSSEGUIR ➔</button>
+        </div>
+
+        <!-- Etapa 2: Pergunta de Verificação -->
+        <div id="modal-step-question" style="display:none;">
+          <div class="question-title" id="modal-q-title">Verificação de Leitura:</div>
+          <div id="modal-options"></div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+        </div>
+
+        <!-- Etapa 3: Feedback (Acerto ou Erro) -->
+        <div id="modal-step-feedback" style="display:none;">
+          <div class="modal-text" id="modal-feedback-text">Feedback...</div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+          <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModal()">PROSSEGUIR ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA INTERMEDIÁRIA (FIM DO JOGO) -->
+  <div id="screen-game-end" class="screen">
+    <h2>Vitória!</h2>
+    <div class="card" style="text-align: center;">
+      <p style="font-size: 1.5rem; color: #2ecc71; font-weight: bold; margin-bottom: 12px;">
+        Parabéns! Você venceu a Filo Race! 🏆
+      </p>
+      <p>Você coletou todas as 12 dicas e dominou os conceitos do Bloco TSP4!</p>
+      <p style="margin-top: 15px; font-weight: bold; color: #ffd700;">
+        Faça o simulado a seguir.
+      </p>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-simulado')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 4: SIMULADO -->
+  <div id="screen-simulado" class="screen">
+    <h2>Simulado Final</h2>
+    <p style="text-align: center; font-size: 1.1rem; color: #aaa; margin-bottom: 18px;">Responda às 6 questões da Tarefa SP 4 com base nas dicas coletadas:</p>
+
+    <div id="simulado-container">
+      <!-- As 6 questões serão inseridas via JavaScript -->
+    </div>
+
+    <button class="btn" onclick="finishSimulado()" style="margin-top: 10px;">FINALIZAR E VERIFICAR O GABARITO ➔</button>
+  </div>
+
+  <!-- TELA 5: GABARITO -->
+  <div id="screen-gabarito" class="screen">
+    <h2>Gabarito Final</h2>
+
+    <div id="gabarito-container">
+      <!-- O resultado será inserido via JavaScript -->
+    </div>
+
+    <div class="final-teacher-msg">
+      Mostre essa tela do gabarito para o professor. Se não mostrar, não ganhará o ponto da aula!
+    </div>
+
+    <button class="btn" onclick="resetAll()">REINICIAR JOGO ↺</button>
+  </div>
+
+</div>
+
+<script>
+  // --- DADOS PEDAGÓGICOS SOBRE O BLOCO TSP4 ---
+  const CLUES_DATA = [
+    {
+      id: 1,
+      text: "Hoje em dia, em redes como o TikTok, as pessoas não querem comprar apenas coisas físicas, como roupas ou celulares. Elas querem comprar experiências, como viagens e passeios legais, para mostrar aos outros.",
+      questions: [
+        { q: "Além de produtos físicos, o que as pessoas muito desejam consumir hoje em dia nas redes sociais?", options: [{ text: "Experiências, como viagens e passeios", correct: true }, { text: "Apenas livros didáticos", correct: false }, { text: "Ferramentas para construção", correct: false }] },
+        { q: "Em redes sociais como o TikTok, é muito comum as pessoas compartilharem:", options: [{ text: "Vídeos mostrando viagens e experiências", correct: true }, { text: "Receitas antigas em jornais de papel", correct: false }, { text: "Apenas imagens em branco", correct: false }] },
+        { q: "Comprar viagens e passeios para se divertir e mostrar aos outros é um exemplo de consumo de:", options: [{ text: "Experiências", correct: true }, { text: "Bens de fábrica", correct: false }, { text: "Matéria-prima", correct: false }] },
+        { q: "O que os jovens viajantes buscam ao ver vídeos de lugares bonitos na internet?", options: [{ text: "Vontade de vivenciar aquela mesma experiência", correct: true }, { text: "Vontade de estudar mecânica", correct: false }, { text: "Desejo de desligar a internet para sempre", correct: false }] },
+        { q: "Consumir momentos e vivências em vez de só objetos é uma forte característica do:", options: [{ text: "Hiperconsumo de experiências", correct: true }, { text: "Trabalho braçal antigo", correct: false }, { text: "Estudo da matemática pura", correct: false }] }
+      ]
+    },
+    {
+      id: 2,
+      text: "O filósofo Gilles Lipovetsky chama nossa época de 'hiperconsumo individualizado'. Isso significa que cada pessoa busca comprar coisas para realizar seus próprios desejos pessoais e mostrar sua identidade.",
+      questions: [
+        { q: "Quem é o filósofo que criou o conceito de 'hiperconsumo'?", options: [{ text: "Gilles Lipovetsky", correct: true }, { text: "Sócrates", correct: false }, { text: "Isaac Newton", correct: false }] },
+        { q: "O termo 'hiperconsumo individualizado' significa que o consumo é voltado para:", options: [{ text: "Os desejos e o gosto de cada indivíduo", correct: true }, { text: "As ordens do governo", correct: false }, { text: "Apagar a identidade das pessoas", correct: false }] },
+        { q: "Na etapa do hiperconsumo, as pessoas compram produtos e serviços principalmente para:", options: [{ text: "Buscar realização pessoal e expressar quem são", correct: true }, { text: "Agradar pessoas do passado", correct: false }, { text: "Guardar tudo trancado sem usar", correct: false }] },
+        { q: "A palavra 'hiperconsumo' dá a ideia de um consumo que é:", options: [{ text: "Muito intenso e constante", correct: true }, { text: "Pequeno e raro", correct: false }, { text: "Feito sem gastar dinheiro", correct: false }] },
+        { q: "No hiperconsumo individualizado, o foco principal da compra está no:", options: [{ text: "Bem-estar e desejo individual", correct: true }, { text: "Trabalho em grupo na fábrica", correct: false }, { text: "Plantio de alimentos", correct: false }] }
+      ]
+    },
+    {
+      id: 3,
+      text: "As coisas que compramos trazem uma felicidade rápida, que logo passa. Essa necessidade de comprar algo novo o tempo todo para se sentir feliz é chamada de 'satisfação de necessidades efêmeras' (passageiras).",
+      questions: [
+        { q: "O que significa a palavra 'efêmera'?", options: [{ text: "Algo passageiro, que dura pouco tempo", correct: true }, { text: "Algo que dura para sempre", correct: false }, { text: "Algo que traz dor física", correct: false }] },
+        { q: "A felicidade que vem da compra de um produto novo costuma ser:", options: [{ text: "Rápida e passageira", correct: true }, { text: "Eterna e inabalável", correct: false }, { text: "Inexistente desde o primeiro segundo", correct: false }] },
+        { q: "Por que as pessoas sentem vontade de comprar coisas novas o tempo todo?", options: [{ text: "Porque a satisfação do consumo anterior passa rápido", correct: true }, { text: "Porque os produtos duram 100 anos", correct: false }, { text: "Porque é obrigatório por lei", correct: false }] },
+        { q: "A moda do fast fashion (roupas descartáveis que duram pouco) é um exemplo de consumo de necessidades:", options: [{ text: "Efêmeras (passageiras)", correct: true }, { text: "Eternas", correct: false }, { text: "Religiosas", correct: false }] },
+        { q: "O ciclo de comprar, enjoar e querer comprar de novo gera uma busca por satisfações que são:", options: [{ text: "Passageiras e momentâneas", correct: true }, { text: "Definitivas para a vida toda", correct: false }, { text: "Físicas e dolorosas", correct: false }] }
+      ]
+    },
+    {
+      id: 4,
+      text: "Lipovetsky fala da 'felicidade paradoxal': temos a liberdade de escolher e comprar mil coisas, mas ficamos presos e dependentes da necessidade de consumir sempre para nos sentirmos bem.",
+      questions: [
+        { q: "Por que a felicidade no hiperconsumo é chamada de 'paradoxal' (contraditória)?", options: [{ text: "Porque achamos que somos livres, mas ficamos dependentes do consumo", correct: true }, { text: "Porque ninguém consegue comprar nada nas lojas", correct: false }, { text: "Porque ela só existe durante a noite", correct: false }] },
+        { q: "O que limita a verdadeira liberdade das pessoas na sociedade do hiperconsumo?", options: [{ text: "A dependência constante de comprar novos produtos para ter satisfação", correct: true }, { text: "A falta de opções de produtos no mercado", correct: false }, { text: "A proibição de usar redes sociais", correct: false }] },
+        { q: "No hiperconsumo, a grande variedade de produtos nas lojas nos dá a sensação de:", options: [{ text: "Liberdade de escolha", correct: true }, { text: "Prisão imediata", correct: false }, { text: "Tristeza profunda", correct: false }] },
+        { q: "A contradição da 'felicidade paradoxal' está entre ter liberdade para escolher e:", options: [{ text: "Viver dependente de comprar para se sentir realizado", correct: true }, { text: "Não ter dinheiro para comer", correct: false }, { text: "Ser obrigado a morar na praia", correct: false }] },
+        { q: "O que acontece quando a pessoa condiciona sua felicidade ao próximo produto que vai comprar?", options: [{ text: "Ela se torna escrava de um ciclo infinito de compras", correct: true }, { text: "Ela alcança a paz interior definitiva", correct: false }, { text: "Ela aprende filosofia automaticamente", correct: false }] }
+      ]
+    },
+    {
+      id: 5,
+      text: "Hoje em dia, atividades de lazer (como viajar, cozinhar ou se arrumar) são gravadas e viram conteúdo para a internet. Assim, o momento de descanso se transforma em um trabalho de produção.",
+      questions: [
+        { q: "O que acontece quando gravamos nossas viagens ou hobbys para monetizar nas redes sociais?", options: [{ text: "O momento de lazer vira um trabalho de produção de conteúdo", correct: true }, { text: "O celular apaga todos os vídeos", correct: false }, { text: "A viagem fica proibida", correct: false }] },
+        { q: "Quando o lazer vira trabalho, a lógica da produtividade se espalha para:", options: [{ text: "Os momentos de descanso e vida cotidiana", correct: true }, { text: "Apenas as fábricas e escritórios", correct: false }, { text: "O sono profundo da noite", correct: false }] },
+        { q: "Um influenciador digital que grava suas férias para ganhar curtidas e dinheiro está:", options: [{ text: "Transformando seu lazer em trabalho e conteúdo", correct: true }, { text: "Apenas descansando sem pensar em nada", correct: false }, { text: "Estudando história antiga", correct: false }] },
+        { q: "Fazer com que tudo na nossa vida precise ser produtivo e render dinheiro faz parte da:", options: [{ text: "Expansão da lógica da produtividade para o cotidiano", correct: true }, { text: "Vida de antigamente", correct: false }, { text: "Filosofia da caverna de Platão", correct: false }] },
+        { q: "Se até nossos passeios viram vídeos para gerar visualizações, o que acontece com o descanso real?", options: [{ text: "Fica cada vez mais raro e difícil de acontecer", correct: true }, { text: "Aumenta muito", correct: false }, { text: "Vira uma obrigação do governo", correct: false }] }
+      ]
+    },
+    {
+      id: 6,
+      text: "O filósofo Byung-Chul Han criou a ideia de 'Sociedade do Cansaço'. Ele explica que hoje não somos obrigados por um chefe a trabalhar tanto; nós mesmos nos cobramos para produzir o tempo todo.",
+      questions: [
+        { q: "Quem escreveu sobre a 'Sociedade do Cansaço'?", options: [{ text: "Byung-Chul Han", correct: true }, { text: "Platão", correct: false }, { text: "René Descartes", correct: false }] },
+        { q: "Na Sociedade do Cansaço, de onde vem a maior pressão para produzir e ter sucesso?", options: [{ text: "Do próprio indivíduo, que se cobra sem parar", correct: true }, { text: "De chefes com chicotes", correct: false }, { text: "De leis do rei", correct: false }] },
+        { q: "Qual a principal diferença entre a sociedade antiga (disciplinar) e a do cansaço?", options: [{ text: "O controle passou da proibição externa para a cobrança do próprio indivíduo", correct: true }, { text: "Ninguém mais trabalha hoje em dia", correct: false }, { text: "As pessoas dormem o dia inteiro", correct: false }] },
+        { q: "Dizer a si mesmo frases como 'trabalhe enquanto eles dormem' é um exemplo de:", options: [{ text: "Autocobrança e autoexploração", correct: true }, { text: "Falta de ambição", correct: false }, { text: "Descanso merecido", correct: false }] },
+        { q: "O resultado de uma sociedade onde todos se cobram para produzir o tempo todo é:", options: [{ text: "Um cansaço profundo e esgotamento", correct: true }, { text: "Uma população 100% feliz e relaxada", correct: false }, { text: "O fim da tecnologia", correct: false }] }
+      ]
+    },
+    {
+      id: 7,
+      text: "'Autoexploração' acontece quando a própria pessoa se exige tanto para ser produtiva e perfeita que acaba com a sua própria saúde, achando que está agindo por livre e espontânea vontade.",
+      questions: [
+        { q: "O que significa o termo 'autoexploração'?", options: [{ text: "Quando a própria pessoa se explora e se cobra além dos limites", correct: true }, { text: "Quando você explora uma caverna com um mapa", correct: false }, { text: "Quando um chefe obriga você a fazer horas extras", correct: false }] },
+        { q: "Por que a autoexploração é tão perigosa na Sociedade do Cansaço?", options: [{ text: "Porque a pessoa acha que está se libertando, mas está se prejudicando", correct: true }, { text: "Porque ela dá prêmios em dinheiro", correct: false }, { text: "Porque impede o uso de celulares", correct: false }] },
+        { q: "Na autoexploração, quem faz o papel do 'chefe exigente'?", options: [{ text: "A própria mente do indivíduo", correct: true }, { text: "O professor da escola", correct: false }, { text: "Um policial de trânsito", correct: false }] },
+        { q: "Trabalhar até passar mal por achar que 'nunca produz o suficiente' é um sintoma claro de:", options: [{ text: "Autoexploração", correct: true }, { text: "Boa saúde mental", correct: false }, { text: "Lazer de qualidade", correct: false }] },
+        { q: "A autoexploração é alimentada pelo sentimento constante de que:", options: [{ text: "Precisamos render e produzir cada vez mais", correct: true }, { text: "Já fizemos o bastante e podemos relaxar", correct: false }, { text: "O dinheiro não tem nenhum valor", correct: false }] }
+      ]
+    },
+    {
+      id: 8,
+      text: "Os aplicativos mostram curtidas, número de seguidores e visualizações. Essas métricas fazem a gente comparar nosso desempenho com o dos outros, aumentando a autocobrança.",
+      questions: [
+        { q: "Qual o papel das métricas (curtidas e número de visualizações) nas redes sociais?", options: [{ text: "Funcionam como amplificadores da autocobrança e comparação", correct: true }, { text: "Servem apenas para desligar o celular à noite", correct: false }, { text: "Impedem que as pessoas vejam fotos", correct: false }] },
+        { q: "Comparar o nosso número de seguidores ou visualizações com o de outras pessoas gera:", options: [{ text: "Sensação de cobrança e competição por desempenho", correct: true }, { text: "Alívio imediato da mente", correct: false }, { text: "Fim da vontade de usar a internet", correct: false }] },
+        { q: "As redes sociais ajudam na autoexploração porque nos deixam ver a todo momento:", options: [{ text: "O alcance do nosso desempenho medido em números", correct: true }, { text: "Apenas receitas de bolo", correct: false }, { text: "O futuro da humanidade em detalhes", correct: false }] },
+        { q: "Ver que a postagem de outra pessoa teve milhões de visualizações pode fazer com que o indivíduo:", options: [{ text: "Se cobre para produzir um conteúdo ainda maior", correct: true }, { text: "Pare de se importar com o sucesso", correct: false }, { text: "Venda todos os seus eletrônicos", correct: false }] },
+        { q: "Em resumo, a tecnologia das redes sociais funciona como um:", options: [{ text: "Amplificador da comparação e da pressão por resultados", correct: true }, { text: "Remédio contra o cansaço", correct: false }, { text: "Escudo que protege do trabalho", correct: false }] }
+      ]
+    },
+    {
+      id: 9,
+      text: "A consequência direta de viver se cobrando sem parar para ter sucesso é o 'esgotamento do eu', também conhecido como Burnout, ansiedade e cansaço extremo da mente.",
+      questions: [
+        { q: "Qual é a principal consequência psíquica da autocobrança exagerada na Sociedade do Cansaço?", options: [{ text: "O 'esgotamento do eu' (Burnout e ansiedade)", correct: true }, { text: "Aumento da energia física", correct: false }, { text: "Sabedoria instantânea", correct: false }] },
+        { q: "O termo 'esgotamento do eu' se refere a um estado de:", options: [{ text: "Exaustão mental e emocional da pessoa", correct: true }, { text: "Paz profunda e felicidade sem fim", correct: false }, { text: "Recuperação rápida de energia", correct: false }] },
+        { q: "Doenças modernas como a síndrome de Burnout e crises de ansiedade são frutos da:", options: [{ text: "Sociedade do cansaço e do excesso de cobrança por desempenho", correct: true }, { text: "Prática excessiva de esportes saudáveis", correct: false }, { text: "Falta de aparelhos celulares no mercado", correct: false }] },
+        { q: "Quando a mente de uma pessoa 'pifa' e ela não consegue mais produzir devido ao estresse, ocorreu o:", options: [{ text: "Esgotamento do eu", correct: true }, { text: "Sucesso absoluto", correct: false }, { text: "Hiperconsumo saudável", correct: false }] },
+        { q: "A tirinha e as imagens sobre ter que ser 'trabalhador 24 horas por dia' mostram a caminhada em direção ao:", options: [{ text: "Adoecimento psíquico e cansaço extremo", correct: true }, { text: "Equilíbrio de vida perfeito", correct: false }, { text: "Enriquecimento sem esforço", correct: false }] }
+      ]
+    },
+    {
+      id: 10,
+      text: "Byung-Chul Han ensina que a frase 'Sim, você pode tudo!' é um 'excesso de positividade'. Ela parece motivadora, mas cria a falsa ideia de que quem não consegue o sucesso é o único culpado.",
+      questions: [
+        { q: "O que Byung-Chul Han chama de 'excesso de positividade'?", options: [{ text: "O discurso constante de que 'você pode tudo' e 'basta querer'", correct: true }, { text: "Pensar apenas em coisas tristes", correct: false }, { text: "Fazer testes positivos de laboratório", correct: false }] },
+        { q: "Qual o efeito colateral do slogan 'Você pode qualquer coisa se tentar mais'?", options: [{ text: "Fazer a pessoa se sentir culpada e fracassada quando não consegue", correct: true }, { text: "Garantir que 100% das pessoas fiquem ricas", correct: false }, { text: "Eliminar todo o estresse do mundo", correct: false }] },
+        { q: "O excesso de positividade atua como um motor para a:", options: [{ text: "Autocobrança e autoexploração", correct: true }, { text: "Preguiça de trabalhar", correct: false }, { text: "Falta de interesse pelas redes", correct: false }] },
+        { q: "Diferente da sociedade antiga que dizia 'Você NÃO pode', a sociedade atual repete a todo momento:", options: [{ text: "'Tudo é possível, você DEVE poder!'", correct: true }, { text: "'É proibido tentar'", correct: false }, { text: "'Volte para a caverna'", correct: false }] },
+        { q: "Quando a sociedade exige que todos fiquem otimistas e produtivos o tempo todo, estamos vivendo o:", options: [{ text: "Excesso de positividade", correct: true }, { text: "Ceticismo filosófico", correct: false }, { text: "Isolamento social completo", correct: false }] }
+      ]
+    },
+    {
+      id: 11,
+      text: "Antigamente (Sociedade Disciplinar), o controle vinha de fora, de regras e proibições. Hoje (Sociedade do Cansaço), o controle foi deslocado para dentro do próprio indivíduo.",
+      questions: [
+        { q: "Para onde foi deslocado o controle das normas na Sociedade do Cansaço?", options: [{ text: "Para o próprio indivíduo", correct: true }, { text: "Para reis e imperadores distantes", correct: false }, { text: "Para computadores do passado", correct: false }] },
+        { q: "Na antiga 'Sociedade Disciplinar', como as pessoas eram controladas?", options: [{ text: "Por instituições externas com regras rígidas e proibições", correct: true }, { text: "Por curtidas no Instagram", correct: false }, { text: "Elas não tinham nenhum tipo de regra", correct: false }] },
+        { q: "Na sociedade atual, quem é o responsável por vigiar o seu próprio desempenho?", options: [{ text: "Você mesmo", correct: true }, { text: "Um guarda em cada esquina", correct: false }, { text: "Um juiz de tribunal", correct: false }] },
+        { q: "A mudança da proibição externa ('não faça') para o imperativo interno ('faça mais') marca a passagem para a:", options: [{ text: "Sociedade do Cansaço", correct: true }, { text: "Sociedade do Sono", correct: false }, { text: "Idade Média", correct: false }] },
+        { q: "O controle se tornou mais invisível e difícil de combater porque agora ele vem de:", options: [{ text: "Dentro da nossa própria mente e da nossa autocobrança", correct: true }, { text: "Ordens escritas em pedras", correct: false }, { text: "Invasões alienígenas", correct: false }] }
+      ]
+    },
+    {
+      id: 12,
+      text: "Lembre-se: Lipovetsky estuda o hiperconsumo de experiências rápidas. Byung-Chul Han estuda a sociedade do cansaço, onde nos autoexploramos buscando produtividade.",
+      questions: [
+        { q: "Qual filósofo estuda o Hiperconsumo e a busca por experiências efêmeras?", options: [{ text: "Gilles Lipovetsky", correct: true }, { text: "Byung-Chul Han", correct: false }, { text: "René Descartes", correct: false }] },
+        { q: "Qual filósofo estuda a Sociedade do Cansaço e a autoexploração?", options: [{ text: "Byung-Chul Han", correct: true }, { text: "Gilles Lipovetsky", correct: false }, { text: "Platão", correct: false }] },
+        { q: "Para o simulado, lembre-se de que no hiperconsumo compramos principalmente:", options: [{ text: "Experiências e desejos individuais", correct: true }, { text: "Ferramentas industriais pesadas", correct: false }, { text: "Alimentos para doar sem guardar nada", correct: false }] },
+        { q: "Para o simulado, lembre-se de que na sociedade do cansaço a consequência do excesso de cobrança é o:", options: [{ text: "Esgotamento do eu (Burnout/ansiedade)", correct: true }, { text: "Aumento de felicidade no trabalho", correct: false }, { text: "Desligamento total das redes", correct: false }] },
+        { q: "O controle na sociedade atual não vem mais apenas de proibições de fora, mas sim da:", options: [{ text: "Autocobrança praticada pelo próprio indivíduo", correct: true }, { text: "Falta de vontade de viver em grupo", correct: false }, { text: "Decisão exclusiva dos professores", correct: false }] }
+      ]
+    }
+  ];
+
+  const SIMULADO_QUESTIONS = [
+    {
+      id: 1,
+      type: "fill",
+      title: "Questão 1 - Preencher Lacunas",
+      hint: "💡 <strong>Dica:</strong> Lembre-se do conceito de Lipovetsky sobre o foco nas preferências pessoais de cada sujeito, na busca por viver momentos e não apenas guardar coisas.",
+      context: "Texto de apoio: Print do TikTok (@prefiroviajar) mostrando uma mulher em um mirante em Arraial do Cabo - RJ.",
+      stem: "A popularidade dos perfis de viagem em redes sociais gera desejos de consumo, indicando algo que Lipovestksy apontou sobre a etapa do hiperconsumo [Lacuna 1]: o apelo por consumir [Lacuna 2], não somente [Lacuna 3].",
+      wordOptions: ["individualizado", "experiências", "bens", "hedonista", "conteúdo"],
+      correct: ["individualizado", "experiências", "bens"]
+    },
+    {
+      id: 2,
+      type: "order",
+      title: "Questão 2 - Ordenar Frases",
+      hint: "💡 <strong>Dica:</strong> A lógica de Byung-Chul Han começa com a gravação da vida privada (1), expande a produtividade para o lazer (2), gera métricas de alcance (3) e culmina na comparação de desempenho (4).",
+      stem: "Arraste os blocos abaixo para ordenar corretamente a sequência que explica a autoexploração segundo Byung-Chul Han:",
+      items: [
+        "Quando as pessoas gravam atividades, como viajar ou cozinhar, e as transformam em conteúdo para ser visualizado e monetizado nas redes sociais,",
+        "a lógica da produtividade se expande para as esferas do cotidiano e do lazer, favorecendo a autoexploração.",
+        "A autoexploração, por sua vez, é reforçada pelo fato de que as redes sociais permitem a visualização do alcance das postagens e do quanto os usuários interagiram com elas,",
+        "agindo como tecnologias amplificadoras da autocobrança e da comparação do desempenho."
+      ]
+    },
+    {
+      id: 3,
+      type: "mc",
+      title: "Questão 3 - Resposta Única",
+      hint: "💡 <strong>Dica:</strong> Na Sociedade do Cansaço, quando a pessoa se exige produtividade 24 horas por dia, a consequência psicológica é o cansaço extremo da mente.",
+      stem: "A relação das pessoas com o seu lazer, apresentada na tirinha, expressa uma autocobrança que, segundo Byung-Chul Han, tem como consequência o(a):",
+      options: [
+        "A) hiperconsumo.",
+        "B) excesso de positividade.",
+        "C) esgotamento do eu.",
+        "D) superabundância.",
+        "E) tecnologia."
+      ],
+      correct: 2
+    },
+    {
+      id: 4,
+      type: "mc",
+      title: "Questão 4 - Resposta Única",
+      hint: "💡 <strong>Dica:</strong> Diferente da sociedade antiga (com regras externas de chefes ou regras rígidas), a sociedade moderna faz a cobrança vir de dentro da própria mente da pessoa.",
+      stem: "Conforme exemplificado pela imagem, a sociedade do cansaço se distingue da sociedade disciplinar por deslocar o controle das normas e das instituições para o(a):",
+      options: [
+        "A) alienação de si mesmo.",
+        "B) tecnologia.",
+        "C) Burnout e ansiedade.",
+        "D) esgotamento do eu.",
+        "E) próprio indivíduo."
+      ],
+      correct: 4
+    },
+    {
+      id: 5,
+      type: "mc",
+      title: "Questão 5 - Resposta Única",
+      hint: "💡 <strong>Dica:</strong> O consumo do 'fast fashion' é caracterizado por compras de produtos que duram pouco e trazem felicidades rápidas que logo passam.",
+      stem: "O dado apresentado no trecho da matéria sobre fast fashion (consumo 60% maior de roupas que duram metade do tempo) pode ser compreendido, segundo Lipovetsky, como sintomático de uma sociedade em que a aquisição de produtos está a serviço do(a):",
+      options: [
+        "A) valor de uso dos objetos.",
+        "B) satisfação de necessidades efêmeras.",
+        "C) concretização de projetos coletivos.",
+        "D) realização de desejos duradouros.",
+        "E) dissociação entre consumo e identidade."
+      ],
+      correct: 1
+    },
+    {
+      id: 6,
+      type: "essay",
+      title: "Questão 6 - Discursiva",
+      hint: "💡 <strong>Dica:</strong> Para explicar o paradoxo da felicidade em Lipovetsky, mencione como o consumidor acha que é livre ao escolher produtos, mas fica escravo/dependente do consumo contínuo.",
+      stem: "Lipovetsky afirma que, na sociedade do hiperconsumo, a felicidade é paradoxal, porque existe uma contradição entre a liberdade do consumidor e algo que limita sua liberdade. Explique o que limita a liberdade das pessoas na sociedade do hiperconsumo.",
+      correctModel: "A liberdade das pessoas é limitada porque elas se tornam dependentes do constante consumo de novos produtos para encontrarem satisfação, realização pessoal e expressarem sua identidade, ficando presas a esse ciclo contínuo."
+    }
+  ];
+
+  // --- VARIÁVEIS DE ESTADO ---
+  let currentClueIndex = 0;
+  let collectedCluesCount = 0;
+  let questionIndices = new Array(12).fill(0);
+  let userAnswers = {};
+  let isSpinning = false;
+  let spinAngle = 0;
+
+  // --- PARÂMETROS DE VELOCIDADE PROGRESSIVA ---
+  let baseScrollSpeed = 3.5;
+  let baseCarSpeed = 8;
+  let scrollSpeed = 3.5;
+  let carSpeed = 8;
+
+  function updateDifficulty() {
+    scrollSpeed = baseScrollSpeed + (collectedCluesCount * 0.75);
+    carSpeed = baseCarSpeed + (collectedCluesCount * 0.8);
+    
+    const speedMultiplier = (1 + (collectedCluesCount * 0.2)).toFixed(1);
+    document.getElementById('hud-speed').innerText = `${speedMultiplier}x`;
+  }
+
+  // --- NAVEGAÇÃO ---
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // --- LÓGICA DA CANVAS ---
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let carX = 0;
+  let carY = 0;
+  let roadOffset = 0;
+  let items = [];
+  let isMovingLeft = false;
+  let isMovingRight = false;
+  let animationFrameId = null;
+
+  function initCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+    carX = canvas.width / 2 - 15;
+    carY = canvas.height - 90;
+    updateDifficulty();
+    spawnItems();
+  }
+
+  function spawnItems() {
+    items = [];
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -100,
+      type: 'green'
+    });
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -320,
+      type: 'red'
+    });
+  }
+
+  function startGame() {
+    showScreen('screen-game');
+    initCanvas();
+    if (!animationFrameId) {
+      gameLoop();
+    }
+  }
+
+  function gameLoop() {
+    updateGame();
+    drawGame();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function updateGame() {
+    if (isSpinning) {
+      spinAngle += 0.35;
+      if (spinAngle >= Math.PI * 6) {
+        isSpinning = false;
+        spinAngle = 0;
+      }
+      return;
+    }
+
+    if (isMovingLeft && carX > 20) carX -= carSpeed;
+    if (isMovingRight && carX < canvas.width - 50) carX += carSpeed;
+
+    roadOffset = (roadOffset + (scrollSpeed * 1.2)) % 40;
+
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      item.y += scrollSpeed;
+
+      if (Math.abs(carX + 15 - item.x) < 25 && Math.abs(carY + 25 - item.y) < 25) {
+        if (item.type === 'green') {
+          item.y = -9999;
+          triggerCheckpoint();
+          break;
+        } else if (item.type === 'red') {
+          item.y = -9999;
+          isSpinning = true;
+          spinAngle = 0;
+          break;
+        }
+      }
+
+      if (item.y > canvas.height + 50) {
+        item.y = -180 - Math.random() * 150;
+        item.x = Math.random() * (canvas.width - 60) + 30;
+      }
+    }
+  }
+
+  function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(10, 0, 5, canvas.height);
+    ctx.fillRect(canvas.width - 15, 0, 5, canvas.height);
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([20, 20]);
+    ctx.lineDashOffset = -roadOffset;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    items.forEach(item => {
+      if (item.y < -500) return;
+      ctx.save();
+      if (item.type === 'green') {
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 10, item.y - 12, 20, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(item.x - 7, item.y - 9, 14, 18);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 5, item.y - 6, 10, 3);
+        ctx.fillRect(item.x - 5, item.y, 10, 3);
+      } else {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', item.x, item.y);
+      }
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.translate(carX + 15, carY + 25);
+    if (isSpinning) {
+      ctx.rotate(spinAngle);
+    }
+
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(-15, -25, 30, 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-12, -20, 5, 40);
+    ctx.fillRect(-2, -20, 4, 40);
+    ctx.fillRect(7, -20, 5, 40);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-18, -20, 4, 10);
+    ctx.fillRect(14, -20, 4, 10);
+    ctx.fillRect(-18, 10, 4, 10);
+    ctx.fillRect(14, 10, 4, 10);
+
+    ctx.restore();
+  }
+
+  // Controles
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+
+  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+  btnLeft.addEventListener('mousedown', () => isMovingLeft = true);
+  btnLeft.addEventListener('mouseup', () => isMovingLeft = false);
+
+  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; });
+  btnRight.addEventListener('mousedown', () => isMovingRight = true);
+  btnRight.addEventListener('mouseup', () => isMovingRight = false);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = true;
+    if (e.key === 'ArrowRight') isMovingRight = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = false;
+    if (e.key === 'ArrowRight') isMovingRight = false;
+  });
+
+  // --- CHECKPOINT FLUXO EM 3 ETAPAS ---
+  function triggerCheckpoint() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    document.getElementById('modal-clue-title').innerText = `DICA ${currentClueIndex + 1} DE 12`;
+    document.getElementById('modal-clue-text').innerText = clueData.text;
+
+    document.getElementById('modal-step-reading').style.display = 'block';
+    document.getElementById('modal-step-question').style.display = 'none';
+    document.getElementById('modal-step-feedback').style.display = 'none';
+
+    document.getElementById('game-modal').style.display = 'flex';
+  }
+
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function goToQuestionStep() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    const qIdx = questionIndices[currentClueIndex];
+    const questionObj = clueData.questions[qIdx];
+
+    document.getElementById('modal-q-title').innerText = questionObj.q;
+
+    const optionsContainer = document.getElementById('modal-options');
+    optionsContainer.innerHTML = '';
+
+    const shuffledOptions = shuffleArray(questionObj.options);
+
+    shuffledOptions.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => answerCheckpoint(opt.correct);
+      optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('modal-step-reading').style.display = 'none';
+    document.getElementById('modal-step-question').style.display = 'block';
+  }
+
+  function answerCheckpoint(isCorrect) {
+    document.getElementById('modal-step-question').style.display = 'none';
+    document.getElementById('modal-step-feedback').style.display = 'block';
+
+    if (isCorrect) {
+      collectedCluesCount++;
+      currentClueIndex++;
+      document.getElementById('hud-clues').innerText = collectedCluesCount;
+      updateDifficulty();
+
+      document.getElementById('modal-clue-title').innerText = "RESPOSTA CORRETA! ⚡";
+      document.getElementById('modal-feedback-text').innerText = `Muito bem! A velocidade aumentou para ${(1 + (collectedCluesCount * 0.2)).toFixed(1)}x! Prepare-se para acelerar ainda mais!`;
+
+      if (collectedCluesCount >= 12) {
+        document.getElementById('game-modal').style.display = 'none';
+        showScreen('screen-game-end');
+      }
+    } else {
+      questionIndices[currentClueIndex] = (questionIndices[currentClueIndex] + 1) % 5;
+
+      document.getElementById('modal-clue-title').innerText = "OPS! RESPOSTA INCORRETA";
+      document.getElementById('modal-feedback-text').innerText = "Não tem problema! Na próxima tentativa de pegar essa dica, você responderá uma pergunta diferente. Preste atenção!";
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    spawnItems();
+  }
+
+  // --- SIMULADO E DRAG AND DROP ---
+  let draggedWord = null;
+
+  function renderSimulado() {
+    const container = document.getElementById('simulado-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach((q) => {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+
+      let qContentHTML = `<div class="quiz-q-title">${q.title}</div>`;
+
+      if (q.hint) {
+        qContentHTML += `<div class="question-hint-box">${q.hint}</div>`;
+      }
+
+      if (q.context) {
+        qContentHTML += `<p style="font-size:1rem; font-style:italic; color:#bbb; margin-bottom:10px;">${q.context}</p>`;
+      }
+
+      qContentHTML += `<p style="margin-bottom:12px; font-weight:bold; line-height:1.4;">${q.stem}</p>`;
+
+      if (q.type === 'fill') {
+        let shuffledWords = shuffleArray(q.wordOptions);
+        let wordBankHTML = `<p style="font-size:0.95rem; color:#aaa; margin-bottom:6px;">Clique ou arraste as palavras abaixo para cada lacuna:</p><div class="word-bank" id="word-bank">`;
+        shuffledWords.forEach((word) => {
+          wordBankHTML += `<div class="draggable-word" draggable="true" ondragstart="dragWord(event)" onclick="clickWord(this)">${word}</div>`;
+        });
+        wordBankHTML += `</div>`;
+
+        let fillHTML = `<div style="font-size:1.15rem; line-height:2.2;">`;
+        fillHTML += `A popularidade dos perfis de viagem em redes sociais gera desejos de consumo, indicando algo que Lipovestksy apontou sobre a etapa do hiperconsumo <div class="drop-zone" id="drop-zone-0" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 1]</div>: o apelo por consumir <div class="drop-zone" id="drop-zone-1" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 2]</div>, não somente <div class="drop-zone" id="drop-zone-2" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 3]</div>.`;
+        fillHTML += `</div>`;
+
+        qContentHTML += wordBankHTML + fillHTML;
+      } else if (q.type === 'order') {
+        let shuffledItems = shuffleArray(q.items);
+        let orderHTML = `<p style="font-size:0.95rem; color:#aaa; margin-bottom:6px;">Arraste e solte os blocos na ordem correta (1 a 4):</p><div class="drag-order-container" id="drag-order-container">`;
+        shuffledItems.forEach((text) => {
+          orderHTML += `
+            <div class="drag-order-item" draggable="true" ondragstart="dragOrderItem(event)" ondragover="allowDrop(event)" ondrop="dropOrderItem(event)">
+              <span class="drag-handle">☰</span>
+              <span>${text}</span>
+            </div>
+          `;
+        });
+        orderHTML += `</div>`;
+        qContentHTML += orderHTML;
+      } else if (q.type === 'mc') {
+        let optionsHTML = '<div>';
+        q.options.forEach((opt, oIdx) => {
+          optionsHTML += `
+            <label class="quiz-option">
+              <input type="radio" name="q_${q.id}" value="${oIdx}">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
+        optionsHTML += '</div>';
+        qContentHTML += optionsHTML;
+      } else if (q.type === 'essay') {
+        qContentHTML += `<textarea id="essay-input" placeholder="Digite sua resposta detalhada aqui..."></textarea>`;
+      }
+
+      qContentHTML += `<div class="teacher-help">Não entendeu? Procure o professor.</div>`;
+      qDiv.innerHTML = qContentHTML;
+      container.appendChild(qDiv);
+    });
+  }
+
+  // Lógica Drag and Drop para Lacunas
+  let selectedWordElement = null;
+
+  function dragWord(ev) {
+    draggedWord = ev.target.innerText;
+    ev.dataTransfer.setData("text", ev.target.innerText);
+  }
+
+  function clickWord(el) {
+    if (selectedWordElement) selectedWordElement.style.opacity = "1";
+    selectedWordElement = el;
+    selectedWordElement.style.opacity = "0.5";
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function dropWord(ev) {
+    ev.preventDefault();
+    let word = ev.dataTransfer ? ev.dataTransfer.getData("text") : draggedWord;
+    if (word) {
+      ev.target.innerText = word;
+      ev.target.style.background = "#29b6f6";
+      ev.target.style.color = "#000";
+    }
+  }
+
+  function clearZone(zoneEl) {
+    if (selectedWordElement) {
+      zoneEl.innerText = selectedWordElement.innerText;
+      zoneEl.style.background = "#29b6f6";
+      zoneEl.style.color = "#000";
+      selectedWordElement.style.opacity = "1";
+      selectedWordElement = null;
+    } else {
+      zoneEl.innerText = "[Lacuna]";
+      zoneEl.style.background = "#1a1a1a";
+      zoneEl.style.color = "#00e676";
+    }
+  }
+
+  // Lógica Drag and Drop para Ordenação
+  let draggedOrderItem = null;
+
+  function dragOrderItem(ev) {
+    draggedOrderItem = ev.currentTarget;
+    ev.dataTransfer.setData("text/html", ev.currentTarget.innerHTML);
+  }
+
+  function dropOrderItem(ev) {
+    ev.preventDefault();
+    let targetItem = ev.currentTarget;
+    if (targetItem && targetItem !== draggedOrderItem && targetItem.classList.contains('drag-order-item')) {
+      let tempHTML = targetItem.innerHTML;
+      targetItem.innerHTML = draggedOrderItem.innerHTML;
+      draggedOrderItem.innerHTML = tempHTML;
+    }
+  }
+
+  function finishSimulado() {
+    userAnswers = {};
+    let allAnswered = true;
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      if (q.type === 'fill') {
+        let userVals = [];
+        [0, 1, 2].forEach(idx => {
+          const zone = document.getElementById(`drop-zone-${idx}`);
+          if (zone && !zone.innerText.includes('[Lacuna')) {
+            userVals.push(zone.innerText.trim());
+          }
+        });
+        if (userVals.length < 3) allAnswered = false;
+        userAnswers[q.id] = userVals;
+      } else if (q.type === 'order') {
+        const items = Array.from(document.querySelectorAll('#drag-order-container .drag-order-item span:nth-child(2)')).map(el => el.innerText.trim());
+        userAnswers[q.id] = items;
+      } else if (q.type === 'mc') {
+        const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+        if (selected) {
+          userAnswers[q.id] = parseInt(selected.value);
+        } else {
+          allAnswered = false;
+        }
+      } else if (q.type === 'essay') {
+        const txt = document.getElementById('essay-input').value.trim();
+        if (!txt) allAnswered = false;
+        userAnswers[q.id] = txt;
+      }
+    });
+
+    if (!allAnswered) {
+      alert("Por favor, responda a todas as 6 questões preenchendo as lacunas e ordenando os blocos antes de finalizar!");
+      return;
+    }
+
+    renderGabarito();
+    showScreen('screen-gabarito');
+  }
+
+  // --- GABARITO (COM REGRAS DE EXIBIÇÃO SOLICITADAS) ---
+  function renderGabarito() {
+    const container = document.getElementById('gabarito-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const userAns = userAnswers[q.id];
+      const itemDiv = document.createElement('div');
+
+      if (q.type === 'mc') {
+        const isCorrect = userAns === q.correct;
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua resposta:</strong> ${q.options[userAns]}</div>
+            <div class="ans-detail ans-correct"><strong>Resposta correta:</strong> ${q.options[q.correct]}</div>
+          `;
+        }
+      } else if (q.type === 'fill') {
+        const isCorrect = JSON.stringify(userAns.map(a => a.toLowerCase())) === JSON.stringify(q.correct.map(a => a.toLowerCase()));
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua resposta nas lacunas:</strong> ${userAns.join(', ')}</div>
+            <div class="ans-detail ans-correct"><strong>Resposta correta:</strong> ${q.correct.join(', ')}</div>
+          `;
+        }
+      } else if (q.type === 'order') {
+        const isCorrect = JSON.stringify(userAns) === JSON.stringify(q.items);
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua ordem:</strong><br>${userAns.map((t,i)=>`${i+1}.${t}`).join('<br>')}</div>
+            <br>
+            <div class="ans-detail ans-correct"><strong>Ordem correta:</strong><br>${q.items.map((t,i)=>`${i+1}.${t}`).join('<br>')}</div>
+          `;
+        }
+      } else if (q.type === 'essay') {
+        itemDiv.className = `result-item correct`;
+        itemDiv.innerHTML = `
+          <div class="result-status status-correct-text">Resposta Registrada!</div>
+          <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+          <div class="ans-detail"><strong>Sua resposta:</strong><br>${userAns}</div>
+          <br>
+          <div class="ans-detail ans-correct"><strong>Gabarito Esperado (Professor):</strong><br>${q.correctModel}</div>
+        `;
+      }
+
+      container.appendChild(itemDiv);
+    });
+  }
+
+  function resetAll() {
+    currentClueIndex = 0;
+    collectedCluesCount = 0;
+    questionIndices = new Array(12).fill(0);
+    userAnswers = {};
+    document.getElementById('hud-clues').innerText = '0';
+    updateDifficulty();
+    showScreen('screen-learning');
+  }
+
+  renderSimulado();
+</script>
+</body>
+</html>
