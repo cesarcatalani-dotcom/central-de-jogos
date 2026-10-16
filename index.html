@@ -2,98 +2,113 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Portal de Jogos Educativos e Filosóficos">
   <title>Hub de Jogos Filosóficos & Educativos</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
-    body {
-      background-color: #0f172a;
-      color: #f8fafc;
+    body, html {
+      width: 100%;
       min-height: 100vh;
+      background-color: #0f172a;
+      color: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 24px 16px;
+      padding: 20px 16px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       max-width: 600px;
+      width: 100%;
     }
 
-    h1 {
+    header h1 {
       color: #facc15;
-      font-size: 2rem;
+      font-size: 1.8rem;
       margin-bottom: 8px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      text-shadow: 2px 2px #000;
+      text-transform: uppercase;
     }
 
-    p.subtitle {
-      color: #94a3b8;
-      font-size: 1rem;
+    header p {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      font-weight: bold;
     }
 
     .container {
       width: 100%;
-      max-width: 600px;
+      max-width: 580px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
     }
 
     .game-card {
       background: #1e293b;
       border: 2px solid #334155;
       border-radius: 12px;
-      padding: 20px;
+      padding: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      transition: transform 0.2s, border-color 0.2s;
       text-decoration: none;
       color: inherit;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: transform 0.2s, border-color 0.2s;
     }
 
-    .game-card:hover {
-      transform: translateY(-2px);
+    .game-card:active, .game-card:hover {
+      transform: scale(0.98);
       border-color: #facc15;
     }
 
+    .game-info {
+      flex: 1;
+      padding-right: 12px;
+    }
+
     .game-info h2 {
-      font-size: 1.25rem;
-      color: #f8fafc;
-      margin-bottom: 6px;
+      font-size: 1.15rem;
+      color: #facc15;
+      margin-bottom: 4px;
     }
 
     .game-info p {
-      font-size: 0.9rem;
-      color: #cbd5e1;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      line-height: 1.2;
     }
 
     .btn-play {
       background: #facc15;
-      color: #0f172a;
+      color: #000000;
       font-weight: bold;
-      padding: 10px 18px;
+      padding: 10px 16px;
       border-radius: 8px;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
       white-space: nowrap;
-      margin-left: 12px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      text-align: center;
     }
 
     footer {
       margin-top: auto;
-      padding-top: 32px;
+      padding-top: 24px;
       color: #64748b;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-align: center;
     }
   </style>
@@ -102,42 +117,77 @@
 
   <header>
     <h1>Portal de Jogos Educativos 🎮</h1>
-    <p class="subtitle">Selecione uma das jornadas filosóficas para jogar:</p>
+    <p>Escolha um jogo para iniciar a sua jornada:</p>
   </header>
 
   <div class="container">
     
-    <!-- Novo Jogo Adicionado -->
+    <!-- Filo Race: Alienação -->
+    <a href="filo-race-alienacao.html" class="game-card">
+      <div class="game-info">
+        <h2>Filo Race: Alienação 🏎️</h2>
+        <p>Corrida Filosófica sobre Alienação</p>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Mário: Empatia -->
+    <a href="mario-empatia.html" class="game-card">
+      <div class="game-info">
+        <h2>Mário: Empatia 🍄❤️</h2>
+        <p>Aventura de Aprendizado e Empatia</p>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Revisão Provão 3 -->
+    <a href="revisao-provao-3.html" class="game-card">
+      <div class="game-info">
+        <h2>Revisão Provão 3 📝</h2>
+        <p>Simulado e Revisão para o Provão</p>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 2 -->
     <a href="tarefa-sp-dois.html" class="game-card">
       <div class="game-info">
         <h2>Tarefa SP 2 🌿🍄</h2>
-        <p>A Retomada da Terra (Michel Serres, Ailton Krenak e Nego Bispo)</p>
+        <p>A Retomada da Terra</p>
       </div>
-      <span class="btn-play">Jogar ➔</span>
+      <span class="btn-play">JOGAR ➔</span>
     </a>
 
-    <!-- Exemplo de jogos anteriores se existirem no seu projeto -->
-    <a href="jornada-guardiao.html" class="game-card">
+    <!-- Tarefa SP 3 -->
+    <a href="tarefa-sp-3.html" class="game-card">
       <div class="game-info">
-        <h2>Super Guardião Bros 🛡️</h2>
-        <p>Jornada de Aprendizado e Plataforma</p>
+        <h2>Tarefa SP 3 📚</h2>
+        <p>Jornada Educativa Parte 3</p>
       </div>
-      <span class="btn-play">Jogar ➔</span>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 4 -->
+    <a href="tarefa-sp-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 4 🎓</h2>
+        <p>Jornada Educativa Parte 4</p>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
     </a>
 
   </div>
 
   <footer>
-    Plataforma Educativa Offline & PWA • 2026
+    Plataforma Educativa Offline & PWA
   </footer>
 
   <script>
-    // Registro do Service Worker para suporte Offline (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registrado com sucesso!', reg))
-          .catch(err => console.error('Erro ao registrar Service Worker:', err));
+          .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
+          .catch(err => console.error('Falha ao registrar Service Worker:', err));
       });
     }
   </script>
