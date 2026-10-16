@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
-  <meta name="description" content="Portal de Jogos Educativos e Filosóficos">
-  <title>Hub de Jogos Filosóficos & Educativos</title>
+  <meta name="description" content="Jogo Educativo - Tarefa SP 4">
+  <title>Tarefa SP 4 - Portal de Jogos</title>
   <style>
     * {
       box-sizing: border-box;
@@ -28,7 +28,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 32px;
       max-width: 600px;
       width: 100%;
     }
@@ -52,26 +52,26 @@
       max-width: 580px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
 
     .game-card {
       background: #1e293b;
-      border: 2px solid #334155;
-      border-radius: 12px;
-      padding: 16px;
+      border: 3px solid #facc15;
+      border-radius: 14px;
+      padding: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       text-decoration: none;
       color: inherit;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.5);
       transition: transform 0.2s, border-color 0.2s;
     }
 
     .game-card:active, .game-card:hover {
       transform: scale(0.98);
-      border-color: #facc15;
+      border-color: #ffffff;
     }
 
     .game-info {
@@ -80,33 +80,33 @@
     }
 
     .game-info h2 {
-      font-size: 1.15rem;
+      font-size: 1.3rem;
       color: #facc15;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .game-info p {
-      font-size: 0.85rem;
-      color: #94a3b8;
-      line-height: 1.2;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      line-height: 1.3;
     }
 
     .btn-play {
       background: #facc15;
       color: #000000;
       font-weight: bold;
-      padding: 10px 16px;
+      padding: 12px 20px;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.95rem;
       text-transform: uppercase;
       white-space: nowrap;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
       text-align: center;
     }
 
     footer {
       margin-top: auto;
-      padding-top: 24px;
+      padding-top: 32px;
       color: #64748b;
       font-size: 0.8rem;
       text-align: center;
@@ -116,62 +116,17 @@
 <body>
 
   <header>
-    <h1>Portal de Jogos Educativos 🎮</h1>
-    <p>Escolha um jogo para iniciar a sua jornada:</p>
+    <h1>Portal Educativo 🎮</h1>
+    <p>Clique abaixo para iniciar o jogo:</p>
   </header>
 
   <div class="container">
     
-    <!-- Filo Race: Alienação -->
-    <a href="filo-race-alienacao.html" class="game-card">
-      <div class="game-info">
-        <h2>Filo Race: Alienação 🏎️</h2>
-        <p>Corrida Filosófica sobre Alienação</p>
-      </div>
-      <span class="btn-play">JOGAR ➔</span>
-    </a>
-
-    <!-- Mário: Empatia -->
-    <a href="mario-empatia.html" class="game-card">
-      <div class="game-info">
-        <h2>Mário: Empatia 🍄❤️</h2>
-        <p>Aventura de Aprendizado e Empatia</p>
-      </div>
-      <span class="btn-play">JOGAR ➔</span>
-    </a>
-
-    <!-- Revisão Provão 3 -->
-    <a href="revisao-provao-3.html" class="game-card">
-      <div class="game-info">
-        <h2>Revisão Provão 3 📝</h2>
-        <p>Simulado e Revisão para o Provão</p>
-      </div>
-      <span class="btn-play">JOGAR ➔</span>
-    </a>
-
-    <!-- Tarefa SP 2 -->
-    <a href="tarefa-sp-dois.html" class="game-card">
-      <div class="game-info">
-        <h2>Tarefa SP 2 🌿🍄</h2>
-        <p>A Retomada da Terra</p>
-      </div>
-      <span class="btn-play">JOGAR ➔</span>
-    </a>
-
-    <!-- Tarefa SP 3 -->
-    <a href="tarefa-sp-3.html" class="game-card">
-      <div class="game-info">
-        <h2>Tarefa SP 3 📚</h2>
-        <p>Jornada Educativa Parte 3</p>
-      </div>
-      <span class="btn-play">JOGAR ➔</span>
-    </a>
-
     <!-- Tarefa SP 4 -->
     <a href="tarefa-sp-quatro.html" class="game-card">
       <div class="game-info">
         <h2>Tarefa SP 4 🎓</h2>
-        <p>Jornada Educativa Parte 4</p>
+        <p>Acesse a plataforma e inicie a atividade do jogo Tarefa SP 4.</p>
       </div>
       <span class="btn-play">JOGAR ➔</span>
     </a>
@@ -185,9 +140,9 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
-          .catch(err => console.error('Falha ao registrar Service Worker:', err));
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.error('Erro no Service Worker:', err));
       });
     }
   </script>
