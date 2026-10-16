@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Super Guardião Bros: A Retomada da Terra</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+        
+        html, body {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background: #090d16;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+        }
+
+        /* TELA DE INÍCIO */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            width: 100dvw;
+            height: 100dvh;
+            background: #0f172a;
+            z-index: 1000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #start-card {
+            background: #1e293b;
+            border: 3px solid #facc15;
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #start-card h1 {
+            color: #facc15;
+            font-size: 22px;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px #000;
+        }
+
+        #student-name {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #facc15;
+            background: #0f172a;
+            color: #fff;
+            margin-bottom: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        .phase-select {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .btn-phase {
+            flex: 1;
+            padding: 12px;
+            background: #334155;
+            color: #fff;
+            border: 2px solid #64748b;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .btn-phase.active {
+            background: #15803d;
+            border-color: #4ade80;
+            color: #fff;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            background: #facc15;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* LAYOUT INTEGRAL DO JOGO */
+        #game-layout {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            flex-direction: row;
+            background: #111827;
+            z-index: 999999;
+        }
+
+        #canvas-wrapper {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            background: #38bdf8;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #hud-top {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+
+        .hud-badge {
+            background: rgba(0, 0, 0, 0.85);
+            color: #facc15;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #facc15;
+        }
+
+        /* CONTROLES DIREITA */
+        #controls-sidebar {
+            width: 140px;
+            height: 100%;
+            background: #0f172a;
+            border-left: 3px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 8px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .ctrl-title {
+            color: #facc15;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            width: 100%;
+        }
+
+        .controls-pad {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .dir-row {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: #1e293b;
+            color: #ffffff;
+            border: 2px solid #facc15;
+            border-radius: 8px;
+            padding: 18px 0;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action:active {
+            background: #facc15;
+            color: #000;
+        }
+
+        .btn-jump-action {
+            background: #ef4444;
+            border-color: #ffffff;
+            font-size: 14px;
+            padding: 16px 0;
+            width: 100%;
+        }
+
+        .btn-jump-action:active {
+            background: #f87171;
+        }
+
+        /* MODAL DE LIÇÕES */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000001;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 3px solid #facc15;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 480px;
+            padding: 16px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-header {
+            color: #facc15;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .modal-body {
+            background: #1e293b;
+            border-left: 4px solid #facc15;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .prof-note {
+            background: #334155;
+            color: #facc15;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-opt {
+            background: #1e293b;
+            border: 1px solid #64748b;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .btn-opt:hover {
+            border-color: #facc15;
+            background: #334155;
+        }
+
+        .btn-next {
+            background: #facc15;
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .btn-error-reset {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* TELA DO SIMULADO INTEGRAL (8 QUESTÕES) */
+        #saresp-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 1000005;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .saresp-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #1e293b;
+            border: 3px solid #38bdf8;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .saresp-banner {
+            background: #facc15;
+            color: #000;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .saresp-section-title {
+            background: #0284c7;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .saresp-q-box {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 14px;
+            border: 2px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .saresp-q-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #f8fafc;
+            white-space: pre-line;
+        }
+
+        .saresp-opt {
+            background: #1e293b;
+            border: 2px solid #64748b;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #fff;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .saresp-opt.selected {
+            border-color: #facc15;
+            background: #334155;
+        }
+
+        .btn-submit-saresp {
+            background: #22c55e;
+            color: #fff;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* GABARITO FINAL */
+        .gabarito-box {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 14px;
+            border: 2px solid #22c55e;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gabarito-item {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 5px solid #64748b;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .gabarito-item.correct { border-left-color: #22c55e; }
+        .gabarito-item.wrong { border-left-color: #ef4444; }
+
+        .final-msg {
+            background: #facc15;
+            color: #000;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        #toast {
+            display: none;
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #ef4444;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000002;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE INÍCIO -->
+    <div id="start-screen">
+        <div id="start-card">
+            <h1>Super Guardião Bros 🌿🍄</h1>
+            <p style="font-size: 12px; color: #cbd5e1; margin-bottom: 12px; font-weight: bold;">A Retomada da Terra (Filosofia Ambiental e decolonial)</p>
+            
+            <input type="text" id="student-name" placeholder="Digite seu nome aqui..." maxlength="30">
+            
+            <p style="font-size: 11px; color: #facc15; margin-bottom: 6px; text-align: left; font-weight: bold;">Iniciar pela Fase:</p>
+            <div class="phase-select">
+                <button class="btn-phase active" id="btn-p1" onclick="selectPhase(1)">Fase 1: O Contrato Natural & Gaia (Serres e Krenak)</button>
+                <button class="btn-phase" id="btn-p2" onclick="selectPhase(2)">Fase 2: Retomada & Resistência (Nego Bispo)</button>
+            </div>
+
+            <button class="btn-main" onclick="startGame()">Começar Jogo ➔</button>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DO JOGO -->
+    <div id="game-layout">
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <div id="hud-top">
+                <div class="hud-badge" id="hud-name">Aluno: --</div>
+                <div class="hud-badge" id="hud-phase">Fase 1</div>
+                <div class="hud-badge" id="hud-score">Dicas: 0 / 12</div>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div id="controls-sidebar">
+            <div class="ctrl-title">CONTROLES</div>
+            <div class="controls-pad">
+                <div class="dir-row">
+                    <button class="btn-action" id="btn-left">◀</button>
+                    <button class="btn-action" id="btn-right">▶</button>
+                </div>
+                <button class="btn-action btn-jump-action" id="btn-up">🚀 PULAR</button>
+            </div>
+            <div style="font-size: 9px; color: #64748b; text-align: center;">Teclado: ◄ ► ▲</div>
+        </div>
+    </div>
+
+    <!-- MODAL DE LIÇÕES -->
+    <div id="modal-overlay">
+        <div class="modal-box" id="modal-content"></div>
+    </div>
+
+    <!-- TELA DO SIMULADO COMPLETO (8 QUESTÕES) -->
+    <div id="saresp-overlay">
+        <div class="saresp-container" id="saresp-content">
+            <div class="saresp-banner">Simulado Retomada da Terra — 8 Questões Final</div>
+            <div id="saresp-questions"></div>
+            <button class="btn-submit-saresp" onclick="submitSaresp()">FINALIZAR SIMULADO ➔</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+<script>
+let selectedPhase = 1;
+
+// ==========================================
+// LIÇÕES FASE 1: SERRES E KRENAK (O CONTRATO NATURAL & GAIA)
+// ==========================================
+const databaseFase1 = [
+    {
+        lesson: "📖 Lição 1: POLUIÇÃO MORAL — Michel Serres explica que antes da poluição física dos rios e do ar, existe uma 'Poluição Moral': a atitude mental de ganância e a ideia arrogante de que o ser humano é dono e proprietário da Terra.",
+        questions: [
+            { q: "Qual é a causa invisível da degradação do planeta segundo Michel Serres?", options: ["A Poluição Moral (ideia de domínio e ganância sobre a Terra)", "A falta de tecnologia industrial nas fábricas", "O excesso de chuvas nas florestas"], correct: 0 },
+            { q: "A Poluição Moral se manifesta principalmente no:", options: ["Desejo descontrolado de apropriação e exploração da natureza", "Hábito de ler livros de filosofia", "Cuidado comunitário das hortas"], correct: 0 },
+            { q: "Para Michel Serres, a poluição física do meio ambiente é uma consequência da:", options: ["Poluição Moral prévia da humanidade", "Mágica do tempo", "Falta de carros elétricos"], correct: 0 },
+            { q: "Superar a Poluição Moral exige mudar nossa:", options: ["Relação de domínio e posse para uma relação de respeito com a Terra", "Produção de plásticos para o dobro", "Falta de vontade de trabalhar"], correct: 0 },
+            { q: "A arrogância de se considerar proprietário absoluto da natureza é chamada por Serres de:", options: ["Poluição Moral", "Preservação Ecológica", "Contrato Natural"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 2: O CONTRATO NATURAL — Para salvar o meio ambiente, Michel Serres propõe assinar um 'Contrato Natural', superando o Contrato Social que só incluía humanos. A Terra passa a ser reconhecida como Sujeito de Direito.",
+        questions: [
+            { q: "O que propõe o 'Contrato Natural' de Michel Serres?", options: ["Tratar a Terra como Sujeito de Direito e parceira da humanidade", "Vender os oceanos para empresas privadas", "Aumentar as guerras por recursos naturais"], correct: 0 },
+            { q: "Qual a limitação do antigo 'Contrato Social' criticada por Serres?", options: ["Ele só considerava as relações entre os homens e excluía a natureza", "Ele proibia as pessoas de trabalharem", "Ele foi escrito em latim antigo"], correct: 0 },
+            { q: "Reconhecer a natureza como 'Sujeito de Direito' significa que ela:", options: ["Possui valor próprio e direito à proteção jurídica e preservação", "Pode ser comprada no mercado financeiro", "Não tem importância para a ciência"], correct: 0 },
+            { q: "O Contrato Natural estabelece entre o homem e a Terra um vínculo de:", options: ["Reciprocidade e equilíbrio em vez de exploração destrutiva", "Posse e dominação ilimitada", "Indiferença total"], correct: 0 },
+            { q: "Celebrar o Contrato Natural é indispensável para:", options: ["Garantir a sobrevivência da vida e do planeta no futuro", "Aumentar o consumo de energia fóssil", "Isolar os países ricos"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 3: CRÍTICA AO ANTROPOCENTRISMO — Ailton Krenak critica o Antropocentrismo (a ilusão de que o homem é o centro de tudo e dono de todas as criaturas). Isso separou a humanidade do resto da vida.",
+        questions: [
+            { q: "O que Ailton Krenak critica rigorosamente em seu pensamento?", options: ["O Antropocentrismo que coloca o ser humano como superior a tudo", "O reflorestamento das florestas tropicais", "A vida em comunidade dos povos indígenas"], correct: 0 },
+            { q: "A ilusão antropocêntrica faz a humanidade acreditar que a natureza é apenas:", options: ["Um estoque infinito de recursos para ser explorado e vendido", "Um organismo sagrado e vivo", "Sua grande mãe protetora"], correct: 0 },
+            { q: "Ao se afastar da Terra, o ser humano ocidental provocou um divórcio entre:", options: ["A humanidade e a própria vida na Terra", "A tecnologia e os videogames", "Os rios e os oceanos"], correct: 0 },
+            { q: "Superar a visão antropocêntrica exige reconhecer que os humanos são:", options: ["Apenas uma parte integrante da vasta teia da vida", "Os reis absolutos do universo", "Incapazes de viver em sociedade"], correct: 0 },
+            { q: "A crítica de Krenak ao antropocentrismo nos convida a reatar nossa conexão com:", options: ["A mãe Terra e os seres não humanos", "A produção de mercadorias em massa", "A vida isolada nas metrópoles"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 4: A TERRA COMO GAIA — Krenak defende que a Terra não é uma coisa inanimada, mas GAIA: um organismo vivo, sagrado e consciente, do qual os rios e montanhas são nossos parentes.",
+        questions: [
+            { q: "Como Ailton Krenak e a visão de Gaia concebem o planeta Terra?", options: ["Como um organismo vivo, vivo e sagrado, do qual fazemos parte", "Como uma grande rocha morta e sem valor", "Como um shopping center de matérias-primas"], correct: 0 },
+            { q: "Na cosmovisão dos povos originários defendida por Krenak, as montanhas e rios são:", options: ["Nossos parentes com os quais nos relacionamos com afeto", "Depósitos de minério de ferro para extração rápida", "Propriedades privadas sem vida"], correct: 0 },
+            { q: "Considerar a Terra como Gaia exige uma atitude de:", options: ["Cuidado, respeito e pertencimento espiritual e ecológico", "Exploração acelerada antes que os recursos acabem", "Apatia e abandono"], correct: 0 },
+            { q: "Quando poluímos um rio sagrado (como o Rio Doce), estamos atingindo:", options: ["A nossa própria família e a integridade de Gaia", "Apenas uma poça de água sem importância", "Um objeto plástico"], correct: 0 },
+            { q: "A perspectiva de Gaia contrapõe-se à ideia moderna de ver a Terra como:", options: ["Mercadoria e recurso comercializável", "Organismo vivo e integrado", "Lugar de união da vida"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 5: A IDEIA DE HUMANIDADE UNIFORME — Krenak denuncia que o capitalismo tenta criar uma 'Humanidade Uniforme' e homogênea, que consome as mesmas coisas e destrói as diferenças culturais.",
+        questions: [
+            { q: "O que Krenak denuncia sobre o modelo globalizado de 'Humanidade'?", options: ["A tentativa de padronizar todas as culturas no modelo de consumidor", "A proteção dos territórios tradicionais", "A diversidade de línguas indígenas"], correct: 0 },
+            { q: "Essa 'Humanidade' de consumo afasta as pessoas de suas origens com:", options: ["A Terra, a ancestralidade e o território", "Os computadores de última geração", "A poluição do ar"], correct: 0 },
+            { q: "Para resistir à homogeneização cultural, Krenak valoriza:", options: ["A pluralidade de modos de vida dos povos da floresta e do campo", "O consumo igual em todas as redes de fast-food", "O esquecimento das tradições ancestrais"], correct: 0 },
+            { q: "A 'Humanidade Uniforme' trata a natureza como mercadoria porque perdeu o sentido de:", options: ["Pertencimento e ancestralidade comunitária", "Lucro financeiro imediato", "Venda de produtos"], correct: 0 },
+            { q: "A diversidade cultural dos povos originários é fundamental para garantir a:", options: ["Preservação dos ecossistemas e do planeta", "Destruição das matas", "Padronização das cidades"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 6: ADIAR O FIM DO MUNDO — 'Adiar o fim do mundo' é cantar, dançar, contar histórias e manter a poesia viva para não deixar o sistema devorar a nossa capacidade de sonhar.",
+        questions: [
+            { q: "O que significa 'Adiar o fim do mundo' no pensamento de Krenak?", options: ["Preservar a diversidade, a poesia, os cantos e os modos de vida em comunhão", "Construir bunkers subterrâneos para os ricos", "Acelerar a produção industrial"], correct: 0 },
+            { q: "Para Krenak, o que sustenta o céu e impede o fim do mundo?", options: ["Nossa capacidade de sonhar, cantar e habitar a Terra com afeto", "O cimento das grandes construções urbanas", "As armas de guerra dos exércitos"], correct: 0 },
+            { q: "Narrar histórias ancestrais e cultivar hortas comunitárias são formas de:", options: ["Resistência e adiamento da catástrofe ambiental", "Apatia e desperdício de tempo", "Aceitação do progresso destrutivo"], correct: 0 },
+            { q: "O 'fim do mundo' que Krenak alerta é o resultado direto da:", options: ["Devoradora máquina de consumo antropocêntrica", "Abundância de florestas protegidas", "Falta de tecnologia financeira"], correct: 0 },
+            { q: "Quando mantemos viva a relação de amor com a floresta, estamos:", options: ["Adiando o fim do mundo e criando futuros possíveis", "Destruindo a economia", "Vivendo no passado sem futuro"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 7: A PROPRIEDADE PRIVADA vs BEM COMUM — Serres e Krenak coincidem: a mania de transformar cada pedaço de terra e água em propriedade privada está matando o Bem Comum.",
+        questions: [
+            { q: "Qual o impacto de transformar a natureza em propriedade privada absoluta?", options: ["Destrói a noção de Bem Comum e privatiza o que deveria ser de todos", "Garante água limpa e gratuita para a população", "Protege as florestas da poluição"], correct: 0 },
+            { q: "O ar, os oceanos e o clima pertencem à categoria do:", options: ["Bem Comum planetário que não pode ser apropriado por ninguém", "Mercado de ações privadas", "Comércio de produtos de luxo"], correct: 0 },
+            { q: "A mercantilização da natureza transforma a vida em um bem de:", options: ["Troca financeira exclusivo de quem pode pagar", "Acesso livre e irrestrito", "Proteção coletiva universal"], correct: 0 },
+            { q: "Defender o Bem Comum exige reconhecer os limites morais da:", options: ["Propriedade privada sobre os recursos essenciais da vida", "Preservação ambiental", "Educação comunitária"], correct: 0 },
+            { q: "Para Krenak, a Terra não nos pertence; nós é que somos:", options: ["Filhos e pertencemos à Terra", "Donos e proprietários dela", "Inimigos de todos os seres"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 8: O DIREITO DOS SERES NÃO HUMANOS — O Contrato Natural exige ampliar a justiça para incluir plantas, animais, rios e montanhas como portadores de direitos.",
+        questions: [
+            { q: "O que defende a ecologia jurídica do Contrato Natural?", options: ["Que animais, rios e florestas têm direitos que devem ser respeitados na lei", "Que só pessoas com dinheiro têm direitos legais", "Que as empresas podem poluir se pagarem impostos"], correct: 0 },
+            { q: "Conceder direitos jurídicos a um rio (como o Rio Whanganui ou o Rio Doce) impede:", options: ["Sua destruição impune por indústrias e mineradoras", "Sua água de fluir para o mar", "A vida dos peixes na natureza"], correct: 0 },
+            { q: "A justiça ambiental contemporânea precisa ser:", options: ["Biocêntrica, incluindo todos os seres vivos no pacto de proteção", "Exclusivamente antropocêntrica", "Focada no aumento de dejetos tóxicos"], correct: 0 },
+            { q: "Respeitar os seres não humanos significa reconhecer que eles possuem:", options: ["Valor intrínseco, independentemente de sua utilidade financeira para o homem", "Apenas valor de venda em feiras", "Zero importância para o ecossistema"], correct: 0 },
+            { q: "Essa mudança jurídica representa o avanço do Contrato Social para o:", options: ["Contrato Natural", "Acordo Comercial Privado", "Isolamento Urbano"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 9: DEMOCRACIA DA TERRA — É a proposta de construir uma política onde as decisões comunitárias levem em conta o impacto nos ecossistemas e nas futuras gerações.",
+        questions: [
+            { q: "O que é a 'Democracia da Terra'?", options: ["Uma política inclusiva onde as decisões respeitam a teia da vida e as futuras gerações", "Uma eleição onde só os donos de terras votam", "A proibição do uso de plantas nas cidades"], correct: 0 },
+            { q: "A Democracia da Terra combate diretamente o modelo do:", options: ["Capitalismo extrativista e destruidor do meio ambiente", "Cuidado ancestral com as sementes", "Diálogo comunitário respeitoso"], correct: 0 },
+            { q: "Incluir as 'futuras gerações' no debate político significa ter uma atitude de:", options: ["Responsabilidade e sustentabilidade a longo prazo", "Pensar apenas no lucro de hoje", "Ignorar o amanhã"], correct: 0 },
+            { q: "Na Democracia da Terra, o ser humano atua como um:", options: ["Guardião e cuidador respeitoso da vida", "Explorador impiedoso", "Consumidor apático"], correct: 0 },
+            { q: "A cidadania na Democracia da Terra estende-se além das fronteiras humanas para atingir a:", options: ["Comunidade de todas as criaturas vivas", "Apenas as grandes corporações", "Nenhuma parte da sociedade"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 10: O MITO DO PROGRESSO INFINITO — Krenak alerta que é impossível ter um crescimento econômico infinito em um planeta com recursos finitos.",
+        questions: [
+            { q: "Qual o erro fatal do 'Mito do Progresso Infinito'?", options: ["Acreditar que a economia pode crescer para sempre destruindo um planeta limitado", "Proteger as nascentes dos rios", "Plantar árvores nas praças públicas"], correct: 0 },
+            { q: "A obsessão pelo desenvolvimento econômico a qualquer custo gera:", options: ["Crise climática, extinção de espécies e aquecimento global", "Paz e igualdade perfeita para todos", "Rios mais limpos e transparentes"], correct: 0 },
+            { q: "A alternativa ao mito do progresso infinito é aprender a:", options: ["Viver com simplicidade, equilíbrio e bem-viver comunitário", "Comprar o dobro de produtos de plástico", "Desmatar todas as florestas"], correct: 0 },
+            { q: "O planeta Terra nos dá sinais claros de que o modelo extrativista está:", options: ["Esgotado e ameaçando a existência das próximas gerações", "Perfeito e deve continuar sem regras", "Sem nenhum problema sério"], correct: 0 },
+            { q: "Reconhecer os limites ecológicos da Terra é a base para a sustentabilidade da:", options: ["Vida e da Filosofia Ambiental", "Exploração descontrolada", "Ganância corporativa"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 11: RECAPITULANDO FASE 1 — Serres = Poluição Moral e Contrato Natural. Krenak = Antropocentrismo, Gaia e Adiar o Fim do Mundo. Não confunda na prova!",
+        questions: [
+            { q: "Quem propõe a celebração do 'Contrato Natural'?", options: ["Michel Serres", "Ailton Krenak", "Nego Bispo"], correct: 0 },
+            { q: "Quem critica o Antropocentrismo e nos ensina a 'Adiar o fim do mundo'?", options: ["Ailton Krenak", "Michel Serres", "Karl Marx"], correct: 0 },
+            { q: "A Poluição Moral é a mentalidade de:", options: ["Dominar e explorar a Terra como propriedade", "Proteger os rios e florestas", "Fazer reciclagem em casa"], correct: 0 },
+            { q: "Tratar a Terra como organismo vivo é a visão de:", options: ["Gaia", "Objeto inanimado", "Mercadoria industrial"], correct: 0 },
+            { q: "Para salvar o planeta, a humanidade deve passar do Antropocentrismo para o:", options: ["Biocentrismo e Contrato Natural", "Extrativismo radical", "Consumo acelerado"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 12: RESUMO GERAL FASE 1 — A Terra é nossa mãe Gaia, um organismo vivo e sagrado. É hora de assinar o Contrato Natural e sermos Guardiões da Vida!",
+        questions: [
+            { q: "Qual a mensagem central da Fase 1 para a humanidade?", options: ["Superar a Poluição Moral e viver em harmonia com Gaia e o Contrato Natural", "Continuar explorando a Terra sem qualquer limite", "Vender todas as florestas para mineradoras"], correct: 0 },
+            { q: "O Guardião da Terra entende que a verdadeira riqueza é:", options: ["A preservação da vida, dos rios limpos e da diversidade cultural", "Ter milhões de moedas no banco à custa da destruição", "Comprar carros de luxo"], correct: 0 },
+            { q: "Adiar o fim do mundo depende da nossa capacidade de:", options: ["Unir a razão, a poesia, a política e o respeito aos seres vivos", "Trabalhar 24 horas por dia sem pensar na natureza", "Poluir os oceanos"], correct: 0 },
+            { q: "A natureza como Sujeito de Direito garante proteção para os:", options: ["Ecossistemas e todas as formas de vida", "Apenas para as indústrias poluidoras", "Nenhum ser vivo"], correct: 0 },
+            { q: "Você está pronto para a Fase 2 quando compreende que defender a Terra é defender:", options: ["A própria existência do ser humano e de todas as espécies", "Apenas o lucro dos bancos", "A destruição da floresta"], correct: 0 }
+        ]
+    }
+];
+
+// ==========================================
+// LIÇÕES FASE 2: NEGO BISPO E CRÍTICA À CIVILIZAÇÃO (RETOMADA E RESISTÊNCIA)
+// ==========================================
+const databaseFase2 = [
+    {
+        lesson: "📖 Lição 1: O REFLUXO FILOSÓFICO — O pensador quilombola Nego Bispo ensina o conceito de 'Refluxo Filosófico': a capacidade dos povos colonizados de resistir, devolver a energia e transformar as ferramentas da dominação.",
+        questions: [
+            { q: "O que é o 'Refluxo Filosófico' de Nego Bispo?", options: ["A reorganização e resistência dos colonizados ressignificando as ferramentas da dominação", "Aceitar passivamente a destruição de sua cultura", "Mudar para a Europa para esquecer suas raízes"], correct: 0 },
+            { q: "O Refluxo funciona como a maré: o opressor avança com a violência, mas o povo colonizado responde com o:", options: ["Refluxo da resistência, sabedoria e reorganização", "Abandono total de suas terras", "Esquecimento de seus ancestrais"], correct: 0 },
+            { q: "O Refluxo Filosófico ensina que a cultura colonizada não foi destruída, mas sim:", options: ["Bio-reorganizada e fortalecida na resistência", "Apagada para sempre da história", "Comprada pelos colonizadores"], correct: 0 },
+            { q: "Em vez de apenas lamentar a opressão, o Refluxo atua com:", options: ["Ação criativa, defesa do território e preservação da vida", "Desespero e paralisia", "Trabalho escravo livre"], correct: 0 },
+            { q: "Nego Bispo desenvolveu seu pensamento a partir da experiência de vida nos:", options: ["Quilombos e comunidades tradicionais", "Bancos de Wall Street", "Laboratórios de computadores da Europa"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 2: A LÓGICA COLONIAL (PRIMEIRA FASE) — A primeira etapa do ataque colonial é o assalto, a invasão e a tentativa de apagar os saberes ancestrais dos povos originários e quilombolas.",
+        questions: [
+            { q: "Como se caracteriza a 'Lógica Colonial' segundo Nego Bispo?", options: ["Pela invasão, violência, assalto aos territórios e imposição cultural", "Pelo respeito mútuo e trocas amigáveis", "Pela distribuição gratuita de terras"], correct: 0 },
+            { q: "A Lógica Colonial tenta convencer os povos de que sua própria cultura é:", options: ["Atrasada, devendo ser substituída pela cultura do colonizador", "A mais sábia do mundo", "Impossível de ser estudada"], correct: 0 },
+            { q: "O principal objetivo do colonizador ao invadir um território é o(a):", options: ["Exploração extrativista e o domínio das terras e corpos", "Preservação das religiões locais", "Ensino gratuito da Filosofia"], correct: 0 },
+            { q: "A Lógica Colonial enxerga a natureza como:", options: ["Coisa a ser loteada, desmatada e vendida para lucro", "Um ser sagrado e vivo", "Mãe acolhedora"], correct: 0 },
+            { q: "Resistir à Lógica Colonial exige manter acesa a memória e a ligação com:", options: ["A ancestralidade e a defesa do território ancestral", "As grandes lojas do mercado", "O esquecimento do passado"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 3: APROPRIAÇÃO E RESSIGNIFICAÇÃO (SEGUNDA FASE) — Na segunda etapa do Refluxo, o colonizado se 'apropria' das tecnologias e linguagens do opressor, mas muda seu sentido para defender sua comunidade!",
+        questions: [
+            { q: "O que é a 'Apropriação e Ressignificação' no pensamento de Nego Bispo?", options: ["Pegar elementos do colonizador e usá-los para defender e fortalecer a comunidade", "Virar cópia fiel do colonizador e abandonar seu povo", "Destruir todos os livros e celulares"], correct: 0 },
+            { q: "Um exemplo de ressignificação é usar a língua do colonizador para:", options: ["Escrever leis e livros em defesa dos direitos quilombolas e originários", "Elogiar os invasores coloniais", "Fazer propaganda de produtos de luxo"], correct: 0 },
+            { q: "A ressignificação transforma uma ferramenta de dominação em um instrumento de:", options: ["Libertação e resistência comunitária", "Escravidão renovada", "Trabalho sem fim"], correct: 0 },
+            { q: "Usar a internet e os celulares para denunciar a destruição das matas é uma forma de:", options: ["Ressignificação tecnológica a favor do território", "Submissão cultural ao opressor", "Perda de tempo"], correct: 0 },
+            { q: "Na ressignificação, quem dita a intenção do uso da ferramenta é o:", options: ["Povo colonizado em sua estratégia de defesa", "Imperador europeu", "Empresário estrangeiro"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 4: DEFESA E RESISTÊNCIA (TERCEIRA FASE) — A etapa final do Refluxo é a firmeza na Retomada do Território e na manutenção dos modos de vida comunitários contra o avanço do agronegócio e das mineradoras.",
+        questions: [
+            { q: "Qual o foco da etapa de 'Defesa e Resistência' na filosofia quilombola?", options: ["Proteger o território, o modo de vida comunitário e a natureza sagrada", "Vender as terras do quilombo para mineradoras", "Desmatar as nascentes para criar pasto"], correct: 0 },
+            { q: "Para Nego Bispo, o território não é apenas pedaço de terra, é lugar de:", options: ["Vida, afetos, ancestralidade e biointeração", "Especulação imobiliária de prédios", "Construção de fábricas poluentes"], correct: 0 },
+            { q: "A resistência quilombola e indígena protege as florestas brasileiras contra o:", options: ["Avanço da devastação do extrativismo predatório", "Crescimento de hortas orgânicas", "Reflorestamento de matas nativas"], correct: 0 },
+            { q: "Defender o território é garantir o futuro das:", options: ["Crianças e das futuras gerações ancestrais", "Apenas dos grandes fazendeiros", "Empresas poluidoras"], correct: 0 },
+            { q: "A verdadeira resistência acontece na união entre o pensamento e a:", options: ["Ação prática no território no dia a dia", "Apatia e isolamento em casa", "Falta de coragem"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 5: COSMOVALOR vs EUROCENTRISMO — Nego Bispo contrapõe o Eurocentrismo (que tudo mede por dinheiro e lucro) ao Cosmovalor das comunidades, que mede a riqueza pela convivência e respeito à vida.",
+        questions: [
+            { q: "Qual a diferença entre o Eurocentrismo e o 'Cosmovalor' de Nego Bispo?", options: ["O Eurocentrismo busca o lucro; o Cosmovalor valoriza o respeito e a biointeração com a vida", "O Cosmovalor quer comprar todos os bancos do mundo", "O Eurocentrismo protege os rios sagrados"], correct: 0 },
+            { q: "Para a visão do Cosmovalor, uma pessoa rica é aquela que possui:", options: ["Comunidade unida, terra preservada, saúde e alegria de viver", "Milhões de reais mas vive isolada e sem natureza", "Muitas armas de fogo"], correct: 0 },
+            { q: "O Eurocentrismo impôs a lógica da concorrência; o Cosmovalor cultiva a:", options: ["Compartilhamento, mutirão e solidariedade", "Briga constante entre os vizinhos", "Destruição do trabalho coletivo"], correct: 0 },
+            { q: "Medir o progresso apenas pelo dinheiro é uma cegueira do:", options: ["Modelo colonial eurocêntrico", "Cosmovalor quilombola", "Bem-viver dos povos originários"], correct: 0 },
+            { q: "A biointeração ensina que os seres humanos e a natureza trocam energia em um equilíbrio de:", options: ["Cosmovalor e respeito mútuo", "Exploração e roubo", "Guerra e destruição"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 6: IRONIA NA CRÍTICA À CIVILIZAÇÃO — A civilização ocidental se orgulha de ser 'avançada', mas cria bombas, poluição e guerras. Usar a IRONIA é debochar e denunciar essa falsa 'civilização'.",
+        questions: [
+            { q: "Como a filosofia usa a IRONIA para criticar o conceito ocidental de 'Civilização'?", options: ["Mostrando a contradição de chamar de 'avanço' algo que produz guerras e destruição", "Elogiando as armas nucleares nas escolas", "Defendendo a poluição dos rios"], correct: 0 },
+            { q: "Cobrir uma bomba atômica ou uma fábrica poluidora com a legenda 'Civilização' é exercitar a:", options: ["Ironia crítica contra o modelo destrutivo", "Ciência de construção de bombas", "Aprovação irrestrita das guerras"], correct: 0 },
+            { q: "Uma 'civilização' que destrói a própria casa (a Terra) é na verdade uma civilização:", options: ["Barbárie e irracional, apesar de sua tecnologia", "Perfeita e sustentável", "Sem nenhum problema"], correct: 0 },
+            { q: "A crítica ironiza a ideia de que o avanço tecnológico significa sempre avanço:", options: ["Moral, humano e social", "Físico dos carros", "De velocidade das máquinas"], correct: 0 },
+            { q: "Questionar o mito da 'civilização superior' nos permite valorizar os saberes dos povos:", options: ["Tradicionais, quilombolas e originários", "Extrativistas violentos", "Poluidores do planeta"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 7: CONFLUÊNCIA vs CONFLITO — Nego Bispo propõe a 'Confluência' (como o encontro de rios diferentes que fluem juntos mantendo suas águas) em vez do conflito destruidor.",
+        questions: [
+            { q: "O que representa o conceito poético de 'Confluência' para Nego Bispo?", options: ["A união de saberes e povos diferentes que fluem juntos sem destruir o outro", "A obrigação de todos pensarem igualzinho", "O combate violento entre as culturas"], correct: 0 },
+            { q: "Na confluência dos rios, cada rio traz sua cor e força, criando uma mistura de:", options: ["Vida, diversidade e cooperação rica", "Lixo e poluição industrial", "Morte dos peixes"], correct: 0 },
+            { q: "A confluência é a alternativa quilombola para substituir a relação colonial de:", options: ["Dominação, guerra e imposição cultural", "Amizade e solidariedade", "Paz nas florestas"], correct: 0 },
+            { q: "Praticar a confluência na escola é aprender com os colegas que possuem:", options: ["Experiências e visões de mundo diferentes das suas", "Exatamente as mesmas roupas e brinquedos", "Falta de vontade de conversar"], correct: 0 },
+            { q: "As lutas dos povos indígenas e quilombolas confluem no mesmo objetivo de:", options: ["Proteger a Terra e garantir a vida digna para todos", "Vender as matas para indústrias", "Destruir as cidades"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 8: A BIOINTERAÇÃO — É a relação harmoniosa onde o ser humano troca com a natureza sem drenar sua vida. É o oposto do extrativismo predatório!",
+        questions: [
+            { q: "O que caracteriza a 'Biointeração' nas comunidades tradicionais?", options: ["Uma troca respeitosa com a natureza, onde se retira o necessário sem destruir o ecossistema", "Arrancar todas as árvores de uma vez para vender a madeira", "Construir fábricas de plástico na beira do rio"], correct: 0 },
+            { q: "Diferente do extrativismo brutal, a biointeração funciona com a lógica de:", options: ["Plantar, cuidar e colher em sintonia com os ciclos naturais", "Queimar a floresta para abrir pasto rápido", "Poluir as nascentes de água"], correct: 0 },
+            { q: "Na biointeração, a pessoa se sente parte do ecossistema e não sua:", options: ["Dona e destruidora", "Protetora amorosa", "Filha zelosa"], correct: 0 },
+            { q: "A agricultura familiar orgânica e o manejo comunitário são práticas sustentáveis de:", options: ["Biointeração ecológica", "Poluição industrial acelerada", "Lógica colonial de assalto"], correct: 0 },
+            { q: "A biointeração garante que o solo e as águas continuem férteis para os:", options: ["Filhos e netos do futuro", "Empresários da poluição", "Invasores coloniais"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 9: RESISTÊNCIA ANCESTRAL — A força dos povos quilombolas e indígenas vem da conexão viva com os seus ancestrais que lutaram pela liberdade e deixaram ensinamentos.",
+        questions: [
+            { q: "De onde vem a força da 'Resistência Ancestral' segundo Nego Bispo?", options: ["Da memória, dos ensinamentos e da espiritualidade dos ancestrais que lutaram antes", "Do dinheiro recebido de bancos internacionais", "Das armas de guerra compradas fora"], correct: 0 },
+            { q: "Honrar a ancestralidade é manter vivos os cantos, os remédios das plantas e os:", options: ["Saberes comunitários de preservação da vida", "Projetos de desmatamento da floresta", "Livros de propaganda colonial"], correct: 0 },
+            { q: "Um povo que esquece seus ancestrais fica fraco e vulnerável às:", options: ["Mentiras e dominações da Lógica Colonial", "Ideias de liberdade e justiça", "Festas comunitárias"], correct: 0 },
+            { q: "Os quilombos foram espaços históricos de liberdade criados pelo:", options: ["Povo negro em resistência firme contra a escravidão", "Governo colonial europeu", "Mercado de ações"], correct: 0 },
+            { q: "A resistência ancestral nos ensina que a liberdade não é um presente, mas uma:", options: ["Conquista e luta comunitária diária", "Mercadoria comprada na loja", "Coisa que não existe"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 10: RETOMADA DO TERRITÓRIO — Retomar a Terra é reconquistar o direito de viver com autonomia, reflorestar as áreas destruídas e cultivar o futuro.",
+        questions: [
+            { q: "O que significa a 'Retomada do Território' na prática dos povos tradicionais?", options: ["Reconquistar as terras ancestrais para reflorestar, cultivar e viver em comunidade", "Construir garimpos ilegais nas reservas", "Vender as nascentes de água pura"], correct: 0 },
+            { q: "A Retomada não é apenas física, é também a retomada do direito de:", options: ["Decidir o próprio futuro com autonomia e dignidade cultural", "Poluir os rios sem regras", "Trabalhar em condições análogas à escravidão"], correct: 0 },
+            { q: "Nas áreas de Retomada, as comunidades recuperam florestas degradadas por meio de:", options: ["Sistemas agroflorestais e plantio de mudas nativas", "Uso descontrolado de venenos agrícolas", "Asfalto e poluição"], correct: 0 },
+            { q: "Retomar a Terra é um ato de justiça histórica contra os crimes da:", options: ["Lógica Colonial e do desmatamento predatório", "Preservação das reservas ambientais", "Educação comunitária"], correct: 0 },
+            { q: "A Retomada da Terra beneficia o planeta inteiro ao proteger o:", options: ["Clima, a biodiversidade e as nascentes de água", "Lucro dos poluidores", "Aumento do aquecimento global"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 11: RECAPITULANDO FASE 2 — Refluxo Filosófico = Lógica Colonial ➔ Apropriação/Ressignificação ➔ Defesa/Resistência. Cosmovalor vs Eurocentrismo. Ironia = crítica à falsa civilização.",
+        questions: [
+            { q: "Quais são as três etapas do Refluxo Filosófico de Nego Bispo?", options: ["Lógica Colonial, Apropriação/Ressignificação e Defesa/Resistência", "Comer, Dormir e Trabalhar", "Comprar, Vender e Lucrar"], correct: 0 },
+            { q: "Quando o povo usa as ferramentas do opressor para defender seu direito, ocorre a:", options: ["Apropriação e Ressignificação", "Lógica Colonial passiva", "Desistência da luta"], correct: 0 },
+            { q: "Qual a diferença do Cosmovalor para o Eurocentrismo?", options: ["Cosmovalor foca no respeito à vida e comunhão; Eurocentrismo no lucro e domínio", "Cosmovalor quer destruir as matas", "Eurocentrismo defende as terras indígenas"], correct: 0 },
+            { q: "Usar a palavra 'Civilização' ao lado de destruição e bombas é exercitar a:", options: ["Ironia crítica", "Glorificação da guerra", "Verdade matemática"], correct: 0 },
+            { q: "A confluência dos saberes propõe a união de povos para defender a:", options: ["Terra e a Vida", "Guerra e a Poluição", "Lógica do Mercado privado"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 12: RESUMO GERAL FASE 2 — A Retomada da Terra foi um sucesso! Você aprendeu com Serres, Krenak e Nego Bispo como ser um verdadeiro Guardião do Planeta!",
+        questions: [
+            { q: "Qual a grande lição da Jornada do Guardião para a nossa vida?", options: ["Unir o Contrato Natural, o pensamento ancestral e o Refluxo Filosófico para defender a Terra", "Viver apático sem se importar com a natureza e com o país", "Acreditar que o dinheiro compra a vida e a saúde"], correct: 0 },
+            { q: "Diante dos desafios ambientais, os jovens devem atuar com:", options: ["Consciência crítica, respeito à ancestralidade e ação comunitária", "Indiferença e consumo de plásticos", "Medo e desesperança"], correct: 0 },
+            { q: "Proteger a Terra é proteger a nossa própria família e garantir o futuro das:", options: ["Próximas gerações humanas e não humanas", "Apenas dos empresários de mineradoras", "Ninguém"], correct: 0 },
+            { q: "A filosofia da Retomada nos ensina que a Terra não é um recurso para vender, mas a nossa:", options: ["Mãe e casa sagrada de todas as vidas", "Fábrica de dinheiro e lixo", "Propriedade privada individual"], correct: 0 },
+            { q: "Parabéns, Guardião! Você concluiu todas as lições! Abrindo o Simulado Final...", options: ["Estou pronto para fazer o simulado de 8 questões com atenção!", "Não quero fazer o teste final", "Vou chutar todas as respostas sem ler"], correct: 0 }
+        ]
+    }
+];
+
+// QUESTÕES DO SIMULADO COMPLETO (8 QUESTÕES NO FINAL DA FASE 2)
+const fullSarespQuestions = [
+    // BLOCO 1
+    {
+        section: "Bloco 1: Michel Serres e Ailton Krenak (O Contrato Natural & Gaia)",
+        q: "1. (Fácil) Em sua reflexão sobre os problemas ambientais contemporâneos, o filósofo Michel Serres afirma que a crise ecológica que enfrentamos não é apenas técnica ou econômica, mas resulta de uma atitude mental prévia da humanidade que considera a Terra como mero objeto de posse e consumo desmedido.\n\nAssinale a alternativa que indica o conceito utilizado por Serres para definir essa causa invisível da degradação do planeta:",
+        options: [
+            "(A) Poluição Moral, caracterizada pela arrogância e atitude de domínio proprietário sobre a Terra.",
+            "(B) Contrato Social Iluminista, focado na criação de leis exclusivas para o mercado internacional.",
+            "(C) Determinismo Genético, que explica o comportamento destruidor através dos códigos de DNA.",
+            "(D) Apatia Política, caracterizada pelo desinteresse dos cidadãos nas reuniões de bairro.",
+            "(E) Eficiência Técnica do Homo Faber, voltada para a automação total das indústrias."
+        ],
+        correct: 0
+    },
+    {
+        section: "Bloco 1: Michel Serres e Ailton Krenak (O Contrato Natural & Gaia)",
+        q: "2. (Fácil) Leia o trecho abaixo de Ailton Krenak:\n'A Terra é Gaia, um organismo vivo e sagrado. Os rios não são apenas recursos hídricos para alimentar hidrelétricas; eles são nossos avôs e parentes com os quais nos relacionamos com afeto. Quando arrancamos a pele da Terra para extrair minério, estamos destruindo a própria teia que nos sustenta.'\n\nCom base na cosmovisão indígena de Krenak e na ecologia crítica, conclui-se que o combate à crise climática exige a superação do:",
+        options: [
+            "(A) Biocentrismo e da valorização dos saberes ancestrais das comunidades tradicionais.",
+            "(B) Antropocentrismo, que coloca a humanidade acima da natureza como sua proprietária e exploradora.",
+            "(C) Contrato Natural, que busca conceder direitos jurídicos à preservação dos ecossistemas.",
+            "(D) Princípio da precaução na utilização de pesticidas e agrotóxicos no campo.",
+            "(E) Bem-viver comunitário baseado no cultivo de hortas orgânicas e agroflorestas."
+        ],
+        correct: 1
+    },
+    {
+        section: "Bloco 1: Michel Serres e Ailton Krenak (O Contrato Natural & Gaia)",
+        q: "3. (Intermediária) Para fundamentar uma nova relação ética com o planeta, Michel Serres propõe a celebração do 'Contrato Natural', criticando as limitações do 'Contrato Social' moderno formulado por pensadores como Rousseau e Locke.\n\nDe acordo com a filosofia de Serres, a principal inovação do Contrato Natural em relação ao Contrato Social tradicional consiste em:",
+        options: [
+            "(A) Restringir os direitos políticos e civis apenas aos proprietários de grandes extensões de terra.",
+            "(B) Garantir a privatização dos oceanos e florestas tropicais para empresas privadas de turismo.",
+            "(C) Reconhecer a natureza não como objeto inerte de exploração, mas como Sujeito de Direito no pacto coletivo.",
+            "(D) Substituir as leis da democracia parlamentar por decisões exclusivas dos administradores técnicos.",
+            "(E) Isolar a humanidade do contato com os ecossistemas para impedir qualquer interação biológica."
+        ],
+        correct: 2
+    },
+    {
+        section: "Bloco 1: Michel Serres e Ailton Krenak (O Contrato Natural & Gaia)",
+        q: "4. (Difícil) Em sua obra Ideias para Adiar o Fim do Mundo, Ailton Krenak alerta para os perigos da ilusão de uma 'Humanidade Uniforme' promovida pelo capitalismo globalizado, que tenta padronizar as diferentes culturas sob o modelo único de consumidores de mercadorias.\n\nAnalisando a crítica de Krenak, assinale a alternativa que melhor expressa a estratégia proposta pelo autor para resistir à catástrofe ambiental e cultural contemporânea:",
+        options: [
+            "(A) Acelerar o ritmo de extração mineral para financiar a construção de bunkers de proteção contra as mudanças climáticas.",
+            "(B) Adiar o fim do mundo por meio da preservação da poesia, dos cantos, da diversidade cultural e das narrativas ancestrais que mantêm a vida em comunhão.",
+            "(C) Aceitar a padronização cultural como um passo inevitável e necessário para o desenvolvimento do comércio internacional.",
+            "(D) Substituir o debate ético sobre a natureza por investimentos financeiros em tecnologias de manipulação do clima.",
+            "(E) Incentivar a desocupação das reservas indígenas e quilombolas para expandir a monocultura de exportação."
+        ],
+        correct: 1
+    },
+
+    // BLOCO 2
+    {
+        section: "Bloco 2: Nego Bispo e Crítica à Civilização (Refluxo Filosófico e Resistência)",
+        q: "5. (Fácil) O pensador quilombola Nego Bispo formulou o conceito de 'Refluxo Filosófico' para explicar as formas de reorganização e luta das comunidades originárias e afro-pindorâmicas diante das investidas da dominação colonial.\n\nAssinale a opção que descreve a segunda etapa do movimento de Refluxo Filosófico:",
+        options: [
+            "(A) O assalto violento e a invasão inicial dos territórios promovidos pela Lógica Colonial.",
+            "(B) A Apropriação e Ressignificação, onde o colonizado toma as ferramentas do opressor e altera seu uso em defesa da comunidade.",
+            "(C) A aceitação passiva da aculturação e o esquecimento definitivo dos saberes ancestrais.",
+            "(D) A destruição de todas as tecnologias sem a criação de alternativas de resistência.",
+            "(E) A venda das terras comunitárias para grandes corporações de extrativismo."
+        ],
+        correct: 1
+    },
+    {
+        section: "Bloco 2: Nego Bispo e Crítica à Civilização (Refluxo Filosófico e Resistência)",
+        q: "6. (Fácil) Observe a descrição da charge satírica a seguir:\nUma grande fábrica lança fumaça negra sobre um rio morto repleto de peixes boiando. No alto da chaminé, há uma enorme faixa dourada gravada com a palavra: 'CIVILIZAÇÃO E PROGRESSO'.\n\nA utilização da palavra 'Civilização' associada à destruição do ecossistema e à degradação da vida constitui um recurso filosófico de:",
+        options: [
+            "(A) Glorificação indiscutível da tecnologia bélica e industrial do modelo ocidental.",
+            "(B) Ironia crítica, utilizada para debochar e denunciar a falsa ideia de 'avanço' de uma civilização que destrói a própria Terra.",
+            "(C) Demonstração literal de que a fumaça das indústrias purifica a atmosfera das florestas.",
+            "(D) Aprovação dos métodos de poluição de rios pelas grandes mineradoras transnacionais.",
+            "(E) Prova científica de que o desenvolvimento econômico independe dos limites ecológicos do planeta."
+        ],
+        correct: 1
+    },
+    {
+        section: "Bloco 2: Nego Bispo e Crítica à Civilização (Refluxo Filosófico e Resistência)",
+        q: "7. (Intermediária) Em seu pensamento contracolonial, Nego Bispo estabelece uma oposição fundamental entre o Eurocentrismo e o 'Cosmovalor' vivenciado nos quilombos e comunidades tradicionais.\n\nA respeito dessa oposição, conclui-se que enquanto o Eurocentrismo reduz a terra e os seres a mercadorias para obtenção de lucro, o Cosmovalor:",
+        options: [
+            "(A) Defende que o valor das coisas e das pessoas depende do quanto de dinheiro possuem no banco.",
+            "(B) Pauta-se pela biointeração, pelo respeito à ancestralidade, pela convivência comunitária e pela proteção da vida.",
+            "(C) Estimula a competição individualista entre os membros do quilombo em busca de poder político.",
+            "(D) Prioriza a destruição das nascentes de água para forçar a compra de água mineral engarrafada.",
+            "(E) Rejeita qualquer relação afetiva com a terra por considerá-la um espaço estritamente comercial."
+        ],
+        correct: 1
+    },
+    {
+        section: "Bloco 2: Nego Bispo e Crítica à Civilização (Refluxo Filosófico e Resistência)",
+        q: "8. (Difícil) Leia o texto a seguir:\n'A Retomada do Território não é um ato de vingança, mas um imperativo ético e ambiental de restauração do equilíbrio. Ao retomar a terra, as comunidades quilombolas e originárias praticam a confluência de saberes, reflorestam áreas degradadas e reestabelecem a biointeração sagrada que garante o futuro das próximas gerações.' (Nego Bispo, adaptado).\n\nAnalisando a dimensão política e ecológica da Retomada do Território na filosofia de Nego Bispo, assinale a alternativa correta:",
+        options: [
+            "(A) A Retomada limita-se a um conflito imobiliário privado, sem nenhum impacto na preservação do clima ou da biodiversidade.",
+            "(B) A Retomada do Território representa um ato de justiça histórica e regeneração ambiental, onde a defesa da terra vincula-se diretamente à preservação da vida e do Bem Comum.",
+            "(C) A prática da biointeração exige a eliminação total das florestas nativas para a construção de estradas de asfalto.",
+            "(D) O conceito de confluência propõe a destruição das identidades culturais diversas em favor de uma cultura única europeia.",
+            "(E) A resistência ancestral defende que a natureza deve ser explorada até o esgotamento total para gerar riquezas de curto prazo."
+        ],
+        correct: 1
+    }
+];
+
+let activeDatabase = databaseFase1;
+let userAnswers = [-1, -1, -1, -1, -1, -1, -1, -1];
+
+// VARIÁVEIS DE ESTADO
+let studentName = "";
+let currentStep = 0;
+let currentLessonIdx = null;
+let currentQuestionObj = null;
+
+let canvas, ctx;
+let gameState = 'START';
+let hitCount = 0;
+let unlockedTips = new Array(12).fill(false);
+
+let cameraX = 0;
+let cameraY = 0;
+let shakeTime = 0;
+
+// CHUVA FASE 2
+let rainDrops = [];
+
+function initRain() {
+    rainDrops = [];
+    for (let i = 0; i < 120; i++) {
+        rainDrops.push({
+            x: Math.random() * 6000,
+            y: Math.random() * 600,
+            length: Math.random() * 15 + 10,
+            speed: Math.random() * 8 + 10
+        });
+    }
+}
+
+// JOGADOR
+const player = {
+    x: 40,
+    y: 350,
+    width: 24,
+    height: 32,
+    vx: 0,
+    vy: 0,
+    speed: 4.2,
+    jumpPower: -11.5,
+    grounded: false
+};
+
+const keys = { right: false, left: false, up: false };
+
+let platforms = [];
+let enemies = [];
+
+function selectPhase(p) {
+    selectedPhase = p;
+    document.getElementById('btn-p1').classList.toggle('active', p === 1);
+    document.getElementById('btn-p2').classList.toggle('active', p === 2);
+}
+
+function initWorld() {
+    if (selectedPhase === 1) {
+        activeDatabase = databaseFase1;
+    } else {
+        activeDatabase = databaseFase2;
+        initRain();
+    }
+
+    document.getElementById('hud-phase').innerText = `Fase ${selectedPhase}`;
+    unlockedTips = new Array(12).fill(false);
+    hitCount = 0;
+    document.getElementById('hud-score').innerText = `Dicas: 0 / 12`;
+
+    // PLATAFORMAS (ZONA LISO/SLIDE NA FASE 2)
+    platforms = [
+        { x: 0, y: 400, width: 6000, height: 60, type: 'ground' },
+
+        { x: 220, y: 290, width: 34, height: 34, type: 'block', id: 0, hit: false },
+        { x: 300, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 420, y: 290, width: 34, height: 34, type: 'block', id: 1, hit: false },
+        { x: 500, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 620, y: 290, width: 34, height: 34, type: 'block', id: 2, hit: false },
+        { x: 700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 820, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 833, y: 190, width: 34, height: 34, type: 'block', id: 3, hit: false },
+        { x: 920, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        /* ZONA LISO/SLIDE (FASE 2) */
+        { x: 1040, y: 290, width: 34, height: 34, type: 'block', id: 4, hit: false },
+        { x: 1120, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1240, y: 290, width: 34, height: 34, type: 'block', id: 5, hit: false },
+        { x: 1320, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1440, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 1453, y: 190, width: 34, height: 34, type: 'block', id: 6, hit: false },
+        { x: 1540, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1660, y: 290, width: 34, height: 34, type: 'block', id: 7, hit: false },
+        { x: 1740, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1860, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 1920, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 1933, y: 120, width: 34, height: 34, type: 'block', id: 8, hit: false },
+
+        { x: 2080, y: 290, width: 34, height: 34, type: 'block', id: 9, hit: false },
+        { x: 2160, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2280, y: 290, width: 34, height: 34, type: 'block', id: 10, hit: false },
+        { x: 2360, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2480, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 2540, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 2553, y: 120, width: 34, height: 34, type: 'block', id: 11, hit: false },
+
+        { x: 2700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+        { x: 2800, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2813, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2950, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2963, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 3100, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 3160, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 3173, y: 120, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 3400, y: 200, width: 10, height: 200, type: 'pole' },
+        { x: 3410, y: 200, width: 45, height: 30, type: 'flag' }
+    ];
+
+    enemies = [
+        { x: 1300, y: 376, width: 24, height: 24, speed: -1.2, minX: 1100, maxX: 1600 },
+        { x: 2800, y: 376, width: 24, height: 24, speed: -1.5, minX: 2500, maxX: 3200 }
+    ];
+}
+
+// CONTROLES
+window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+        if (!keys.up && player.grounded && gameState === 'PLAYING') {
+            player.vy = player.jumpPower;
+            player.grounded = false;
+        }
+        keys.up = true;
+    }
+});
+
+window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.up = false;
+});
+
+function bindTouchBtn(id, keyName) {
+    const btn = document.getElementById(id);
+    const press = (e) => {
+        e.preventDefault();
+        if (keyName === 'up') {
+            if (player.grounded && gameState === 'PLAYING') {
+                player.vy = player.jumpPower;
+                player.grounded = false;
+            }
+        }
+        keys[keyName] = true;
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+}
+
+bindTouchBtn('btn-left', 'left');
+bindTouchBtn('btn-right', 'right');
+bindTouchBtn('btn-up', 'up');
+
+function startGame() {
+    const input = document.getElementById('student-name').value.trim();
+    if (!input) {
+        alert("Por favor, digite seu nome antes de começar!");
+        return;
+    }
+    studentName = input;
+    document.getElementById('hud-name').innerText = `Aluno: ${studentName}`;
+
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-layout').style.display = 'flex';
+
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    player.x = 40;
+    player.y = 350;
+    player.vx = 0;
+    player.vy = 0;
+
+    initWorld();
+    gameState = 'PLAYING';
+    gameLoop();
+}
+
+function resizeCanvas() {
+    if (!canvas) return;
+    const wrapper = document.getElementById('canvas-wrapper');
+    canvas.width = wrapper.clientWidth;
+    canvas.height = wrapper.clientHeight;
+}
+
+function update() {
+    if (gameState !== 'PLAYING') return;
+
+    let isSlipperyZone = (selectedPhase === 2 && player.x >= 1100 && player.x <= 2000);
+
+    if (isSlipperyZone) {
+        if (keys.right) player.vx += 0.25;
+        else if (keys.left) player.vx -= 0.25;
+        else player.vx *= 0.96;
+
+        player.vx = Math.max(-5.5, Math.min(5.5, player.vx));
+    } else {
+        if (keys.right) player.vx = player.speed;
+        else if (keys.left) player.vx = -player.speed;
+        else player.vx = 0;
+    }
+
+    player.vy += 0.52;
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x < 0) player.x = 0;
+
+    player.grounded = false;
+
+    platforms.forEach(p => {
+        if (player.x < p.x + p.width &&
+            player.x + player.width > p.x &&
+            player.y < p.y + p.height &&
+            player.y + player.height > p.y) {
+
+            if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 12) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+            else if (player.vy < 0 && player.y - player.vy >= p.y + p.height - 12) {
+                player.y = p.y + p.height;
+                player.vy = 0;
+
+                if (p.type === 'block' && !p.hit) {
+                    p.hit = true;
+                    openLessonModal(p.id);
+                } else if (p.type === 'empty' && !p.hit) {
+                    p.hit = true;
+                    showToast("Nenhuma dica aqui!");
+                }
+            }
+            else if (p.type === 'pole' && hitCount < 12) {
+                if (player.vx > 0) player.x = p.x - player.width;
+            }
+        }
+    });
+
+    enemies.forEach(en => {
+        en.x += en.speed;
+        if (en.x <= en.minX || en.x >= en.maxX) {
+            en.speed *= -1;
+        }
+
+        if (player.x < en.x + en.width &&
+            player.x + player.width > en.x &&
+            player.y < en.y + en.height &&
+            player.y + player.height > en.y) {
+            
+            showToast("Tente novamente!");
+            player.x = Math.max(40, player.x - 150);
+            player.y = 300;
+            player.vx = 0;
+        }
+    });
+
+    if (selectedPhase === 2) {
+        rainDrops.forEach(drop => {
+            drop.y += drop.speed;
+            drop.x += 1.5;
+            if (drop.y > canvas.height + 20) {
+                drop.y = -20;
+                drop.x = Math.random() * 6000;
+            }
+        });
+    }
+
+    cameraX = player.x - canvas.width * 0.35;
+    if (cameraX < 0) cameraX = 0;
+
+    cameraY = player.y - canvas.height * 0.65;
+    if (cameraY > 100) cameraY = 100;
+
+    // CONCLUSÃO DA FASE
+    if (player.x >= 3410 && hitCount >= 12 && gameState !== 'WIN') {
+        gameState = 'WIN';
+        setTimeout(() => {
+            if (selectedPhase === 1) {
+                // AVANÇA PARA A FASE 2 AUTOMATICAMENTE
+                showToast("Indo para a Fase 2: Retomada e Resistência!");
+                setTimeout(() => {
+                    selectedPhase = 2;
+                    player.x = 40;
+                    player.y = 350;
+                    player.vx = 0;
+                    player.vy = 0;
+                    initWorld();
+                    gameState = 'PLAYING';
+                }, 1000);
+            } else {
+                // FINAL DA FASE 2: ABRE O SIMULADO DE 8 QUESTÕES
+                openSarespSimulado();
+            }
+        }, 1200);
+    }
+
+    if (gameState === 'WIN') shakeTime += 0.2;
+}
+
+function draw() {
+    if (!ctx) return;
+
+    ctx.fillStyle = (selectedPhase === 2) ? '#1e293b' : '#38bdf8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, -cameraY);
+
+    platforms.forEach(p => {
+        if (p.type === 'ground') {
+            let isIce = (selectedPhase === 2 && p.x >= 1000 && p.x <= 2000);
+            ctx.fillStyle = isIce ? '#0284c7' : '#15803d';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = isIce ? '#e0f2fe' : '#22c55e';
+            ctx.fillRect(p.x, p.y, p.width, 8);
+        } else if (p.type === 'stone') {
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#0f172a';
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'block' || p.type === 'empty') {
+            ctx.fillStyle = p.hit ? '#78350f' : '#facc15';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+            if (!p.hit) {
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText('?', p.x + 11, p.y + 24);
+            }
+        } else if (p.type === 'pole') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'flag') {
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.width, p.y + p.height / 2);
+            ctx.lineTo(p.x, p.y + p.height);
+            ctx.fill();
+        }
+    });
+
+    enemies.forEach(en => {
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(en.x, en.y, en.width, en.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(en.x + 4, en.y + 4, 4, 4);
+        ctx.fillRect(en.x + 14, en.y + 4, 4, 4);
+    });
+
+    if (selectedPhase === 2) {
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        rainDrops.forEach(drop => {
+            if (drop.x >= cameraX - 50 && drop.x <= cameraX + canvas.width + 50) {
+                ctx.moveTo(drop.x, drop.y);
+                ctx.lineTo(drop.x + 3, drop.y + drop.length);
+            }
+        });
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#16a34a';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = '#ca8a04';
+    ctx.fillRect(player.x + 2, player.y + 16, player.width - 4, 12);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(player.x + 4, player.y + 6, 16, 10);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(player.x + 6, player.y + 12, 12, 3);
+
+    ctx.restore();
+
+    if (gameState === 'WIN') {
+        let shakeX = Math.sin(shakeTime * 10) * 8;
+        let shakeY = Math.cos(shakeTime * 10) * 8;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2 + shakeX, canvas.height * 0.35 + shakeY);
+        ctx.font = '900 48px Arial, sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 5;
+        ctx.strokeText('Farmei!', 0, 0);
+        ctx.fillText('Farmei!', 0, 0);
+        ctx.restore();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillStyle = '#22c55e';
+        ctx.textAlign = 'center';
+        let txtMsg = (selectedPhase === 1) ? `Farmou a Fase 1, ${studentName}! Carregando Fase 2...` : `Farmou o Jogo Todo, ${studentName}! Abrindo Simulado Final...`;
+        ctx.fillText(txtMsg, canvas.width / 2, canvas.height * 0.55 + 35);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function openLessonModal(idx) {
+    gameState = 'PAUSED';
+    currentLessonIdx = idx;
+    currentStep = 0;
+
+    const item = activeDatabase[idx];
+    const qRandIdx = Math.floor(Math.random() * item.questions.length);
+    currentQuestionObj = item.questions[qRandIdx];
+
+    renderModalContent();
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function renderModalContent() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = '';
+
+    if (currentStep === 0) {
+        box.innerHTML = `
+            <div class="modal-header">Fase ${selectedPhase} - Lição ${currentLessonIdx + 1} de 12</div>
+            <div class="modal-body">${activeDatabase[currentLessonIdx].lesson}</div>
+            <div class="prof-note">💬 Não entendeu? Pergunte ao professor.</div>
+            <button class="btn-next" onclick="goToStep2()">Avançar ➔</button>
+        `;
+    } else {
+        let opts = currentQuestionObj.options.map((opt, i) => ({
+            text: opt,
+            isCorrect: i === currentQuestionObj.correct
+        }));
+
+        for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+
+        let optsHTML = opts.map(o => `
+            <button class="btn-opt" onclick="answerQuestion(${o.isCorrect})">${o.text}</button>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="modal-header">Verificação de Leitura 📝</div>
+            <div style="font-size: 14px; font-weight: bold; color: #fff;">${currentQuestionObj.q}</div>
+            <div class="options-list">${optsHTML}</div>
+        `;
+    }
+}
+
+function goToStep2() {
+    currentStep = 1;
+    renderModalContent();
+}
+
+function answerQuestion(isCorrect) {
+    if (isCorrect) {
+        document.getElementById('modal-overlay').style.display = 'none';
+        if (!unlockedTips[currentLessonIdx]) {
+            unlockedTips[currentLessonIdx] = true;
+            hitCount++;
+            document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+        }
+        gameState = 'PLAYING';
+    } else {
+        showErrorScreen();
+    }
+}
+
+function showErrorScreen() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = `
+        <div class="modal-header" style="color: #ef4444;">Atenção! ⚠️</div>
+        <div class="modal-body" style="border-left-color: #ef4444; font-weight: bold; text-align: center;">
+            Você errou! Volte 2 perguntas e leia as Lições com atenção!
+        </div>
+        <button class="btn-error-reset" onclick="confirmPenalizeTwoQuestions()">CONTINUAR ➔</button>
+    `;
+}
+
+function confirmPenalizeTwoQuestions() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    penalizeTwoQuestions();
+}
+
+function penalizeTwoQuestions() {
+    let currentBlock = platforms.find(p => p.type === 'block' && p.id === currentLessonIdx);
+    if (currentBlock) currentBlock.hit = false;
+
+    let targetIdx = Math.max(0, currentLessonIdx - 2);
+
+    for (let i = targetIdx; i <= currentLessonIdx; i++) {
+        if (unlockedTips[i]) {
+            unlockedTips[i] = false;
+            hitCount = Math.max(0, hitCount - 1);
+        }
+        let blockToReset = platforms.find(p => p.type === 'block' && p.id === i);
+        if (blockToReset) blockToReset.hit = false;
+    }
+
+    document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+
+    let targetBlock = platforms.find(p => p.type === 'block' && p.id === targetIdx);
+    if (targetBlock) {
+        player.x = Math.max(40, targetBlock.x - 80);
+        player.y = 350;
+    } else {
+        player.x = 40;
+        player.y = 350;
+    }
+
+    player.vx = 0;
+    player.vy = 0;
+    gameState = 'PLAYING';
+}
+
+// LÓGICA DO SIMULADO DE 8 QUESTÕES NO FINAL DA FASE 2
+function openSarespSimulado() {
+    document.getElementById('game-layout').style.display = 'none';
+    document.getElementById('saresp-overlay').style.display = 'flex';
+
+    const container = document.getElementById('saresp-questions');
+    container.innerHTML = '';
+
+    fullSarespQuestions.forEach((qObj, qIdx) => {
+        let optsHTML = qObj.options.map((optText, oIdx) => `
+            <div class="saresp-opt" id="opt-${qIdx}-${oIdx}" onclick="selectSarespOpt(${qIdx}, ${oIdx})">
+                ${optText}
+            </div>
+        `).join('');
+
+        let sectionHeader = (qIdx === 0 || qIdx === 4) ? `<div class="saresp-section-title">${qObj.section}</div>` : '';
+
+        container.innerHTML += `
+            ${sectionHeader}
+            <div class="saresp-q-box">
+                <div class="saresp-q-text">${qObj.q}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">${optsHTML}</div>
+            </div>
+        `;
+    });
+}
+
+function selectSarespOpt(qIdx, oIdx) {
+    userAnswers[qIdx] = oIdx;
+    fullSarespQuestions[qIdx].options.forEach((_, idx) => {
+        const el = document.getElementById(`opt-${qIdx}-${idx}`);
+        if (el) el.classList.remove('selected');
+    });
+    const selectedEl = document.getElementById(`opt-${qIdx}-${oIdx}`);
+    if (selectedEl) selectedEl.classList.add('selected');
+}
+
+function submitSaresp() {
+    if (userAnswers.includes(-1)) {
+        alert("Por favor, responda a todas as 8 questões antes de finalizar!");
+        return;
+    }
+
+    const container = document.getElementById('saresp-content');
+    let gabaritoHTML = '';
+
+    fullSarespQuestions.forEach((qObj, qIdx) => {
+        const selectedIdx = userAnswers[qIdx];
+        const correctIdx = qObj.correct;
+        const isCorrect = selectedIdx === correctIdx;
+
+        if (isCorrect) {
+            gabaritoHTML += `
+                <div class="gabarito-item correct">
+                    <strong>Questão ${qIdx + 1} (${qIdx < 4 ? 'Serres/Krenak' : 'Nego Bispo'}): ✔️ CORRETA!</strong><br>
+                    Sua resposta: ${qObj.options[selectedIdx]}
+                </div>
+            `;
+        } else {
+            gabaritoHTML += `
+                <div class="gabarito-item wrong">
+                    <strong>Questão ${qIdx + 1} (${qIdx < 4 ? 'Serres/Krenak' : 'Nego Bispo'}): ❌ INCORRETA!</strong><br><br>
+                    <strong>Enunciado:</strong> ${qObj.q}<br><br>
+                    <span style="color: #ef4444;"><strong>Sua resposta:</strong> ${qObj.options[selectedIdx]}</span><br>
+                    <span style="color: #22c55e;"><strong>Resposta Correta:</strong> ${qObj.options[correctIdx]}</span>
+                </div>
+            `;
+        }
+    });
+
+    container.innerHTML = `
+        <div class="saresp-banner">Gabarito Final do Estudante: ${studentName} 📝</div>
+        <div class="gabarito-box">${gabaritoHTML}</div>
+        <div class="final-msg">Procure o professor para receber a nota do Simulado!</div>
+    `;
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => {
+        t.style.display = 'none';
+    }, 1800);
+}
+</script>
+</body>
+</html>
