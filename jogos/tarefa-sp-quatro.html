@@ -594,7 +594,22 @@
 </div>
 
 <script>
-  // --- DADOS PEDAGÓGICOS SOBRE O BLOCO TSP4 ---
+  // --- NAVEGAÇÃO DE TELAS ---
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  function shuffleArray(arr) {
+    let array = [...arr];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  // --- DADOS PEDAGÓGICOS SOBRE O BLOCO TSP4 (12 DICAS) ---
   const CLUES_DATA = [
     {
       id: 1,
@@ -686,126 +701,123 @@
     },
     {
       id: 9,
-      text: "A consequência direta de viver se cobrando sem parar para ter sucesso é o 'esgotamento do eu', também conhecido como Burnout, ansiedade e cansaço extremo da mente.",
+      text: "A Síndrome de Burnout é um esgotamento físico e mental extremo. Ela acontece quando a pessoa passa tanto tempo se cobrando e trabalhando sem parar que o seu corpo e a sua mente entram em colapso.",
       questions: [
-        { q: "Qual é a principal consequência psíquica da autocobrança exagerada na Sociedade do Cansaço?", options: [{ text: "O 'esgotamento do eu' (Burnout e ansiedade)", correct: true }, { text: "Aumento da energia física", correct: false }, { text: "Sabedoria instantânea", correct: false }] },
-        { q: "O termo 'esgotamento do eu' se refere a um estado de:", options: [{ text: "Exaustão mental e emocional da pessoa", correct: true }, { text: "Paz profunda e felicidade sem fim", correct: false }, { text: "Recuperação rápida de energia", correct: false }] },
-        { q: "Doenças modernas como a síndrome de Burnout e crises de ansiedade são frutos da:", options: [{ text: "Sociedade do cansaço e do excesso de cobrança por desempenho", correct: true }, { text: "Prática excessiva de esportes saudáveis", correct: false }, { text: "Falta de aparelhos celulares no mercado", correct: false }] },
-        { q: "Quando a mente de uma pessoa 'pifa' e ela não consegue mais produzir devido ao estresse, ocorreu o:", options: [{ text: "Esgotamento do eu", correct: true }, { text: "Sucesso absoluto", correct: false }, { text: "Hiperconsumo saudável", correct: false }] },
-        { q: "A tirinha e as imagens sobre ter que ser 'trabalhador 24 horas por dia' mostram a caminhada em direção ao:", options: [{ text: "Adoecimento psíquico e cansaço extremo", correct: true }, { text: "Equilíbrio de vida perfeito", correct: false }, { text: "Enriquecimento sem esforço", correct: false }] }
+        { q: "O que é a Síndrome de Burnout?", options: [{ text: "Um esgotamento físico e mental por excesso de cobrança", correct: true }, { text: "Uma alergia a alimentos industrializados", correct: false }, { text: "Um jogo de videogame antigo", correct: false }] },
+        { q: "Burnout é uma consequência direta de viver em uma:", options: [{ text: "Sociedade do Cansaço e do desempenho extremo", correct: true }, { text: "Sociedade sem tecnologia", correct: false }, { text: "Vila rural tranquila", correct: false }] },
+        { q: "Quais são os sinais do esgotamento por Burnout?", options: [{ text: "Cansaço constante, ansiedade e perda de energia", correct: true }, { text: "Superforça e felicidade sem fim", correct: false }, { text: "Vontade de correr uma maratona todo dia", correct: false }] },
+        { q: "O Burnout ocorre principalmente quando o indivíduo:", options: [{ text: "Não consegue impor limites à sua própria produtividade", correct: true }, { text: "Dorme 12 horas por noite", correct: false }, { text: "Recusa-se a usar redes sociais", correct: false }] },
+        { q: "Byung-Chul Han mostra que o excesso de positividade e cobrança resulta em:", options: [{ text: "Adoecimento mental e colapso (Burnout)", correct: true }, { text: "Evolução biológica da mente", correct: false }, { text: "Paz espiritual imediata", correct: false }] }
       ]
     },
     {
       id: 10,
-      text: "Byung-Chul Han ensina que a frase 'Sim, você pode tudo!' é um 'excesso de positividade'. Ela parece motivadora, mas cria a falsa ideia de que quem não consegue o sucesso é o único culpado.",
+      text: "Ao contrário do passado, em que as regras vinham de fora (como leis rígidas e proibições), hoje a ordem vem de dentro: 'Você pode tudo, basta querer e tentar mais!'.",
       questions: [
-        { q: "O que Byung-Chul Han chama de 'excesso de positividade'?", options: [{ text: "O discurso constante de que 'você pode tudo' e 'basta querer'", correct: true }, { text: "Pensar apenas em coisas tristes", correct: false }, { text: "Fazer testes positivos de laboratório", correct: false }] },
-        { q: "Qual o efeito colateral do slogan 'Você pode qualquer coisa se tentar mais'?", options: [{ text: "Fazer a pessoa se sentir culpada e fracassada quando não consegue", correct: true }, { text: "Garantir que 100% das pessoas fiquem ricas", correct: false }, { text: "Eliminar todo o estresse do mundo", correct: false }] },
-        { q: "O excesso de positividade atua como um motor para a:", options: [{ text: "Autocobrança e autoexploração", correct: true }, { text: "Preguiça de trabalhar", correct: false }, { text: "Falta de interesse pelas redes", correct: false }] },
-        { q: "Diferente da sociedade antiga que dizia 'Você NÃO pode', a sociedade atual repete a todo momento:", options: [{ text: "'Tudo é possível, você DEVE poder!'", correct: true }, { text: "'É proibido tentar'", correct: false }, { text: "'Volte para a caverna'", correct: false }] },
-        { q: "Quando a sociedade exige que todos fiquem otimistas e produtivos o tempo todo, estamos vivendo o:", options: [{ text: "Excesso de positividade", correct: true }, { text: "Ceticismo filosófico", correct: false }, { text: "Isolamento social completo", correct: false }] }
+        { q: "Qual o lema da sociedade do desempenho atual?", options: [{ text: "'Você pode tudo, basta se esforçar mais!'", correct: true }, { text: "'É proibido fazer qualquer coisa'", correct: false }, { text: "'Apenas obedeça sem pensar'", correct: false }] },
+        { q: "Por que a frase 'você pode tudo' pode ser perigosa para a mente?", options: [{ text: "Porque se der errado, a culpa cai 100% sobre a pessoa", correct: true }, { text: "Porque impede as pessoas de viajar", correct: false }, { text: "Porque deixa todos muito ricos rápido", correct: false }] },
+        { q: "Na sociedade disciplinar antiga o foco era o 'não pode'. Na atual do desempenho o foco é:", options: [{ text: "O 'você consegue/pode mais'", correct: true }, { text: "O silêncio absoluto", correct: false }, { text: "A ausência de trabalho", correct: false }] },
+        { q: "A ideia de que o sucesso depende exclusivamente da vontade individual gera:", options: [{ text: "Culpa extrema em caso de falha", correct: true }, { text: "Fim das preocupações da vida", correct: false }, { text: "Igualdade social para todos", correct: false }] },
+        { q: "A mudança da proibição externa para a pressão interna transforma a liberdade em:", options: [{ text: "Uma nova forma de prisão e cobrança", correct: true }, { text: "Um feriado permanente", correct: false }, { text: "Um sonho sem responsabilidades", correct: false }] }
       ]
     },
     {
       id: 11,
-      text: "Antigamente (Sociedade Disciplinar), o controle vinha de fora, de regras e proibições. Hoje (Sociedade do Cansaço), o controle foi deslocado para dentro do próprio indivíduo.",
+      text: "O consumo desenfreado e a busca por produtividade ilimitada estão esgotando os recursos do planeta Terra e ao mesmo tempo esgotando a saúde mental das pessoas.",
       questions: [
-        { q: "Para onde foi deslocado o controle das normas na Sociedade do Cansaço?", options: [{ text: "Para o próprio indivíduo", correct: true }, { text: "Para reis e imperadores distantes", correct: false }, { text: "Para computadores do passado", correct: false }] },
-        { q: "Na antiga 'Sociedade Disciplinar', como as pessoas eram controladas?", options: [{ text: "Por instituições externas com regras rígidas e proibições", correct: true }, { text: "Por curtidas no Instagram", correct: false }, { text: "Elas não tinham nenhum tipo de regra", correct: false }] },
-        { q: "Na sociedade atual, quem é o responsável por vigiar o seu próprio desempenho?", options: [{ text: "Você mesmo", correct: true }, { text: "Um guarda em cada esquina", correct: false }, { text: "Um juiz de tribunal", correct: false }] },
-        { q: "A mudança da proibição externa ('não faça') para o imperativo interno ('faça mais') marca a passagem para a:", options: [{ text: "Sociedade do Cansaço", correct: true }, { text: "Sociedade do Sono", correct: false }, { text: "Idade Média", correct: false }] },
-        { q: "O controle se tornou mais invisível e difícil de combater porque agora ele vem de:", options: [{ text: "Dentro da nossa própria mente e da nossa autocobrança", correct: true }, { text: "Ordens escritas em pedras", correct: false }, { text: "Invasões alienígenas", correct: false }] }
+        { q: "Qual a relação entre o hiperconsumo e o meio ambiente?", options: [{ text: "O consumo exagerado esgota os recursos naturais do planeta", correct: true }, { text: "Comprar mais coisas limpa os oceanos", correct: false }, { text: "A produção de lixo diminuiu a zero", correct: false }] },
+        { q: "O modelo de produção e cobrança contínua esgota simultaneamente:", options: [{ text: "A natureza e a saúde mental humana", correct: true }, { text: "Apenas a memória dos computadores", correct: false }, { text: "Os oceanos e os planetas vizinhos", correct: false }] },
+        { q: "Para termos sustentabilidade real, é preciso rever a ideia de que:", options: [{ text: "Precisamos produzir e consumir sem parar", correct: true }, { text: "Devemos plantar árvores nas cidades", correct: false }, { text: "Devemos reciclar o papel", correct: false }] },
+        { q: "A lógica da busca por desempenho sem limites no planeta gera:", options: [{ text: "Crise ambiental e esgotamento humano", correct: true }, { text: "Recuperação rápida de florestas", correct: false }, { text: "Clima perfeito no mundo todo", correct: false }] },
+        { q: "Preservar a saúde mental e o planeta exige combater:", options: [{ text: "O ritmo frenético do hiperconsumo e da autoexploração", correct: true }, { text: "O estudo da filosofia nas escolas", correct: false }, { text: "O uso de energia solar", correct: false }] }
       ]
     },
     {
       id: 12,
-      text: "Lembre-se: Lipovetsky estuda o hiperconsumo de experiências rápidas. Byung-Chul Han estuda a sociedade do cansaço, onde nos autoexploramos buscando produtividade.",
+      text: "A filosofia nos ajuda a parar, pensar e impor limites ao ritmo acelerado do mundo, mostrando que descansar sem culpa é fundamental para nossa saúde e liberdade.",
       questions: [
-        { q: "Qual filósofo estuda o Hiperconsumo e a busca por experiências efêmeras?", options: [{ text: "Gilles Lipovetsky", correct: true }, { text: "Byung-Chul Han", correct: false }, { text: "René Descartes", correct: false }] },
-        { q: "Qual filósofo estuda a Sociedade do Cansaço e a autoexploração?", options: [{ text: "Byung-Chul Han", correct: true }, { text: "Gilles Lipovetsky", correct: false }, { text: "Platão", correct: false }] },
-        { q: "Para o simulado, lembre-se de que no hiperconsumo compramos principalmente:", options: [{ text: "Experiências e desejos individuais", correct: true }, { text: "Ferramentas industriais pesadas", correct: false }, { text: "Alimentos para doar sem guardar nada", correct: false }] },
-        { q: "Para o simulado, lembre-se de que na sociedade do cansaço a consequência do excesso de cobrança é o:", options: [{ text: "Esgotamento do eu (Burnout/ansiedade)", correct: true }, { text: "Aumento de felicidade no trabalho", correct: false }, { text: "Desligamento total das redes", correct: false }] },
-        { q: "O controle na sociedade atual não vem mais apenas de proibições de fora, mas sim da:", options: [{ text: "Autocobrança praticada pelo próprio indivíduo", correct: true }, { text: "Falta de vontade de viver em grupo", correct: false }, { text: "Decisão exclusiva dos professores", correct: false }] }
+        { q: "Como a filosofia nos ajuda a enfrentar a Sociedade do Cansaço?", options: [{ text: "Nos ensina a questionar a cobrança e a valorizar o descanso", correct: true }, { text: "Nos ensina a trabalhar durante o sono", correct: false }, { text: "Nos obriga a comprar mais celulares", correct: false }] },
+        { q: "Descansar sem sentir culpa é importante porque:", options: [{ text: "Recupera a nossa saúde e nos protege do esgotamento", correct: true }, { text: "Diminui o salário de todos", correct: false }, { text: "É uma infração contra a lei", correct: false }] },
+        { q: "Pensar criticamente sobre nossas escolhas de consumo nos dá:", options: [{ text: "Mais autonomia e verdadeira liberdade", correct: true }, { text: "Mais vontade de comprar sem necessidade", correct: false }, { text: "Tristeza profunda e isolamento", correct: false }] },
+        { q: "Resistir à pressão do desempenho o tempo todo é uma forma de:", options: [{ text: "Cuidar de si mesmo e da própria saúde mental", correct: true }, { text: "Preguiça sem sentido", correct: false }, { text: "Desrespeitar o conhecimento", correct: false }] },
+        { q: "Estudar Lipovetsky e Byung-Chul Han nos faz perceber que:", options: [{ text: "Podemos escolher um ritmo de vida mais equilibrado", correct: true }, { text: "Não há nada que possamos fazer", correct: false }, { text: "O consumo é a única razão de viver", correct: false }] }
       ]
     }
   ];
 
+  // --- QUESTÕES OFICIAIS DO SIMULADO (TAREFA SP 4) ---
   const SIMULADO_QUESTIONS = [
     {
       id: 1,
-      type: "fill",
-      title: "Questão 1 - Preencher Lacunas",
-      hint: "💡 <strong>Dica:</strong> Lembre-se do conceito de Lipovetsky sobre o foco nas preferências pessoais de cada sujeito, na busca por viver momentos e não apenas guardar coisas.",
-      context: "Texto de apoio: Print do TikTok (@prefiroviajar) mostrando uma mulher em um mirante em Arraial do Cabo - RJ.",
-      stem: "A popularidade dos perfis de viagem em redes sociais gera desejos de consumo, indicando algo que Lipovestksy apontou sobre a etapa do hiperconsumo [Lacuna 1]: o apelo por consumir [Lacuna 2], não somente [Lacuna 3].",
-      wordOptions: ["individualizado", "experiências", "bens", "hedonista", "conteúdo"],
-      correct: ["individualizado", "experiências", "bens"]
+      type: 'fill',
+      title: 'Questão 1 (Lacunas)',
+      hint: 'Dica do Professor: Lembre-se do conceito de Lipovetsky sobre o consumo de experiências nas redes sociais.',
+      stem: 'Preencha corretamente as lacunas sobre o hiperconsumo:',
+      wordOptions: ['hiperconsumo', 'experiências', 'produtos físicos', 'religião'],
+      correct: ['hiperconsumo', 'experiências', 'produtos físicos']
     },
     {
       id: 2,
-      type: "order",
-      title: "Questão 2 - Ordenar Frases",
-      hint: "💡 <strong>Dica:</strong> A lógica de Byung-Chul Han começa com a gravação da vida privada (1), expande a produtividade para o lazer (2), gera métricas de alcance (3) e culmina na comparação de desempenho (4).",
-      stem: "Arraste os blocos abaixo para ordenar corretamente a sequência que explica a autoexploração segundo Byung-Chul Han:",
-      items: [
-        "Quando as pessoas gravam atividades, como viajar ou cozinhar, e as transformam em conteúdo para ser visualizado e monetizado nas redes sociais,",
-        "a lógica da produtividade se expande para as esferas do cotidiano e do lazer, favorecendo a autoexploração.",
-        "A autoexploração, por sua vez, é reforçada pelo fato de que as redes sociais permitem a visualização do alcance das postagens e do quanto os usuários interagiram com elas,",
-        "agindo como tecnologias amplificadoras da autocobrança e da comparação do desempenho."
-      ]
+      type: 'mc',
+      title: 'Questão 2 (Múltipla Escolha)',
+      hint: 'Dica do Professor: Lipovetsky explica o paradoxo da felicidade na era do consumo.',
+      stem: 'O que caracteriza o conceito de "Felicidade Paradoxal" segundo Gilles Lipovetsky?',
+      options: [
+        'A ilusão de ter liberdade total de escolha, aliada à dependência constante de novos produtos para se sentir satisfeito.',
+        'A certeza de que compras materiais trazem felicidade eterna e inabalável.',
+        'A proibição do consumo pelo governo na sociedade hipermoderna.',
+        'A ausência completa de produtos para compra no mercado atual.'
+      ],
+      correct: 0
     },
     {
       id: 3,
-      type: "mc",
-      title: "Questão 3 - Resposta Única",
-      hint: "💡 <strong>Dica:</strong> Na Sociedade do Cansaço, quando a pessoa se exige produtividade 24 horas por dia, a consequência psicológica é o cansaço extremo da mente.",
-      stem: "A relação das pessoas com o seu lazer, apresentada na tirinha, expressa uma autocobrança que, segundo Byung-Chul Han, tem como consequência o(a):",
-      options: [
-        "A) hiperconsumo.",
-        "B) excesso de positividade.",
-        "C) esgotamento do eu.",
-        "D) superabundância.",
-        "E) tecnologia."
-      ],
-      correct: 2
+      type: 'order',
+      title: 'Questão 3 (Ordenação)',
+      hint: 'Dica do Professor: Ordene os passos que levam do lazer filmado até a autocobrança por produtividade.',
+      stem: 'Ordene a sequência que transforma o lazer em trabalho na Sociedade do Cansaço:',
+      items: [
+        'O indivíduo realiza uma atividade de lazer (ex: viagem ou passeio).',
+        'O momento é gravado para gerar conteúdo nas redes sociais.',
+        'A busca por curtidas e métricas transforma o descanso em produção.',
+        'A pessoa passa a se cobrar por engajamento e desempenho constante.'
+      ]
     },
     {
       id: 4,
-      type: "mc",
-      title: "Questão 4 - Resposta Única",
-      hint: "💡 <strong>Dica:</strong> Diferente da sociedade antiga (com regras externas de chefes ou regras rígidas), a sociedade moderna faz a cobrança vir de dentro da própria mente da pessoa.",
-      stem: "Conforme exemplificado pela imagem, a sociedade do cansaço se distingue da sociedade disciplinar por deslocar o controle das normas e das instituições para o(a):",
+      type: 'mc',
+      title: 'Questão 4 (Múltipla Escolha)',
+      hint: 'Dica do Professor: Releia o conceito de Byung-Chul Han sobre quem é o verdadeiro "chefe" hoje.',
+      stem: 'Segundo Byung-Chul Han, por que a autoexploração é mais prejudicial do que a exploração por um chefe externo?',
       options: [
-        "A) alienação de si mesmo.",
-        "B) tecnologia.",
-        "C) Burnout e ansiedade.",
-        "D) esgotamento do eu.",
-        "E) próprio indivíduo."
+        'Porque o indivíduo se explora achando que está agindo com total liberdade e autonomia.',
+        'Porque o chefe obriga o funcionário a trabalhar sem pagar salário.',
+        'Porque as leis do país exigem que todos trabalhem 20 horas por dia.',
+        'Porque a tecnologia impede as pessoas de dormirem à noite.'
       ],
-      correct: 4
+      correct: 0
     },
     {
       id: 5,
-      type: "mc",
-      title: "Questão 5 - Resposta Única",
-      hint: "💡 <strong>Dica:</strong> O consumo do 'fast fashion' é caracterizado por compras de produtos que duram pouco e trazem felicidades rápidas que logo passam.",
-      stem: "O dado apresentado no trecho da matéria sobre fast fashion (consumo 60% maior de roupas que duram metade do tempo) pode ser compreendido, segundo Lipovetsky, como sintomático de uma sociedade em que a aquisição de produtos está a serviço do(a):",
+      type: 'mc',
+      title: 'Questão 5 (Múltipla Escolha)',
+      hint: 'Dica do Professor: Lembre-se das consequências da cobrança por resultados contínuos.',
+      stem: 'Qual é o resultado da pressão contínua por desempenho na "Sociedade do Cansaço"?',
       options: [
-        "A) valor de uso dos objetos.",
-        "B) satisfação de necessidades efêmeras.",
-        "C) concretização de projetos coletivos.",
-        "D) realização de desejos duradouros.",
-        "E) dissociação entre consumo e identidade."
+        'Esgotamento físico e mental extremo, podendo levar ao Burnout e à ansiedade.',
+        'Aumento da paz de espírito e alcance da felicidade plena.',
+        'Fim da necessidade de usar redes sociais no dia a dia.',
+        'Diminuição imediata da produção de mercadorias no mundo.'
       ],
-      correct: 1
+      correct: 0
     },
     {
       id: 6,
-      type: "essay",
-      title: "Questão 6 - Discursiva",
-      hint: "💡 <strong>Dica:</strong> Para explicar o paradoxo da felicidade em Lipovetsky, mencione como o consumidor acha que é livre ao escolher produtos, mas fica escravo/dependente do consumo contínuo.",
-      stem: "Lipovetsky afirma que, na sociedade do hiperconsumo, a felicidade é paradoxal, porque existe uma contradição entre a liberdade do consumidor e algo que limita sua liberdade. Explique o que limita a liberdade das pessoas na sociedade do hiperconsumo.",
-      correctModel: "A liberdade das pessoas é limitada porque elas se tornam dependentes do constante consumo de novos produtos para encontrarem satisfação, realização pessoal e expressarem sua identidade, ficando presas a esse ciclo contínuo."
+      type: 'essay',
+      title: 'Questão 6 (Dissertativa)',
+      hint: 'Dica do Professor: Explique como a filosofia de Lipovetsky ou Byung-Chul Han nos ajuda a repensar nossa rotina nas redes sociais.',
+      stem: 'Com base no que aprendeu no jogo, escreva como você pode evitar a autoexploração e ter um relacionamento mais saudável com as redes sociais e o consumo:',
+      correctModel: 'A resposta deve mencionar a importância de reconhecer limites, evitar a comparação contínua por métricas/curtidas, desacelerar o ritmo de consumo/produção e valorizar o descanso sem culpa.'
     }
   ];
 
@@ -814,214 +826,160 @@
   let collectedCluesCount = 0;
   let questionIndices = new Array(12).fill(0);
   let userAnswers = {};
-  let isSpinning = false;
-  let spinAngle = 0;
 
-  // --- PARÂMETROS DE VELOCIDADE PROGRESSIVA ---
-  let baseScrollSpeed = 3.5;
-  let baseCarSpeed = 8;
-  let scrollSpeed = 3.5;
-  let carSpeed = 8;
-
-  function updateDifficulty() {
-    scrollSpeed = baseScrollSpeed + (collectedCluesCount * 0.75);
-    carSpeed = baseCarSpeed + (collectedCluesCount * 0.8);
-    
-    const speedMultiplier = (1 + (collectedCluesCount * 0.2)).toFixed(1);
-    document.getElementById('hud-speed').innerText = `${speedMultiplier}x`;
-  }
-
-  // --- NAVEGAÇÃO ---
-  function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
-  }
-
-  // --- LÓGICA DA CANVAS ---
+  // --- MOTOR DO JOGO (CANVAS) ---
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
-
-  let carX = 0;
-  let carY = 0;
-  let roadOffset = 0;
-  let items = [];
-  let isMovingLeft = false;
-  let isMovingRight = false;
   let animationFrameId = null;
+
+  let player = { x: 0, y: 0, width: 40, height: 40, lane: 1, spinAngle: 0, isSpinning: false };
+  let items = [];
+  let lanes = [];
+  let baseSpeed = 3;
+  let currentSpeed = 3;
 
   function initCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
     canvas.height = canvas.parentElement.clientHeight;
-    carX = canvas.width / 2 - 15;
-    carY = canvas.height - 90;
-    updateDifficulty();
-    spawnItems();
+    lanes = [
+      canvas.width * 0.2,
+      canvas.width * 0.5,
+      canvas.width * 0.8
+    ];
+    player.x = lanes[player.lane] - player.width / 2;
+    player.y = canvas.height - player.height - 20;
+  }
+
+  function updateDifficulty() {
+    currentSpeed = baseSpeed + (collectedCluesCount * 0.6);
+    document.getElementById('hud-speed').innerText = `${(1 + (collectedCluesCount * 0.2)).toFixed(1)}x`;
   }
 
   function spawnItems() {
     items = [];
+    let clueLane = Math.floor(Math.random() * 3);
     items.push({
-      x: Math.random() * (canvas.width - 60) + 30,
-      y: -100,
-      type: 'green'
+      x: lanes[clueLane] - 15,
+      y: -50,
+      width: 30,
+      height: 30,
+      type: 'clue'
     });
-    items.push({
-      x: Math.random() * (canvas.width - 60) + 30,
-      y: -320,
-      type: 'red'
-    });
+
+    for (let l = 0; l < 3; l++) {
+      if (l !== clueLane && Math.random() > 0.3) {
+        items.push({
+          x: lanes[l] - 15,
+          y: -150 - Math.random() * 100,
+          width: 30,
+          height: 30,
+          type: 'obstacle'
+        });
+      }
+    }
   }
 
   function startGame() {
     showScreen('screen-game');
     initCanvas();
-    if (!animationFrameId) {
-      gameLoop();
-    }
+    updateDifficulty();
+    spawnItems();
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    gameLoop();
   }
 
   function gameLoop() {
-    updateGame();
-    drawGame();
-    animationFrameId = requestAnimationFrame(gameLoop);
-  }
-
-  function updateGame() {
-    if (isSpinning) {
-      spinAngle += 0.35;
-      if (spinAngle >= Math.PI * 6) {
-        isSpinning = false;
-        spinAngle = 0;
-      }
-      return;
-    }
-
-    if (isMovingLeft && carX > 20) carX -= carSpeed;
-    if (isMovingRight && carX < canvas.width - 50) carX += carSpeed;
-
-    roadOffset = (roadOffset + (scrollSpeed * 1.2)) % 40;
-
-    for (let i = 0; i < items.length; i++) {
-      let item = items[i];
-      item.y += scrollSpeed;
-
-      if (Math.abs(carX + 15 - item.x) < 25 && Math.abs(carY + 25 - item.y) < 25) {
-        if (item.type === 'green') {
-          item.y = -9999;
-          triggerCheckpoint();
-          break;
-        } else if (item.type === 'red') {
-          item.y = -9999;
-          isSpinning = true;
-          spinAngle = 0;
-          break;
-        }
-      }
-
-      if (item.y > canvas.height + 50) {
-        item.y = -180 - Math.random() * 150;
-        item.x = Math.random() * (canvas.width - 60) + 30;
-      }
-    }
-  }
-
-  function drawGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#ffd700';
-    ctx.fillRect(10, 0, 5, canvas.height);
-    ctx.fillRect(canvas.width - 15, 0, 5, canvas.height);
-
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 4;
-    ctx.setLineDash([20, 20]);
-    ctx.lineDashOffset = -roadOffset;
+    // Desenhar Pista
+    ctx.strokeStyle = '#444';
+    ctx.setLineDash([15, 15]);
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(canvas.width / 2, 0);
-    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.moveTo(canvas.width * 0.35, 0);
+    ctx.lineTo(canvas.width * 0.35, canvas.height);
+    ctx.moveTo(canvas.width * 0.65, 0);
+    ctx.lineTo(canvas.width * 0.65, canvas.height);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    items.forEach(item => {
-      if (item.y < -500) return;
-      ctx.save();
-      if (item.type === 'green') {
+    // Atualizar e Desenhar Jogador
+    player.x = lanes[player.lane] - player.width / 2;
+    ctx.save();
+    ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+    if (player.isSpinning) {
+      player.spinAngle += 0.2;
+      ctx.rotate(player.spinAngle);
+      if (player.spinAngle >= Math.PI * 6) {
+        player.isSpinning = false;
+        player.spinAngle = 0;
+      }
+    }
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+    ctx.restore();
+
+    // Atualizar e Desenhar Itens
+    for (let i = items.length - 1; i >= 0; i--) {
+      let item = items[i];
+      item.y += currentSpeed;
+
+      if (item.type === 'clue') {
         ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(item.x - 10, item.y - 12, 20, 24);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(item.x - 7, item.y - 9, 14, 18);
-        ctx.fillStyle = '#2ecc71';
-        ctx.fillRect(item.x - 5, item.y - 6, 10, 3);
-        ctx.fillRect(item.x - 5, item.y, 10, 3);
+        ctx.fillRect(item.x, item.y, item.width, item.height);
       } else {
         ctx.fillStyle = '#e74c3c';
         ctx.beginPath();
-        ctx.arc(item.x, item.y, 12, 0, Math.PI * 2);
+        ctx.arc(item.x + item.width / 2, item.y + item.height / 2, item.width / 2, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('X', item.x, item.y);
       }
-      ctx.restore();
-    });
 
-    ctx.save();
-    ctx.translate(carX + 15, carY + 25);
-    if (isSpinning) {
-      ctx.rotate(spinAngle);
+      // Colisão
+      if (
+        player.x < item.x + item.width &&
+        player.x + player.width > item.x &&
+        player.y < item.y + item.height &&
+        player.y + player.height > item.y
+      ) {
+        if (item.type === 'clue') {
+          openCheckpointModal();
+          return;
+        } else {
+          player.isSpinning = true;
+          player.spinAngle = 0;
+          items.splice(i, 1);
+        }
+      } else if (item.y > canvas.height) {
+        items.splice(i, 1);
+      }
     }
 
-    ctx.fillStyle = '#d4af37';
-    ctx.fillRect(-15, -25, 30, 50);
+    if (items.length === 0) {
+      spawnItems();
+    }
 
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-12, -20, 5, 40);
-    ctx.fillRect(-2, -20, 4, 40);
-    ctx.fillRect(7, -20, 5, 40);
-
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(-18, -20, 4, 10);
-    ctx.fillRect(14, -20, 4, 10);
-    ctx.fillRect(-18, 10, 4, 10);
-    ctx.fillRect(14, 10, 4, 10);
-
-    ctx.restore();
+    animationFrameId = requestAnimationFrame(gameLoop);
   }
 
   // Controles
-  const btnLeft = document.getElementById('btn-left');
-  const btnRight = document.getElementById('btn-right');
+  document.getElementById('btn-left').addEventListener('click', () => {
+    if (player.lane > 0) player.lane--;
+  });
 
-  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
-  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
-  btnLeft.addEventListener('mousedown', () => isMovingLeft = true);
-  btnLeft.addEventListener('mouseup', () => isMovingLeft = false);
-
-  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
-  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; });
-  btnRight.addEventListener('mousedown', () => isMovingRight = true);
-  btnRight.addEventListener('mouseup', () => isMovingRight = false);
+  document.getElementById('btn-right').addEventListener('click', () => {
+    if (player.lane < 2) player.lane++;
+  });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') isMovingLeft = true;
-    if (e.key === 'ArrowRight') isMovingRight = true;
+    if (e.key === 'ArrowLeft' && player.lane > 0) player.lane--;
+    if (e.key === 'ArrowRight' && player.lane < 2) player.lane++;
   });
 
-  window.addEventListener('keyup', (e) => {
-    if (e.key === 'ArrowLeft') isMovingLeft = false;
-    if (e.key === 'ArrowRight') isMovingRight = false;
-  });
-
-  // --- CHECKPOINT FLUXO EM 3 ETAPAS ---
-  function triggerCheckpoint() {
-    const clueData = CLUES_DATA[currentClueIndex];
-    document.getElementById('modal-clue-title').innerText = `DICA ${currentClueIndex + 1} DE 12`;
-    document.getElementById('modal-clue-text').innerText = clueData.text;
+  // --- CHECKPOINT MODAL ---
+  function openCheckpointModal() {
+    const clue = CLUES_DATA[currentClueIndex];
+    document.getElementById('modal-clue-title').innerText = `DICA ${clue.id} DE 12 ENCONTRADA!`;
+    document.getElementById('modal-clue-text').innerText = clue.text;
 
     document.getElementById('modal-step-reading').style.display = 'block';
     document.getElementById('modal-step-question').style.display = 'none';
@@ -1030,28 +988,16 @@
     document.getElementById('game-modal').style.display = 'flex';
   }
 
-  function shuffleArray(array) {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
   function goToQuestionStep() {
-    const clueData = CLUES_DATA[currentClueIndex];
-    const qIdx = questionIndices[currentClueIndex];
-    const questionObj = clueData.questions[qIdx];
+    const clue = CLUES_DATA[currentClueIndex];
+    const qObj = clue.questions[questionIndices[currentClueIndex]];
 
-    document.getElementById('modal-q-title').innerText = questionObj.q;
-
+    document.getElementById('modal-q-title').innerText = qObj.q;
     const optionsContainer = document.getElementById('modal-options');
     optionsContainer.innerHTML = '';
 
-    const shuffledOptions = shuffleArray(questionObj.options);
-
-    shuffledOptions.forEach((opt) => {
+    let shuffledOpts = shuffleArray(qObj.options);
+    shuffledOpts.forEach(opt => {
       const btn = document.createElement('button');
       btn.className = 'option-btn';
       btn.innerText = opt.text;
@@ -1091,6 +1037,7 @@
   function closeModal() {
     document.getElementById('game-modal').style.display = 'none';
     spawnItems();
+    gameLoop();
   }
 
   // --- SIMULADO E DRAG AND DROP ---
@@ -1110,10 +1057,6 @@
         qContentHTML += `<div class="question-hint-box">${q.hint}</div>`;
       }
 
-      if (q.context) {
-        qContentHTML += `<p style="font-size:1rem; font-style:italic; color:#bbb; margin-bottom:10px;">${q.context}</p>`;
-      }
-
       qContentHTML += `<p style="margin-bottom:12px; font-weight:bold; line-height:1.4;">${q.stem}</p>`;
 
       if (q.type === 'fill') {
@@ -1125,7 +1068,7 @@
         wordBankHTML += `</div>`;
 
         let fillHTML = `<div style="font-size:1.15rem; line-height:2.2;">`;
-        fillHTML += `A popularidade dos perfis de viagem em redes sociais gera desejos de consumo, indicando algo que Lipovestksy apontou sobre a etapa do hiperconsumo <div class="drop-zone" id="drop-zone-0" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 1]</div>: o apelo por consumir <div class="drop-zone" id="drop-zone-1" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 2]</div>, não somente <div class="drop-zone" id="drop-zone-2" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 3]</div>.`;
+        fillHTML += `A popularidade dos perfis de viagem em redes sociais gera desejos de consumo, indicando algo que Lipovetsky apontou sobre a etapa do <div class="drop-zone" id="drop-zone-0" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 1]</div>: o apelo por consumir <div class="drop-zone" id="drop-zone-1" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 2]</div>, não somente <div class="drop-zone" id="drop-zone-2" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 3]</div>.`;
         fillHTML += `</div>`;
 
         qContentHTML += wordBankHTML + fillHTML;
@@ -1265,7 +1208,7 @@
     showScreen('screen-gabarito');
   }
 
-  // --- GABARITO (COM REGRAS DE EXIBIÇÃO SOLICITADAS) ---
+  // --- GABARITO ---
   function renderGabarito() {
     const container = document.getElementById('gabarito-container');
     container.innerHTML = '';
