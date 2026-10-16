@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Super Mário Ético: O Dilema da Vida (tsp3)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
+        
+        html, body {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            background: #090d16;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+        }
+
+        /* TELA DE INÍCIO */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            width: 100dvw;
+            height: 100dvh;
+            background: #0f172a;
+            z-index: 1000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #start-card {
+            background: #1e293b;
+            border: 3px solid #facc15;
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        #start-card h1 {
+            color: #facc15;
+            font-size: 22px;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px #000;
+        }
+
+        #student-name {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #facc15;
+            background: #0f172a;
+            color: #fff;
+            margin-bottom: 15px;
+            text-align: center;
+            outline: none;
+        }
+
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            background: #facc15;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* LAYOUT DO JOGO */
+        #game-layout {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100dvw;
+            height: 100dvh;
+            flex-direction: row;
+            background: #111827;
+            z-index: 999999;
+        }
+
+        #canvas-wrapper {
+            flex: 1;
+            height: 100%;
+            position: relative;
+            background: #38bdf8;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #hud-top {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+
+        .hud-badge {
+            background: rgba(0, 0, 0, 0.85);
+            color: #facc15;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid #facc15;
+        }
+
+        /* CONTROLES DIREITA */
+        #controls-sidebar {
+            width: 140px;
+            height: 100%;
+            background: #0f172a;
+            border-left: 3px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 8px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .ctrl-title {
+            color: #facc15;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            width: 100%;
+        }
+
+        .controls-pad {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .dir-row {
+            display: flex;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .btn-action {
+            flex: 1;
+            background: #1e293b;
+            color: #ffffff;
+            border: 2px solid #facc15;
+            border-radius: 8px;
+            padding: 18px 0;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-action:active {
+            background: #facc15;
+            color: #000;
+        }
+
+        .btn-jump-action {
+            background: #ef4444;
+            border-color: #ffffff;
+            font-size: 14px;
+            padding: 16px 0;
+            width: 100%;
+        }
+
+        .btn-jump-action:active {
+            background: #f87171;
+        }
+
+        /* MODAIS DE DICAS E PERGUNTAS */
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000001;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 3px solid #facc15;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 480px;
+            padding: 16px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-header {
+            color: #facc15;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .modal-body {
+            background: #1e293b;
+            border-left: 4px solid #facc15;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .prof-note {
+            background: #334155;
+            color: #facc15;
+            font-size: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-opt {
+            background: #1e293b;
+            border: 1px solid #64748b;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .btn-opt:hover {
+            border-color: #facc15;
+            background: #334155;
+        }
+
+        .btn-next {
+            background: #facc15;
+            color: #000;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .btn-error-reset {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* TELA DO SIMULADO PROVÃO PAULISTA */
+        #saresp-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            z-index: 1000005;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .saresp-container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #1e293b;
+            border: 3px solid #38bdf8;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .saresp-banner {
+            background: #facc15;
+            color: #000;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .saresp-q-box {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 14px;
+            border: 2px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .saresp-q-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #f8fafc;
+            white-space: pre-line;
+        }
+
+        .saresp-opt {
+            background: #1e293b;
+            border: 2px solid #64748b;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #fff;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .saresp-opt.selected {
+            border-color: #facc15;
+            background: #334155;
+        }
+
+        .btn-submit-saresp {
+            background: #22c55e;
+            color: #fff;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        /* GABARITO FINAL */
+        .gabarito-box {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 14px;
+            border: 2px solid #22c55e;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .gabarito-item {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 5px solid #64748b;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .gabarito-item.correct { border-left-color: #22c55e; }
+        .gabarito-item.wrong { border-left-color: #ef4444; }
+
+        .final-msg {
+            background: #facc15;
+            color: #000;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        #toast {
+            display: none;
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #ef4444;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000002;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE INÍCIO -->
+    <div id="start-screen">
+        <div id="start-card">
+            <h1>Super Mário Ético 🧬🧪</h1>
+            <p style="font-size: 13px; color: #cbd5e1; margin-bottom: 6px; font-weight: bold;">O Dilema da Vida</p>
+            <p style="font-size: 11px; color: #94a3b8; margin-bottom: 15px;">Bioética e Questões Éticas Contemporâneas (3ª Série - EM)</p>
+            <input type="text" id="student-name" placeholder="Digite seu nome aqui..." maxlength="30">
+            <button class="btn-main" onclick="startGame()">Começar Jogo ➔</button>
+        </div>
+    </div>
+
+    <!-- ESTRUTURA DO JOGO -->
+    <div id="game-layout">
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <div id="hud-top">
+                <div class="hud-badge" id="hud-name">Aluno: --</div>
+                <div class="hud-badge" id="hud-score">Dicas: 0 / 12</div>
+            </div>
+        </div>
+
+        <!-- CONTROLES -->
+        <div id="controls-sidebar">
+            <div class="ctrl-title">CONTROLES</div>
+            <div class="controls-pad">
+                <div class="dir-row">
+                    <button class="btn-action" id="btn-left">◀</button>
+                    <button class="btn-action" id="btn-right">▶</button>
+                </div>
+                <button class="btn-action btn-jump-action" id="btn-up">🚀 PULAR</button>
+            </div>
+            <div style="font-size: 9px; color: #64748b; text-align: center;">Teclado: ◄ ► ▲</div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DICA E PERGUNTA -->
+    <div id="modal-overlay">
+        <div class="modal-box" id="modal-content"></div>
+    </div>
+
+    <!-- TELA DO SIMULADO PROVÃO PAULISTA -->
+    <div id="saresp-overlay">
+        <div class="saresp-container" id="saresp-content">
+            <div class="saresp-banner">Faça o simulado SARESP a seguir, com 4 questões.</div>
+            <div id="saresp-questions"></div>
+            <button class="btn-submit-saresp" onclick="submitSaresp()">FINALIZAR SIMULADO ➔</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+<script>
+// BASE DE DADOS COM 12 LIÇÕES FACILITADAS (5 VARIAÇÕES CADA)
+const database = [
+    {
+        lesson: "📖 Lição 1: O QUE É BIOÉTICA? — 'Bio' significa vida e 'Ética' significa o que é certo ou errado. A Bioética é o estudo que ajuda os médicos e cientistas a respeitarem a vida e o corpo das pessoas.",
+        questions: [
+            { q: "Para que serve a Bioética na ciência e na medicina?", options: ["Para ajudar cientistas e médicos a respeitarem a vida e as pessoas", "Para proibir todas as pesquisas científicas no mundo", "Para fazer remedios ficarem mais caros"], correct: 0 },
+            { q: "A palavra 'Bioética' estuda as decisões certas ou erradas sobre:", options: ["A vida, a saúde e o corpo humano", "Conserto de carros e computadores", "Regras de jogos de futebol"], correct: 0 },
+            { q: "Quando um médico precisa tomar uma decisão difícil sobre um paciente, ele usa a:", options: ["Bioética para fazer o que é mais justo", "Sorte para decidir no cara ou coroa", "Opinião das redes sociais"], correct: 0 },
+            { q: "A Bioética existe para proteger:", options: ["A dignidade e a vida das pessoas", "Apenas o dinheiro dos hospitais", "Os segredos das empresas"], correct: 0 },
+            { q: "A Bioética junta a Filosofia e a Medicina para pensar sobre:", options: ["O respeito ao ser humano e ao meio ambiente", "Como construir prédios mais altos", "Como vender mais celulares"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 2: PRINCÍPIO DA AUTONOMIA — 'Autonomia' significa ter o direito de escolher! O paciente tem o direito de ser informado sobre um tratamento e DECIDIR se aceita ou não.",
+        questions: [
+            { q: "O que significa o Princípio da AUTONOMIA na saúde?", options: ["O direito do paciente de decidir sobre o seu próprio corpo", "O dever do médico de mandar no paciente sem explicar nada", "A obrigação de tomar todos os remédios sem reclamar"], correct: 0 },
+            { q: "Quando uma pessoa escolhe se quer ou não fazer uma cirurgia, ela está usando sua:", options: ["Autonomia", "Força física", "Falta de paciência"], correct: 0 },
+            { q: "Para o paciente exercer sua autonomia, o médico deve primeiro:", options: ["Explicar todos os riscos e detalhes do tratamento", "Fazer a cirurgia sem avisar", "Cobrar o valor antes de conversar"], correct: 0 },
+            { q: "Se o médico obriga um paciente a fazer um tratamento sem sua permissão, ele desrespeitou a:", options: ["Autonomia do paciente", "Regra de trânsito", "A saúde do hospital"], correct: 0 },
+            { q: "Ter autonomia significa que cada pessoa é dona das suas próprias:", options: ["Decisões sobre o seu corpo e sua vida", "Receitas médicas dos amigos", "Opiniões da televisão"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 3: TERMO DE CONSENTIMENTO (TCLE) — É um documento escrito onde o médico explica todo o tratamento, riscos e benefícios, e o paciente assina concordando de livre vontade.",
+        questions: [
+            { q: "O que é o Termo de Consentimento Livre e Esclarecido (TCLE)?", options: ["Um documento em que o paciente autoriza um tratamento após ser bem informado", "Uma receita para comprar remédios na farmácia", "Um comprovante de pagamento da consulta"], correct: 0 },
+            { q: "O Termo de Consentimento garante na prática o princípio da:", options: ["Autonomia do paciente", "Falta de escolha do doente", "Velocidade no atendimento"], correct: 0 },
+            { q: "Antes de assinar o Termo de Consentimento, o paciente deve:", options: ["Tirar todas as suas dúvidas com o profissional de saúde", "Assinar sem ler rápido", "Pedir para o vizinho assinar no seu lugar"], correct: 0 },
+            { q: "O termo diz que o consentimento é 'Livre' porque o paciente:", options: ["Não pode ser forçado nem obrigado a aceitar", "Não precisa pagar a conta", "Pode ir embora sem avisar"], correct: 0 },
+            { q: "Se o paciente não entendeu os riscos de uma pesquisa, ele NÃO deve assinar o TCLE até receber:", options: ["As explicações claras do pesquisador", "Um presente da empresa", "Um desconto no exame"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 4: O QUE SÃO ALGORITMOS NAS REDES? — Algoritmos são programas de computador que observam o que você curte na internet e mostram só conteúdos parecidos para prender sua atenção.",
+        questions: [
+            { q: "O que faz um algoritmo de rede social?", options: ["Mostra conteúdos que prendem sua atenção com base no que você clica", "Apaga os vídeos ruins da internet automaticamente", "Conserta a tela do seu celular se quebrar"], correct: 0 },
+            { q: "Qual é o principal objetivo das empresas com esses algoritmos?", options: ["Manter você o maior tempo possível usando o aplicativo", "Ensinar matérias da escola de graça", "Fazer você desligar o celular para dormir"], correct: 0 },
+            { q: "Como o algoritmo descobre o que mostrar para você?", options: ["Analisando o que você curte, comenta e assiste", "Adivinhando o que você está pensando", "Perguntando para seus pais"], correct: 0 },
+            { q: "Os algoritmos das redes sociais são programados para:", options: ["Entregar conteúdos que causam reação forte e prendem a tela", "Mostrar opiniões contrárias para você aprender mais", "Bloquear pessoas que passam de 1 hora no celular"], correct: 0 },
+            { q: "Para o algoritmo, quanto mais tempo você passa na tela:", options: ["Mais lucro a empresa de tecnologia ganha", "Mais inteligente você fica", "Menos propaganda você vê"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 5: BOLHAS INFORMACIONAIS E RADICALISMO — Como o algoritmo só mostra coisas que você já concorda, você fica isolado em uma 'bolha', o que aumenta as brigas e o radicalismo.",
+        questions: [
+            { q: "O que é uma 'bolha informacional' nas redes sociais?", options: ["Ficar vendo apenas opiniões iguais às suas, isolado de ideias diferentes", "Um tipo de vírus que trava o computador", "Um grupo de mensagens só com fotos de família"], correct: 0 },
+            { q: "Qual a consequência negativa das bolhas na sociedade?", options: ["Aumento das brigas e radicalização entre grupos diferentes", "Todo mundo passa a concordar em tudo com paz", "Diminuição das notícias falsas na internet"], correct: 0 },
+            { q: "Quando uma pessoa só consome ideias de dentro da sua bolha, ela passa a ter dificuldades de:", options: ["Ouvir, respeitar e dialogar com quem pensa diferente", "Usar o teclado do celular", "Achar novos vídeos de música"], correct: 0 },
+            { q: "As bolhas virtuais prejudicam o debate democrático porque:", options: ["Diminuem o respeito e aumentam o preconceito contra os outros", "Deixam a internet mais devagar", "Impedem a criação de contas novas"], correct: 0 },
+            { q: "Para sair de uma 'bolha informacional', o estudante deve:", options: ["Procurar fontes diferentes e ler opiniões diversas com respeito", "Deletar todas as redes sociais para sempre", "Acreditar na primeira mensagem que receber no WhatsApp"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 6: O ANTROPOCENTRISMO — É a ideia antiga de que o Ser Humano é o centro do mundo e que pode gastar e destruir a natureza sem se importar com os limites do planeta.",
+        questions: [
+            { q: "O que é a visão ANTROPOCÊNTRICA da natureza?", options: ["Achar que o ser humano é o centro de tudo e pode usar a natureza sem limites", "Acreditar que os animais são mais importantes que as pessoas", "Proteger as florestas sem derrubar nenhuma árvore"], correct: 0 },
+            { q: "A ideia de que a Terra tem recursos infinitos para a gente gastar gerou:", options: ["A crise climática e a poluição global", "A preservação perfeita das matas", "O fim de todas as doenças"], correct: 0 },
+            { q: "O antropocentrismo exagerado trata o meio ambiente apenas como:", options: ["Uma fonte inesgotável de recursos para dar lucro", "Um lugar sagrado que não deve ser tocado", "Um parque de diversões gratuito"], correct: 0 },
+            { q: "Por que precisamos mudar a visão antropocêntrica hoje?", options: ["Porque os recursos do planeta são finitos e estão acabando", "Porque o planeta Terra está ficando maior", "Porque os animais mandam nas cidades"], correct: 0 },
+            { q: "Superar o antropocentrismo significa entender que o ser humano:", options: ["Faz parte da natureza e precisa cuidar do equilíbrio do planeta", "É dono de todas as espécies de plantas e animais", "Não precisa de água limpa para sobreviver"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 7: ÉTICA AMBIENTAL E GENERATIONES FUTURAS — Ética Ambiental é pensar no impacto das nossas ações hoje para não destruir o futuro dos nossos filhos e netos.",
+        questions: [
+            { q: "O que defende a Ética Ambiental contemporânea?", options: ["Cuidar da natureza hoje para garantir a vida das gerações futuras", "Usar todo o petróleo agora antes que acabe", "Vender os rios para empresas estrangeiras"], correct: 0 },
+            { q: "A responsabilidade 'intergeracional' significa ter deveres éticos com:", options: ["As pessoas das gerações futuras que ainda vão nascer", "Apenas com as pessoas idosas de hoje", "Somente com os nossos colegas de sala"], correct: 0 },
+            { q: "Gastar água e poluir sem parar hoje traz prejuízos diretos para:", options: ["O futuro dos nossos filhos e netos", "Apenas para os filmes de ficção científica", "Ninguém, pois a natureza se limpa sozinha"], correct: 0 },
+            { q: "Proteger o ecossistema e combater o aquecimento global é uma atitude de:", options: ["Responsabilidade ética e respeito à vida", "Falta do que fazer", "Medo absurdo sem motivo"], correct: 0 },
+            { q: "A ética com o meio ambiente exige que as decisões de hoje pensem em:", options: ["Equilíbrio ecológico e sustentabilidade a longo prazo", "Lucro rápido no mesmo dia", "Construir mais estradas de asfalto"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 8: MANIPULAÇÃO GENÉTICA (CRISPR) — Ciência moderna que consegue 'editar' o DNA. Ela pode ser usada para CURAR doenças graves de nascença.",
+        questions: [
+            { q: "O que é a tecnologia de edição genética (CRISPR)?", options: ["Uma ferramenta científica que consegue alterar partes do DNA", "Um novo aplicativo para tirar fotos do rosto", "Um remédio para dor de cabeça"], correct: 0 },
+            { q: "Qual é o uso de benefício da edição genética para a saúde?", options: ["Corrigir genes defeituosos para curar doenças graves", "Mudar a cor da roupa das pessoas", "Fazer as pessoas não precisarem mais comer"], correct: 0 },
+            { q: "A alteração do DNA de seres vivos pode trazer grandes avanços na:", options: ["Cura de doenças genéticas que antes não tinham tratamento", "Fabricação de carros elétricos", "Criação de novos robôs de metal"], correct: 0 },
+            { q: "Quando usam a genética para salvar vidas e tirar dores, os cientistas buscam a:", options: ["Saúde e cura dos pacientes", "Poluição das águas", "Destruição das plantas"], correct: 0 },
+            { q: "A edição de genes em humanos precisa ser feita com muita responsabilidade para evitar:", options: ["Efeitos colaterais perigosos e erros no corpo", "Aumento da velocidade da internet", "Falta de médicos nos postos"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 9: O PERIGO DA EUGENIA POSITIVA — Usar a genética não para curar doenças, mas para criar 'bebês perfeitos' (escolhendo inteligência, beleza ou altura). Isso é perigoso!",
+        questions: [
+            { q: "O que seria a 'eugenia' ou aprimoramento genético não médico?", options: ["Modificar embriões para escolher características físicas ou estéticas", "Tomar vacinas para não pegar gripe", "Fazer exercícios na academia"], correct: 0 },
+            { q: "Por que alterar o DNA de bebês por estética ou inteligência traz preocupação?", options: ["Porque transforma seres humanos em produtos 'projetados'", "Porque deixa todas as pessoas com a mesma cara", "Porque impede as crianças de crescerem"], correct: 0 },
+            { q: "A Bioética alerta contra a escolha de características em bebês porque isso pode criar:", options: ["Uma busca por 'seres humanos perfeitos' e preconceito", "Uma sociedade mais humilde e solidária", "O fim da necessidade de ir para a escola"], correct: 0 },
+            { q: "A diferença entre CURIAR uma doença e APRIMORAR características é que:", options: ["Curar busca saúde; aprimorar busca criar pessoas 'superiores'", "Curar faz mal; aprimorar é sempre obrigatório", "São exatamente a mesma coisa na medicina"], correct: 0 },
+            { q: "A busca por criar pessoas esteticamente 'superiores' no laboratório chama-se:", options: ["Eugenia moderna", "Autonomia médica", "Consenso científico"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 10: DESIGUALDADE BIOLÓGICA — Se só os mais ricos puderem pagar pela edição genética, o mundo terá uma divisão entre 'super-humanos' ricos e o resto da população sem acesso.",
+        questions: [
+            { q: "Qual é o maior risco social se a edição genética for cara e desregulada?", options: ["Criar uma divisão social e biológica entre ricos modificados e pobres", "Todo mundo virar médico ao mesmo tempo", "Os remédios normais desaparecerem do mercado"], correct: 0 },
+            { q: "Se apenas famílias com muito dinheiro comprarem aprimoramentos para os filhos:", options: ["A desigualdade social vai aumentar ainda mais", "A pobreza no mundo vai acabar na hora", "Todas as pessoas serão tratadas com igualdade"], correct: 0 },
+            { q: "O acesso desigual às novas biotecnologias pode gerar preconceito contra quem:", options: ["Não teve dinheiro para pagar por alterações genéticas", "Mora perto do hospital", "Trabalha com pesquisa científica"], correct: 0 },
+            { q: "A Bioética exige que os avanços da medicina e da biotecnologia sejam:", options: ["Democráticos e acessíveis para toda a sociedade", "Reservados apenas para os donos dos laboratórios", "Usados em segredo sem ninguém saber"], correct: 0 },
+            { q: "Garantir que a tecnologia não crie 'classes biológicas' de pessoas é um dever da:", options: ["Justiça e Bioética global", "Empresa de tecnologia de jogos", "Polícia de trânsito"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 11: RECAPITULANDO ALGORITMOS E FAKE NEWS — Na internet, busque sempre checar as fontes das notícias e saia da sua bolha para não cair em mentiras e desinformação.",
+        questions: [
+            { q: "Como evitar ser enganado por Fake News entregues por algoritmos?", options: ["Checando a notícia em vários sites confiáveis antes de acreditar", "Repassando a notícia para todos os grupos imediatamente", "Confiando apenas em áudios sem identificação"], correct: 0 },
+            { q: "Os algoritmos entregam notícias chocantes mesmo se forem falsas porque:", options: ["Elas geram mais cliques e prendem as pessoas na tela", "O computador quer ajudar você a estudar", "As notícias verdadeiras são proibidas na rede"], correct: 0 },
+            { q: "Diante de um conteúdo alarmante na rede social, a atitude ética é:", options: ["Parar, refletir e verificar se a informação é verdadeira", "Compartilhar com raiva sem ler até o fim", "Xingar as pessoas nos comentários"], correct: 0 },
+            { q: "Um cidadão crítico no ambiente digital é aquele que:", options: ["Sabe que a internet usa algoritmos e busca informações de verdade", "Acredita em tudo o que os influenciadores dizem", "Deixa o celular ligado o dia inteiro sozinho"], correct: 0 },
+            { q: "O respeito nas redes sociais virtuais começa quando a gente:", options: ["Não espalha mentiras e respeita as pessoas diferentes", "Bloqueia quem tira notas melhores que a gente", "Usa perfis falsos para xingar os outros"], correct: 0 }
+        ]
+    },
+    {
+        lesson: "📖 Lição 12: RESUMO GERAL — Autonomia nos hospitais + Cuidado com os Algoritmos + Respeito ao Meio Ambiente + Ética nas Pesquisas Genéticas = Sociedade Justa!",
+        questions: [
+            { q: "O que aprendemos sobre tomar decisões éticas no mundo atual?", options: ["Devemos respeitar a vida, os direitos humanos e o meio ambiente", "Devemos pensar apenas no nosso próprio dinheiro", "O mais forte sempre deve mandar nos mais fracos"], correct: 0 },
+            { q: "O princípio da Autonomia garante que o paciente pode:", options: ["Decidir sobre seu tratamento com base em informações claras", "Entrar no hospital sem tomar remedios", "Medicar os próprios amigos na rua"], correct: 0 },
+            { q: "A Ética Ambiental nos ensina que a Terra precisa de:", options: ["Cuidado, equilíbrio e consumo consciente", "Mais poluição para crescer", "Desmatamento sem limites"], correct: 0 },
+            { q: "A Bioética existe para garantir que as tecnologias científicas tragam:", options: ["Benefícios reais com justiça e respeito a todos", "Apenas lucros para os cientistas", "Divisão e preconceito entre as pessoas"], correct: 0 },
+            { q: "Pensar de forma ética nas questões contemporâneas é dever de:", options: ["Todos os cidadãos na construção de um futuro melhor", "Apenas dos professores de Filosofia", "Apenas dos presidentes dos países"], correct: 0 }
+        ]
+    }
+];
+
+// QUESTÕES DO SIMULADO PROVÃO PAULISTA
+const sarespQuestions = [
+    {
+        q: "1. (Fácil) O avanço das tecnologias médicas trouxe novos desafios para a relação entre profissionais da saúde e pacientes. Atualmente, o modelo em que o médico decidia isoladamente sobre o tratamento do paciente deu lugar ao uso do Termo de Consentimento Livre e Esclarecido (TCLE), instrumento pelo qual o indivíduo é informado detalhadamente sobre procedimentos, riscos e alternativas antes de autorizar qualquer intervenção em seu corpo.\n\nNo campo da Bioética, a exigência do consentimento livre e esclarecido assegura o cumprimento do princípio da:",
+        options: [
+            "(A) Beneficência, que impõe o dever de maximizar o bem-estar físico do paciente acima de suas escolhas.",
+            "(B) Autonomia, que garante o direito do indivíduo de deliberar e decidir sobre a própria vida e corpo.",
+            "(C) Justiça distributiva, que visa garantir o acesso igualitário aos tratamentos de alta complexidade.",
+            "(D) Não maleficência, que proíbe o profissional de realizar qualquer procedimento médico invasivo.",
+            "(E) Utilitarismo, que busca alcançar a maior felicidade possível para a maioria dos familiares do paciente."
+        ],
+        correct: 1
+    },
+    {
+        q: "2. (Fácil) Nas redes sociais, algoritmos de recomendação são programados para mapear o comportamento dos usuários e entregar conteúdos que mantenham sua atenção retida pelo maior tempo possível. Esse mecanismo frequentemente confina as pessoas em 'bolhas informacionais', nas quais elas consomem apenas opiniões semelhantes às suas e conteúdos alarmantes.\n\nSob a perspectiva da ética contemporânea, o funcionamento desses algoritmos traz como consequência social a:",
+        options: [
+            "(A) Ampliação do debate democrático e o fortalecimento do pluralismo de ideias.",
+            "(B) Eliminação completa de informações falsas e discursos de ódio no ambiente digital.",
+            "(C) Radicalização de opiniões e o enfraquecimento do diálogo entre diferentes grupos sociais.",
+            "(D) Promoção do uso consciente e moderado da tecnologia pelas jovens gerações.",
+            "(E) Neutralidade moral absoluta nas decisões tomadas pelas grandes empresas de tecnologia."
+        ],
+        correct: 2
+    },
+    {
+        q: "3. (Intermediária) Leia o texto a seguir:\n\n'O modelo de desenvolvimento econômico pautado no consumo ilimitado de recursos naturais pressupõe que a Terra é uma fonte inesgotável de matéria-prima. Contudo, a crise climática global coloca em xeque a perspectiva antropocêntrica tradicional, exigindo uma nova postura ética que considere a responsabilidade moral da humanidade não apenas para com os seus contemporâneos, mas também com o equilíbrio do ecossistema e as gerações futuras.'\n\nA partir da leitura do texto e dos debates da ética ambiental contemporânea, conclui-se que o enfrentamento da crise ecológica exige:",
+        options: [
+            "(A) A manutenção do antropocentrismo irrestrito, garantindo a exploração dos recursos para o crescimento econômico do presente.",
+            "(B) A superação da responsabilidade ética coletiva em favor de ações estritamente individuais e voluntárias.",
+            "(C) A expansão da consideração moral para além do presente imediato, incorporando os direitos das futuras gerações e a preservação da vida no planeta.",
+            "(D) O abandono total da tecnologia e do conhecimento científico como ferramentas de conservação e desenvolvimento sustentável.",
+            "(E) A delegação exclusiva da preservação ambiental aos países em desenvolvimento, isentando as nações industrializadas."
+        ],
+        correct: 2
+    },
+    {
+        q: "4. (Difícil) Leia o trecho abaixo:\n\n'A técnica de edição genética CRISPR-Cas9 permite alterar sequências do DNA de organismos vivos com precisão inédita. Se, por um lado, essa tecnologia abre portas para a cura de doenças genéticas graves, por outro, reacende o debate bioético sobre a eugenia positiva — a possibilidade de seleção e modificação de embriões humanos para o aprimoramento de características estéticas, cognitivas ou físicas não relacionadas à saúde.'\n\nConsiderando os dilemas da Bioética contemporânea frente às novas biotecnologias, a principal preocupação ética em relação ao uso desregulamentado do aprimoramento genético em seres humanos reside na:",
+        options: [
+            "(A) Certeza matemática de que a edição genética erradicará todas as formas de desigualdade econômica global.",
+            "(B) Impossibilidade técnica de aplicação da manipulação genética em seres humanos, tornando a discussão meramente teórica.",
+            "(C) Redução do papel da indústria farmacêutica, que perderia o mercado de medicamentos convencionais.",
+            "(D) Possibilidade de aprofundamento das desigualdades sociais, criando uma divisão biológica entre indivíduos com e sem acesso às tecnologias de aprimoramento.",
+            "(E) Garantia automática de que todos os países terão acesso universal e gratuito às tecnologias de modificação celular."
+        ],
+        correct: 3
+    }
+];
+
+let userAnswers = [-1, -1, -1, -1];
+
+// VARIÁVEIS DO JOGO
+let studentName = "";
+let currentStep = 0;
+let currentLessonIdx = null;
+let currentQuestionObj = null;
+
+let canvas, ctx;
+let gameState = 'START';
+let hitCount = 0;
+let unlockedTips = new Array(12).fill(false);
+
+let cameraX = 0;
+let cameraY = 0;
+let shakeTime = 0;
+
+// JOGADOR
+const player = {
+    x: 40,
+    y: 350,
+    width: 24,
+    height: 32,
+    vx: 0,
+    vy: 0,
+    speed: 4.2,
+    jumpPower: -11.5,
+    grounded: false
+};
+
+const keys = { right: false, left: false, up: false };
+
+let platforms = [];
+let enemy = null;
+
+function initWorld() {
+    platforms = [
+        { x: 0, y: 400, width: 6000, height: 60, type: 'ground' },
+
+        { x: 220, y: 290, width: 34, height: 34, type: 'block', id: 0, hit: false },
+        { x: 300, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 420, y: 290, width: 34, height: 34, type: 'block', id: 1, hit: false },
+        { x: 500, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 620, y: 290, width: 34, height: 34, type: 'block', id: 2, hit: false },
+        { x: 700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 820, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 833, y: 190, width: 34, height: 34, type: 'block', id: 3, hit: false },
+        { x: 920, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1040, y: 290, width: 34, height: 34, type: 'block', id: 4, hit: false },
+        { x: 1120, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1240, y: 290, width: 34, height: 34, type: 'block', id: 5, hit: false },
+        { x: 1320, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1440, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 1453, y: 190, width: 34, height: 34, type: 'block', id: 6, hit: false },
+        { x: 1540, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1660, y: 290, width: 34, height: 34, type: 'block', id: 7, hit: false },
+        { x: 1740, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 1860, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 1920, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 1933, y: 120, width: 34, height: 34, type: 'block', id: 8, hit: false },
+
+        { x: 2080, y: 290, width: 34, height: 34, type: 'block', id: 9, hit: false },
+        { x: 2160, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2280, y: 290, width: 34, height: 34, type: 'block', id: 10, hit: false },
+        { x: 2360, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2480, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 2540, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 2553, y: 120, width: 34, height: 34, type: 'block', id: 11, hit: false },
+
+        { x: 2700, y: 290, width: 34, height: 34, type: 'empty', hit: false },
+        { x: 2800, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2813, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 2950, y: 310, width: 60, height: 20, type: 'stone' },
+        { x: 2963, y: 200, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 3100, y: 320, width: 60, height: 20, type: 'stone' },
+        { x: 3160, y: 240, width: 60, height: 20, type: 'stone' },
+        { x: 3173, y: 120, width: 34, height: 34, type: 'empty', hit: false },
+
+        { x: 3400, y: 200, width: 10, height: 200, type: 'pole' },
+        { x: 3410, y: 200, width: 45, height: 30, type: 'flag' }
+    ];
+
+    enemy = {
+        x: 3300,
+        y: 376,
+        width: 24,
+        height: 24,
+        speed: -1.2,
+        minX: 100,
+        maxX: 3350
+    };
+}
+
+// CONTROLES
+window.addEventListener('keydown', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') {
+        if (!keys.up && player.grounded && gameState === 'PLAYING') {
+            player.vy = player.jumpPower;
+            player.grounded = false;
+        }
+        keys.up = true;
+    }
+});
+
+window.addEventListener('keyup', e => {
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
+    if (e.code === 'ArrowUp' || e.code === 'Space' || e.code === 'KeyW') keys.up = false;
+});
+
+function bindTouchBtn(id, keyName) {
+    const btn = document.getElementById(id);
+    const press = (e) => {
+        e.preventDefault();
+        if (keyName === 'up') {
+            if (player.grounded && gameState === 'PLAYING') {
+                player.vy = player.jumpPower;
+                player.grounded = false;
+            }
+        }
+        keys[keyName] = true;
+    };
+    const release = (e) => {
+        e.preventDefault();
+        keys[keyName] = false;
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+}
+
+bindTouchBtn('btn-left', 'left');
+bindTouchBtn('btn-right', 'right');
+bindTouchBtn('btn-up', 'up');
+
+function startGame() {
+    const input = document.getElementById('student-name').value.trim();
+    if (!input) {
+        alert("Por favor, digite seu nome antes de começar!");
+        return;
+    }
+    studentName = input;
+    document.getElementById('hud-name').innerText = `Aluno: ${studentName}`;
+
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-layout').style.display = 'flex';
+
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    initWorld();
+    gameState = 'PLAYING';
+    gameLoop();
+}
+
+function resizeCanvas() {
+    if (!canvas) return;
+    const wrapper = document.getElementById('canvas-wrapper');
+    canvas.width = wrapper.clientWidth;
+    canvas.height = wrapper.clientHeight;
+}
+
+function update() {
+    if (gameState !== 'PLAYING') return;
+
+    if (keys.right) player.vx = player.speed;
+    else if (keys.left) player.vx = -player.speed;
+    else player.vx = 0;
+
+    player.vy += 0.52;
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+    if (player.x < 0) player.x = 0;
+
+    player.grounded = false;
+
+    platforms.forEach(p => {
+        if (player.x < p.x + p.width &&
+            player.x + player.width > p.x &&
+            player.y < p.y + p.height &&
+            player.y + player.height > p.y) {
+
+            if (player.vy > 0 && player.y + player.height - player.vy <= p.y + 12) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.grounded = true;
+            }
+            else if (player.vy < 0 && player.y - player.vy >= p.y + p.height - 12) {
+                player.y = p.y + p.height;
+                player.vy = 0;
+
+                if (p.type === 'block' && !p.hit) {
+                    p.hit = true;
+                    openLessonModal(p.id);
+                } else if (p.type === 'empty' && !p.hit) {
+                    p.hit = true;
+                    showToast("Nenhuma dica aqui!");
+                }
+            }
+            else if (p.type === 'pole' && hitCount < 12) {
+                if (player.vx > 0) player.x = p.x - player.width;
+            }
+        }
+    });
+
+    if (enemy) {
+        enemy.x += enemy.speed;
+        if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) {
+            enemy.speed *= -1;
+        }
+
+        if (player.x < enemy.x + enemy.width &&
+            player.x + player.width > enemy.x &&
+            player.y < enemy.y + enemy.height &&
+            player.y + player.height > enemy.y) {
+            
+            showToast("Tente novamente!");
+            player.x = Math.max(40, player.x - 150);
+            player.y = 300;
+        }
+    }
+
+    cameraX = player.x - canvas.width * 0.35;
+    if (cameraX < 0) cameraX = 0;
+
+    cameraY = player.y - canvas.height * 0.65;
+    if (cameraY > 100) cameraY = 100;
+
+    if (player.x >= 3410 && hitCount >= 12 && gameState !== 'WIN') {
+        gameState = 'WIN';
+        setTimeout(() => {
+            openSarespSimulado();
+        }, 1200);
+    }
+
+    if (gameState === 'WIN') shakeTime += 0.2;
+}
+
+function draw() {
+    if (!ctx) return;
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.translate(-cameraX, -cameraY);
+
+    platforms.forEach(p => {
+        if (p.type === 'ground') {
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(p.x, p.y, p.width, 8);
+        } else if (p.type === 'stone') {
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#0f172a';
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'block' || p.type === 'empty') {
+            ctx.fillStyle = p.hit ? '#78350f' : '#facc15';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(p.x, p.y, p.width, p.height);
+
+            if (!p.hit) {
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 20px sans-serif';
+                ctx.fillText('?', p.x + 11, p.y + 24);
+            }
+        } else if (p.type === 'pole') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+        } else if (p.type === 'flag') {
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p.x + p.width, p.y + p.height / 2);
+            ctx.lineTo(p.x, p.y + p.height);
+            ctx.fill();
+        }
+    });
+
+    if (enemy) {
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(enemy.x + 4, enemy.y + 4, 4, 4);
+        ctx.fillRect(enemy.x + 14, enemy.y + 4, 4, 4);
+    }
+
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(player.x + 2, player.y + 16, player.width - 4, 12);
+    ctx.fillStyle = '#fca5a5';
+    ctx.fillRect(player.x + 4, player.y + 6, 16, 10);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(player.x + 6, player.y + 12, 12, 3);
+
+    ctx.restore();
+
+    if (gameState === 'WIN') {
+        let shakeX = Math.sin(shakeTime * 10) * 8;
+        let shakeY = Math.cos(shakeTime * 10) * 8;
+
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2 + shakeX, canvas.height * 0.35 + shakeY);
+        ctx.font = '900 48px Arial, sans-serif';
+        ctx.fillStyle = '#facc15';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 5;
+        ctx.strokeText('Farmei!', 0, 0);
+        ctx.fillText('Farmei!', 0, 0);
+        ctx.restore();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+        ctx.strokeStyle = '#22c55e';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, canvas.height * 0.55, canvas.width - 40, 60);
+
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillStyle = '#22c55e';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Farmou, ${studentName}! Abrindo o Simulado...`, canvas.width / 2, canvas.height * 0.55 + 35);
+    }
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function openLessonModal(idx) {
+    gameState = 'PAUSED';
+    currentLessonIdx = idx;
+    currentStep = 0;
+
+    const item = database[idx];
+    const qRandIdx = Math.floor(Math.random() * item.questions.length);
+    currentQuestionObj = item.questions[qRandIdx];
+
+    renderModalContent();
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+function renderModalContent() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = '';
+
+    if (currentStep === 0) {
+        box.innerHTML = `
+            <div class="modal-header">Lição ${currentLessonIdx + 1} de 12</div>
+            <div class="modal-body">${database[currentLessonIdx].lesson}</div>
+            <div class="prof-note">💬 Não entendeu? Pergunte ao professor.</div>
+            <button class="btn-next" onclick="goToStep2()">Avançar ➔</button>
+        `;
+    } else {
+        let opts = currentQuestionObj.options.map((opt, i) => ({
+            text: opt,
+            isCorrect: i === currentQuestionObj.correct
+        }));
+
+        for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+
+        let optsHTML = opts.map(o => `
+            <button class="btn-opt" onclick="answerQuestion(${o.isCorrect})">${o.text}</button>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="modal-header">Verificação de Leitura 📝</div>
+            <div style="font-size: 14px; font-weight: bold; color: #fff;">${currentQuestionObj.q}</div>
+            <div class="options-list">${optsHTML}</div>
+        `;
+    }
+}
+
+function goToStep2() {
+    currentStep = 1;
+    renderModalContent();
+}
+
+function answerQuestion(isCorrect) {
+    if (isCorrect) {
+        document.getElementById('modal-overlay').style.display = 'none';
+        if (!unlockedTips[currentLessonIdx]) {
+            unlockedTips[currentLessonIdx] = true;
+            hitCount++;
+            document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+        }
+        gameState = 'PLAYING';
+    } else {
+        showErrorScreen();
+    }
+}
+
+function showErrorScreen() {
+    const box = document.getElementById('modal-content');
+    box.innerHTML = `
+        <div class="modal-header" style="color: #ef4444;">Atenção! ⚠️</div>
+        <div class="modal-body" style="border-left-color: #ef4444; font-weight: bold; text-align: center;">
+            Você errou! Volte 2 perguntas e leia as Lições com atenção!
+        </div>
+        <button class="btn-error-reset" onclick="confirmPenalizeTwoQuestions()">CONTINUAR ➔</button>
+    `;
+}
+
+function confirmPenalizeTwoQuestions() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    penalizeTwoQuestions();
+}
+
+function penalizeTwoQuestions() {
+    let currentBlock = platforms.find(p => p.type === 'block' && p.id === currentLessonIdx);
+    if (currentBlock) currentBlock.hit = false;
+
+    let targetIdx = Math.max(0, currentLessonIdx - 2);
+
+    for (let i = targetIdx; i <= currentLessonIdx; i++) {
+        if (unlockedTips[i]) {
+            unlockedTips[i] = false;
+            hitCount = Math.max(0, hitCount - 1);
+        }
+        let blockToReset = platforms.find(p => p.type === 'block' && p.id === i);
+        if (blockToReset) blockToReset.hit = false;
+    }
+
+    document.getElementById('hud-score').innerText = `Dicas: ${hitCount} / 12`;
+
+    let targetBlock = platforms.find(p => p.type === 'block' && p.id === targetIdx);
+    if (targetBlock) {
+        player.x = Math.max(40, targetBlock.x - 80);
+        player.y = 350;
+    } else {
+        player.x = 40;
+        player.y = 350;
+    }
+
+    player.vx = 0;
+    player.vy = 0;
+    gameState = 'PLAYING';
+}
+
+// LÓGICA DO SIMULADO PROVÃO PAULISTA
+function openSarespSimulado() {
+    document.getElementById('game-layout').style.display = 'none';
+    document.getElementById('saresp-overlay').style.display = 'flex';
+
+    const container = document.getElementById('saresp-questions');
+    container.innerHTML = '';
+
+    sarespQuestions.forEach((qObj, qIdx) => {
+        let optsHTML = qObj.options.map((optText, oIdx) => `
+            <div class="saresp-opt" id="opt-${qIdx}-${oIdx}" onclick="selectSarespOpt(${qIdx}, ${oIdx})">
+                ${optText}
+            </div>
+        `).join('');
+
+        container.innerHTML += `
+            <div class="saresp-q-box">
+                <div class="saresp-q-text">${qObj.q}</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">${optsHTML}</div>
+            </div>
+        `;
+    });
+}
+
+function selectSarespOpt(qIdx, oIdx) {
+    userAnswers[qIdx] = oIdx;
+    sarespQuestions[qIdx].options.forEach((_, idx) => {
+        const el = document.getElementById(`opt-${qIdx}-${idx}`);
+        if (el) el.classList.remove('selected');
+    });
+    const selectedEl = document.getElementById(`opt-${qIdx}-${oIdx}`);
+    if (selectedEl) selectedEl.classList.add('selected');
+}
+
+function submitSaresp() {
+    if (userAnswers.includes(-1)) {
+        alert("Por favor, responda a todas as 4 questões antes de finalizar!");
+        return;
+    }
+
+    const container = document.getElementById('saresp-content');
+    let gabaritoHTML = '';
+
+    sarespQuestions.forEach((qObj, qIdx) => {
+        const selectedIdx = userAnswers[qIdx];
+        const correctIdx = qObj.correct;
+        const isCorrect = selectedIdx === correctIdx;
+
+        if (isCorrect) {
+            gabaritoHTML += `
+                <div class="gabarito-item correct">
+                    <strong>Questão ${qIdx + 1}: ✔️ CORRETA!</strong><br>
+                    Sua resposta: ${qObj.options[selectedIdx]}
+                </div>
+            `;
+        } else {
+            gabaritoHTML += `
+                <div class="gabarito-item wrong">
+                    <strong>Questão ${qIdx + 1}: ❌ INCORRETA!</strong><br><br>
+                    <strong>Enunciado:</strong> ${qObj.q}<br><br>
+                    <span style="color: #ef4444;"><strong>Sua resposta:</strong> ${qObj.options[selectedIdx]}</span><br>
+                    <span style="color: #22c55e;"><strong>Resposta Correta:</strong> ${qObj.options[correctIdx]}</span>
+                </div>
+            `;
+        }
+    });
+
+    container.innerHTML = `
+        <div class="saresp-banner">Gabarito do Estudante: ${studentName} 📝</div>
+        <div class="gabarito-box">${gabaritoHTML}</div>
+        <div class="final-msg">Procure o professor para receber o ponto da atividade!</div>
+    `;
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => {
+        t.style.display = 'none';
+    }, 1800);
+}
+</script>
+</body>
+</html>
