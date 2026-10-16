@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jogos-filosoficos-v3';
+const CACHE_NAME = 'jogos-filosoficos-v4';
 
 // Lista de todos os arquivos do PWA para funcionamento sem internet
 const ASSETS = [
@@ -10,6 +10,7 @@ const ASSETS = [
   './jogos/filo-race.html',
   './jogos/filo-race-alienacao.html',
   './jogos/tarefa-sp-3.html',
+  './jogos/tarefa-sp-quatro.html',
   './jogos/revisao-provao-3.html'
 ];
 
