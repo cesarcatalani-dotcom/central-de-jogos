@@ -1,31 +1,35 @@
-const CACHE_NAME = 'jogos-filosoficos-v2';
+const CACHE_NAME = 'jogos-filosoficos-v5';
 
-// Lista de arquivos para cache offline (incluindo o novo tarefa-sp-dois.html)
+// Lista com todos os 6 jogos para salvar em cache e funcionar offline
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './filo-race-alienacao.html',
+  './mario-empatia.html',
+  './revisao-provao-3.html',
   './tarefa-sp-dois.html',
-  './jornada-guardiao.html'
+  './tarefa-sp-3.html',
+  './tarefa-sp-quatro.html'
 ];
 
-// Instalação do Service Worker e armazenamento dos recursos no Cache
+// Instalação do Service Worker e salvamento dos arquivos no cache
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching todos os arquivos do jogo...');
+      console.log('[Service Worker] Armazenando arquivos no cache...');
       return cache.addAll(ASSETS_TO_CACHE);
     }).then(() => self.skipWaiting())
   );
 });
 
-// Ativação e limpeza de caches antigos se a versão mudar
+// Ativação e limpeza de caches antigos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Apagando cache antigo:', cache);
+            console.log('[Service Worker] Deletando cache antigo:', cache);
             return caches.delete(cache);
           }
         })
@@ -34,7 +38,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interpelação das requisições (Estratégia: Cache First, fallback para a rede)
+// Interceptação das requisições de rede (Cache First)
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -42,7 +46,6 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((networkResponse) => {
-        // Se a requisição for válida, adiciona uma cópia ao cache
         if (event.request.method === 'GET' && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -52,7 +55,6 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       });
     }).catch(() => {
-      // Se estiver totalmente offline e não encontrar o arquivo
       if (event.request.mode === 'navigate') {
         return caches.match('./index.html');
       }
