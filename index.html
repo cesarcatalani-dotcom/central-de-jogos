@@ -29,45 +29,26 @@
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
-      padding: 20px;
-    }
-
-    /* Mensagem para virar a tela quando o celular estiver em pé */
-    @media screen and (orientation: portrait) {
-      body::before {
-        content: "🔄 Por favor, vire o celular de lado para jogar melhor!";
-        background-color: #ffd700;
-        color: #000000;
-        text-align: center;
-        padding: 12px;
-        font-weight: bold;
-        font-size: 0.95rem;
-        width: 100%;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 9999;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      }
+      padding: 16px;
     }
 
     header {
       text-align: center;
-      margin-top: 30px;
-      margin-bottom: 25px;
+      margin-top: 15px;
+      margin-bottom: 20px;
     }
 
     h1 {
       color: #ffd700;
-      font-size: 2rem;
+      font-size: 1.8rem;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     p {
       color: #aaa;
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .container-jogos {
@@ -75,7 +56,7 @@
       max-width: 480px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
       padding-bottom: 30px;
     }
 
@@ -83,7 +64,7 @@
       background: #2a2a2a;
       border: 2px solid #ffd700;
       border-radius: 16px;
-      padding: 20px;
+      padding: 18px;
       text-decoration: none;
       color: #ffffff;
       display: flex;
@@ -99,7 +80,7 @@
     }
 
     .titulo-jogo {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       font-weight: bold;
       color: #ffd700;
       display: flex;
@@ -121,7 +102,7 @@
       font-size: 0.8rem;
       padding: 6px 14px;
       border-radius: 20px;
-      margin-top: 5px;
+      margin-top: 4px;
       text-transform: uppercase;
     }
   </style>
@@ -179,7 +160,6 @@
 
   </main>
 
-  <!-- Script para registrar o Service Worker PWA -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
