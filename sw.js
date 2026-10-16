@@ -1,30 +1,38 @@
-const CACHE_NAME = 'tarefa-sp-4-v3';
+const CACHE_NAME = 'hub-jogos-educativos-v1';
 
+// Lista exata de arquivos para armazenar em cache
 const ASSETS_TO_CACHE = [
   'index.html',
+  'filo-race-alienacao.html',
+  'mario-empatia.html',
+  'revisao-provao-3.html',
+  'tarefa-sp-3.html',
+  'tarefa-sp-dois.html',
   'tarefa-sp-quatro.html'
 ];
 
+// Instalação do Service Worker com cache tolerante a falhas
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Armazenando o jogo Tarefa SP 4 no cache...');
+      console.log('[Service Worker] Armazenando jogos no cache...');
       return Promise.allSettled(
         ASSETS_TO_CACHE.map((url) =>
-          cache.add(url).catch((err) => console.warn(`Aviso: Falha ao armazenar ${url}:`, err))
+          cache.add(url).catch((err) => console.warn(`Aviso: Falha ao colocar ${url} no cache:`, err))
         )
       );
     }).then(() => self.skipWaiting())
   );
 });
 
+// Ativação e remoção de versões antigas do cache
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Deletando cache antigo:', cache);
+            console.log('[Service Worker] Removendo cache antigo:', cache);
             return caches.delete(cache);
           }
         })
@@ -33,6 +41,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Interceptação de requisições: tenta a rede primeiro; cai para o cache se offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
