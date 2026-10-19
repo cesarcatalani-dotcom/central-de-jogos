@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Correndo para o Saber: A Race da Razão com Kant!</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #121212;
+      color: #ffffff;
+      overflow: hidden;
+    }
+
+    #app-container {
+      width: 100%;
+      max-width: 520px;
+      height: 100%;
+      margin: 0 auto;
+      position: relative;
+      background: #1a1a1a;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      padding: 24px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      z-index: 10;
+      background-color: #1a1a1a;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    h1, h2 {
+      color: #ffd700;
+      text-align: center;
+      margin-bottom: 18px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+
+    .card {
+      background: #2a2a2a;
+      border: 2px solid #444;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+      line-height: 1.6;
+      font-size: 1.1rem;
+    }
+
+    .card ul {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+
+    .card li {
+      margin-bottom: 10px;
+    }
+
+    .teacher-help {
+      background-color: #3a2e00;
+      border: 1px solid #ffd700;
+      color: #fff3a0;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 12px 0;
+    }
+
+    .question-hint-box {
+      background-color: #0d2b45;
+      border: 2px dashed #29b6f6;
+      color: #e0f7fa;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      background: linear-gradient(180deg, #ffd700 0%, #cca100 100%);
+      color: #000;
+      border: none;
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin-top: auto;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    /* TELA DO JOGO */
+    #screen-game {
+      padding: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #game-canvas {
+      width: 100%;
+      height: calc(100% - 110px);
+      background-color: #222;
+      display: block;
+    }
+
+    #game-controls {
+      height: 110px;
+      background: #111;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 2px solid #333;
+      padding: 0 20px;
+    }
+
+    .ctrl-btn {
+      width: 90px;
+      height: 70px;
+      background: #333;
+      border: 2px solid #ffd700;
+      color: #ffd700;
+      font-size: 2.2rem;
+      border-radius: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .ctrl-btn:active {
+      background: #ffd700;
+      color: #000;
+    }
+
+    #game-hud {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .hud-box {
+      background: rgba(0,0,0,0.85);
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid #ffd700;
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: #ffd700;
+    }
+
+    .speed-badge {
+      background: rgba(231, 76, 60, 0.9);
+      color: #fff;
+      border-color: #ff6b6b;
+    }
+
+    /* MODAL DE CHECKPOINT / PERGUNTA */
+    .modal-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.92);
+      z-index: 100;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: #222;
+      border: 2px solid #ffd700;
+      border-radius: 16px;
+      padding: 22px;
+      width: 100%;
+      max-height: 92%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-title {
+      color: #2ecc71;
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .modal-text {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      background: #111;
+      padding: 16px;
+      border-radius: 10px;
+      border-left: 5px solid #2ecc71;
+    }
+
+    .question-title {
+      font-size: 1.15rem;
+      color: #ffd700;
+      margin-bottom: 14px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .option-btn {
+      width: 100%;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      text-align: left;
+      font-size: 1.05rem;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .option-btn:active {
+      background: #555;
+    }
+
+    /* SIMULADO */
+    .quiz-question {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 22px;
+      border: 1px solid #444;
+    }
+
+    .quiz-q-title {
+      font-size: 1.2rem;
+      color: #ffd700;
+      margin-bottom: 12px;
+      font-weight: bold;
+      line-height: 1.4;
+    }
+
+    .quiz-option {
+      display: flex;
+      align-items: center;
+      background: #1e1e1e;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #333;
+      cursor: pointer;
+      font-size: 1.05rem;
+      line-height: 1.4;
+    }
+
+    .quiz-option input {
+      margin-right: 12px;
+      transform: scale(1.3);
+    }
+
+    /* DRAG AND DROP - LACUNAS E ORDENAÇÃO */
+    .word-bank {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: #121212;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px dashed #ffd700;
+      margin-bottom: 15px;
+      min-height: 50px;
+      align-items: center;
+    }
+
+    .draggable-word {
+      background: #29b6f6;
+      color: #000;
+      font-weight: bold;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: grab;
+      font-size: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+
+    .drop-zone {
+      display: inline-block;
+      min-width: 120px;
+      height: 38px;
+      border-bottom: 2px solid #ffd700;
+      background: #1a1a1a;
+      margin: 0 4px;
+      vertical-align: middle;
+      text-align: center;
+      line-height: 36px;
+      color: #00e676;
+      font-weight: bold;
+      border-radius: 4px;
+      padding: 0 8px;
+    }
+
+    .drag-order-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .drag-order-item {
+      background-color: #1e1e1e;
+      padding: 14px;
+      border-radius: 8px;
+      border: 2px solid #29b6f6;
+      font-size: 1rem;
+      line-height: 1.4;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .drag-handle {
+      color: #ffd700;
+      font-size: 1.4rem;
+      font-weight: bold;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      background-color: #121212;
+      color: #FFFFFF;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 1.05rem;
+      margin-top: 12px;
+      resize: vertical;
+    }
+
+    /* GABARITO ESTILIZADO */
+    .result-item {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+      border-left: 6px solid #ff4d4d;
+      font-size: 1.05rem;
+    }
+
+    .result-item.correct {
+      border-left-color: #2ecc71;
+    }
+
+    .result-status {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .status-correct-text {
+      color: #2ecc71;
+      font-weight: bold;
+      font-size: 1.3rem;
+    }
+
+    .status-wrong-text {
+      color: #ff4d4d;
+      font-weight: bold;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+
+    .stem-normal {
+      color: #ffffff;
+      font-weight: normal;
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    .ans-detail {
+      font-size: 1rem;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .ans-user { color: #ff4d4d; }
+    .ans-correct { color: #2ecc71; }
+
+    .final-teacher-msg {
+      background: #ffd700;
+      color: #000;
+      padding: 18px;
+      border-radius: 12px;
+      font-weight: bold;
+      text-align: center;
+      font-size: 1.15rem;
+      margin: 18px 0;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+
+  <!-- TELA 1: APRENDIZADO -->
+  <div id="screen-learning" class="screen active">
+    <h1>Correndo para o Saber</h1>
+    <h2>A Race da Razão com Kant! (7º Ano)</h2>
+    
+    <div class="card">
+      <p><strong>Nesta aula, você vai aprender sobre Ética e Convivência Digital em 18 Dicas:</strong></p>
+      <ul>
+        <li><strong>Dignidade Humana:</strong> entender que todo mundo tem valor único e ninguém pode ser tratado como piada.</li>
+        <li><strong>Os 3 Papéis no Cyberbullying:</strong> Vítima (quem sofre), Agressor (quem ataca) e Observador (quem vê).</li>
+        <li><strong>Usar a Razão e a Autonomia:</strong> pensar antes de agir por impulso e fazer o certo por consciência.</li>
+        <li><strong>Ações Práticas e Coletivas:</strong> recusar a vingança, guardar evidências, não ser omisso nem cúmplice, e unificar a escola pelo respeito mútuo.</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-rules')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 2: REGRAS -->
+  <div id="screen-rules" class="screen">
+    <h2>Regras da Corrida</h2>
+
+    <div class="card">
+      <ul>
+        <li><strong>Controles:</strong> Use os botões ◀ ▶ ou as setas do teclado para mover seu templo.</li>
+        <li><strong>Dificuldade Progressiva:</strong> A cada dica coletada, a corrida fica mais rápida!⚡</li>
+        <li><strong>Livros Verdes (Dicas):</strong> Pegue as 18 dicas de leitura sobre Kant e o combate ao cyberbullying.</li>
+        <li><strong>Círculos Vermelhos (Distrações):</strong> Desvie deles para não rodopiar na pista!</li>
+        <li><strong>Simulado Final:</strong> Responda às 6 questões modelo SARESP no final e mostre ao professor.</li>
+      </ul>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="startGame()">INICIAR FILO RACE 🏁</button>
+  </div>
+
+  <!-- TELA 3: JOGO -->
+  <div id="screen-game" class="screen">
+    <div id="game-hud">
+      <div class="hud-box">Dicas: <span id="hud-clues">0</span>/18</div>
+      <div class="hud-box speed-badge">Velocidade: <span id="hud-speed">1.0x</span></div>
+    </div>
+
+    <canvas id="game-canvas"></canvas>
+
+    <div id="game-controls">
+      <div class="ctrl-btn" id="btn-left">◀</div>
+      <div class="ctrl-btn" id="btn-right">▶</div>
+    </div>
+
+    <!-- MODAL DE CHECKPOINT -->
+    <div id="game-modal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-title" id="modal-clue-title">DICA ENCONTRADA!</div>
+        
+        <!-- Etapa 1: Leitura da Dica -->
+        <div id="modal-step-reading">
+          <div class="modal-text" id="modal-clue-text">Texto da dica...</div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+          <button class="btn" style="width:100%; margin-top:10px;" onclick="goToQuestionStep()">PROSSEGUIR ➔</button>
+        </div>
+
+        <!-- Etapa 2: Pergunta de Verificação -->
+        <div id="modal-step-question" style="display:none;">
+          <div class="question-title" id="modal-q-title">Verificação de Leitura:</div>
+          <div id="modal-options"></div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+        </div>
+
+        <!-- Etapa 3: Feedback (Acerto ou Erro) -->
+        <div id="modal-step-feedback" style="display:none;">
+          <div class="modal-text" id="modal-feedback-text">Feedback...</div>
+          <div class="teacher-help">
+            Não entendeu? Procure o professor.
+          </div>
+          <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModal()">PROSSEGUIR ➔</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA INTERMEDIÁRIA (FIM DO JOGO) -->
+  <div id="screen-game-end" class="screen">
+    <h2>Vitória!</h2>
+    <div class="card" style="text-align: center;">
+      <p style="font-size: 1.4rem; color: #2ecc71; font-weight: bold; margin-bottom: 12px;">
+        Parabéns! Você venceu a Filo Race! 🏆
+      </p>
+      <p>Você coletou todas as 18 dicas e aprendeu os conceitos da Ética Kantiana e da Convivência Digital!</p>
+      <p style="margin-top: 15px; font-weight: bold; color: #ffd700;">
+        Faça o simulado a seguir.
+      </p>
+    </div>
+
+    <div class="teacher-help">
+      Não entendeu? Procure o professor.
+    </div>
+
+    <button class="btn" onclick="showScreen('screen-simulado')">PROSSEGUIR ➔</button>
+  </div>
+
+  <!-- TELA 4: SIMULADO -->
+  <div id="screen-simulado" class="screen">
+    <h2>Simulado Final (Modelo SARESP)</h2>
+    <p style="text-align: center; font-size: 1rem; color: #aaa; margin-bottom: 18px;">Responda às 6 questões com base no que aprendeu nas dicas:</p>
+
+    <div id="simulado-container">
+      <!-- As 6 questões serão inseridas via JavaScript -->
+    </div>
+
+    <button class="btn" onclick="finishSimulado()" style="margin-top: 10px;">FINALIZAR E VERIFICAR O GABARITO ➔</button>
+  </div>
+
+  <!-- TELA 5: GABARITO -->
+  <div id="screen-gabarito" class="screen">
+    <h2>Gabarito Final</h2>
+
+    <div id="gabarito-container">
+      <!-- O resultado será inserido via JavaScript -->
+    </div>
+
+    <div class="final-teacher-msg">
+      Mostre essa tela do gabarito para o professor. Se não mostrar, não ganhará o ponto da aula!
+    </div>
+
+    <button class="btn" onclick="resetAll()">REINICIAR JOGO ↺</button>
+  </div>
+
+</div>
+
+<script>
+  // --- DADOS PEDAGÓGICOS: KANT E CYBERBULLYING (18 DICAS + 5 PERGUNTAS CADA) ---
+  const CLUES_DATA = [
+    // TEMA 1: PERFIS DO CYBERBULLYING (DICAS 1 A 3)
+    {
+      id: 1,
+      text: "Dica 1 - O que é Dignidade? Dignidade é o valor único e especial que toda pessoa tem pelo simples fato de ser humana. Significa que ninguém pode ser tratado como um objeto, piada ou 'brinquedo' dos outros.",
+      questions: [
+        { q: "Segundo a Dica 1, o que é a dignidade?", options: [{ text: "O valor único e especial que toda pessoa tem pelo simples fato de ser humana", correct: true }, { text: "O valor de ter muitos seguidores nas redes sociais", correct: false }, { text: "Um prêmio dado aos melhores alunos no final do ano", correct: false }] },
+        { q: "Tratar alguém com dignidade significa que essa pessoa:", options: [{ text: "Deve ser tratada com respeito e nunca como um objeto ou chacota", correct: true }, { text: "Pode ser usada como piada no grupo da sala", correct: false }, { text: "Deve ser ignorada quando passar por um problema", correct: false }] },
+        { q: "Quando um grupo faz piadas maldosas sobre um colega na internet, o que está acontecendo?", options: [{ text: "Uma quebra da regra do respeito e da dignidade da pessoa", correct: true }, { text: "Uma brincadeira saudável que ajuda a fazer amigos", correct: false }, { text: "Um estudo de matemática", correct: false }] },
+        { q: "De acordo com a dica, quem tem direito a ter dignidade?", options: [{ text: "Todas as pessoas, pelo simples fato de serem humanas", correct: true }, { text: "Apenas os adultos e professores", correct: false }, { text: "Apenas quem tira notas altas na escola", correct: false }] },
+        { q: "Usar um colega como chacota na internet é uma atitude:", options: [{ text: "Errada, pois desrespeita a dignidade da pessoa", correct: true }, { text: "Normal e permitida se for em tom de brincadeira", correct: false }, { text: "Recomendada pelos filósofos", correct: false }] }
+      ]
+    },
+    {
+      id: 2,
+      text: "Dica 2 - Entenda os 3 Papéis do Cyberbullying: Vítima é quem sofre as agressões; Agressor é quem pratica a violência digital; Observador (espectador) é quem presenciou a agressão na rede.",
+      questions: [
+        { q: "Como se chama a pessoa que sofre as agressões e humilhações na internet?", options: [{ text: "Vítima", correct: true }, { text: "Agressor", correct: false }, { text: "Juiz", correct: false }] },
+        { q: "Como se chama a pessoa que pratica a violência digital, criando ofensas ou espalhando maldades?", options: [{ text: "Agressor", correct: true }, { text: "Observador", correct: false }, { text: "Moderador", correct: false }] },
+        { q: "O que faz o observador (espectador) numa situação de cyberbullying?", options: [{ text: "Presencia a agressão na internet (vê a foto ou lê o comentário)", correct: true }, { text: "Cria o aplicativo no celular", correct: false }, { text: "Dá notas para os alunos na prova", correct: false }] },
+        { q: "De acordo com a dica, quais são os três nomes oficiais dos papéis do cyberbullying?", options: [{ text: "Vítima, Agressor e Observador", correct: true }, { text: "Juiz, Moderador e Cúmplice", correct: false }, { text: "Policial, Advogado e Vítima", correct: false }] },
+        { q: "Palavras como 'juiz' ou 'moderador' são os papéis oficiais do cyberbullying?", options: [{ text: "Não, não são os nomes oficiais dos papéis do cyberbullying", correct: true }, { text: "Sim, são os nomes principais usados no problema", correct: false }, { text: "Sim, mas só no computador", correct: false }] }
+      ]
+    },
+    {
+      id: 3,
+      text: "Dica 3 - A Responsabilidade no Ambiente Virtual: O cyberbullying não acontece sozinho; ele envolve quem ataca, quem é atacado e quem assiste. Identificar esses três papéis é o primeiro passo para resolver.",
+      questions: [
+        { q: "O cyberbullying é um problema que acontece:", options: [{ text: "Envolvendo quem ataca, quem é atacado e quem assiste", correct: true }, { text: "Totalmente sozinho, sem a participação de pessoas", correct: false }, { text: "Somente durante as férias escolares", correct: false }] },
+        { q: "Qual é o primeiro passo para entender como resolver o problema do cyberbullying?", options: [{ text: "Identificar quem cumpre cada papel (vítima, agressor e observador)", correct: true }, { text: "Apagar a internet de toda a cidade", correct: false }, { text: "Mudar de escola sem avisar", correct: false }] },
+        { q: "De acordo com a Dica 3, o cyberbullying envolve apenas a vítima e o agressor?", options: [{ text: "Não, também envolve quem assiste (o observador)", correct: true }, { text: "Sim, quem assiste não tem relação com o problema", correct: false }, { text: "Não, envolve apenas juízes e policiais", correct: false }] },
+        { q: "Saber quem é o agressor, a vítima e o observador ajuda a:", options: [{ text: "Entender como resolver o problema na vida real e nas questões", correct: true }, { text: "Fazer mais piadas maldosas no grupo da sala", correct: false }, { text: "Ganhar um prêmio em dinheiro", correct: false }] },
+        { q: "Quem assiste a uma agressão na internet faz parte da situação?", options: [{ text: "Sim, faz parte da situação como observador", correct: true }, { text: "Não, porque não foi quem escreveu a mensagem", correct: false }, { text: "Sim, mas apenas se for o professor", correct: false }] }
+      ]
+    },
+
+    // TEMA 2: CONSCIENTIZAÇÃO E EDUCAÇÃO (DICAS 4 A 6)
+    {
+      id: 4,
+      text: "Dica 4 - Usar a Razão e Buscar o Esclarecimento: Usar a razão é parar para pensar criticamente antes de agir por impulso. Esclarecimento é aprender a verdade sobre um problema para não agir por ignorância.",
+      questions: [
+        { q: "O que significa usar a razão?", options: [{ text: "Parar para pensar criticamente antes de agir por impulso", correct: true }, { text: "Agir bem rápido sem pensar no que vai acontecer", correct: false }, { text: "Gritar com as pessoas com raiva", correct: false }] },
+        { q: "O que é o esclarecimento?", options: [{ text: "Aprender e entender a verdade sobre um problema para não agir por ignorância", correct: true }, { text: "Acender as luzes da sala de aula", correct: false }, { text: "Apagar as fotos antigas do celular", correct: false }] },
+        { q: "As melhores ações de conscientização ajudam os estudantes a:", options: [{ text: "Pensar sobre suas atitudes na internet de forma consciente", correct: true }, { text: "Obedecer ordens sem entender o motivo", correct: false }, { text: "Usar o celular escondido na aula", correct: false }] },
+        { q: "Agir por impulso na internet sem medir as consequências é o oposto de:", options: [{ text: "Usar a razão", correct: true }, { text: "Usar o teclado", correct: false }, { text: "Jogar videogame", correct: false }] },
+        { q: "Por que o esclarecimento é importante no combate ao cyberbullying?", options: [{ text: "Porque ensina as pessoas a não agirem por ignorância ou crueldade", correct: true }, { text: "Porque obriga a comprar celulares novos", correct: false }, { text: "Porque cancela as provas da escola", correct: false }] }
+      ]
+    },
+    {
+      id: 5,
+      text: "Dica 5 - O que é Autonomia Moral? Autonomia é a capacidade de fazer a coisa certa porque você entendeu no seu coração e na sua mente que aquilo é o correto, e não apenas por medo de punição.",
+      questions: [
+        { q: "O que significa ter autonomia moral?", options: [{ text: "Fazer a coisa certa porque entendeu que é o correto, e não por medo de punição", correct: true }, { text: "Fazer a coisa certa só quando alguém está olhando", correct: false }, { text: "Fazer o que é errado escondido", correct: false }] },
+        { q: "Uma pessoa que age com autonomia moral respeita o outro porque:", options: [{ text: "Entendeu na sua mente e no seu coração que aquilo é o certo", correct: true }, { text: "Tem medo de levar uma bronca do diretor", correct: false }, { text: "Quer ganhar prêmios da turma", correct: false }] },
+        { q: "Qual destas opções incentiva a autonomia na escola?", options: [{ text: "Incentivar os alunos a produzirem vídeos e cartazes refletindo sobre o respeito", correct: true }, { text: "Ameaçar e punir sem explicar o motivo", correct: false }, { text: "Proibir os alunos de conversarem sobre o assunto", correct: false }] },
+        { q: "A autonomia ensina que devemos praticar o respeito:", options: [{ text: "Porque entendemos o valor do respeito por conta própria", correct: true }, { text: "Apenas por medo de sermos suspensos", correct: false }, { text: "Somente dentro do ambiente escolar", correct: false }] },
+        { q: "Criar trabalhos sobre o respeito virtual ajuda os alunos a desenvolverem:", options: [{ text: "Reflexão autônoma e cidadania", correct: true }, { text: "Medo exagerado das regras", correct: false }, { text: "Vontade de brigar na internet", correct: false }] }
+      ]
+    },
+    {
+      id: 6,
+      text: "Dica 6 - Proibir vs. Educar: Ações que apenas proíbem o uso da tecnologia ou fecham os olhos para o problema não ensinam a ter ética. A verdadeira conscientização acontece pelo diálogo e pela criação de projetos.",
+      questions: [
+        { q: "Proibir totalmente a tecnologia consegue ensinar a ter ética na internet?", options: [{ text: "Não, apenas proibir não ensina a agir com responsabilidade", correct: true }, { text: "Sim, proibir resolve todo o problema do mundo", correct: false }, { text: "Sim, porque ninguém mais vai usar celulares", correct: false }] },
+        { q: "O que acontece quando a escola apenas finge que o cyberbullying não existe?", options: [{ text: "Os alunos não aprendem a usar a internet com responsabilidade", correct: true }, { text: "O problema desaparece sozinho com o tempo", correct: false }, { text: "As redes sociais ficam seguras automaticamente", correct: false }] },
+        { q: "Qual é o melhor caminho para a verdadeira conscientização na escola?", options: [{ text: "O diálogo, a conversa e a criação de materiais educativos", correct: true }, { text: "A proibição total de computadores na cidade", correct: false }, { text: "A aplicação de castigos sem explicação", correct: false }] },
+        { q: "Por que a proibição pura e simples não é a melhor solução?", options: [{ text: "Porque as pessoas não aprendem a refletir e a fazer boas escolhas", correct: true }, { text: "Porque os professores não gostam de regras", correct: false }, { text: "Porque é fácil desligar a internet de todos", correct: false }] },
+        { q: "O uso ético da internet é aprendido por meio de:", options: [{ text: "Educação, debate e projetos na escola", correct: true }, { text: "Punições exageradas sem conversa", correct: false }, { text: "Jogar sem supervisão", correct: false }] }
+      ]
+    },
+
+    // TEMA 3: ATITUDES DA VÍTIMA (DICAS 7 A 9)
+    {
+      id: 7,
+      text: "Dica 7 - Vingança não é Razão: Vingança é tentar 'pagar o mal com o mal'. Responder a uma maldade com outra atitude errada faz a pessoa perder a razão e alimenta o ciclo da violência.",
+      questions: [
+        { q: "De acordo com a dica, o que é vingança?", options: [{ text: "Tentar 'pagar o mal com o mal', devolvendo uma agressão", correct: true }, { text: "Ajudar um amigo que precisa de apoio", correct: false }, { text: "Pedir desculpas por um erro cometido", correct: false }] },
+        { q: "Se a vítima de cyberbullying responder com ofensas ainda piores, o que acontece?", options: [{ text: "Alimenta o ciclo de violência e perde a razão", correct: true }, { text: "O problema acaba imediatamente para sempre", correct: false }, { text: "Os agressores pedem desculpas na mesma hora", correct: false }] },
+        { q: "Agir de forma racional diante de uma agressão significa:", options: [{ text: "Não ceder ao impulso da vingança e do revide", correct: true }, { text: "Ofender o agressor com palavras piores", correct: false }, { text: "Brigar no recreio da escola", correct: false }] },
+        { q: "Por que devolver uma agressão na mesma moeda é errado?", options: [{ text: "Porque faz a pessoa perder a razão e perpetua a violência", correct: true }, { text: "Porque gasta a bateria do celular rápido", correct: false }, { text: "Porque o professor dá nota baixa para quem respondeu", correct: false }] },
+        { q: "A atitude correta e consciente de uma vítima deve ser motivada por:", options: [{ text: "Razão e busca por soluções corretas", correct: true }, { text: "Desejo de vingança e raiva acumulada", correct: false }, { text: "Vontade de bater no agressor", correct: false }] }
+      ]
+    },
+    {
+      id: 8,
+      text: "Dica 8 - O que são Evidências? Evidências são provas reais do que aconteceu, como capturas de tela (prints), links e mensagens salvas. A vítima deve guardá-las para apresentar aos adultos responsáveis.",
+      questions: [
+        { q: "O que são evidências numa situação de cyberbullying?", options: [{ text: "Provas reais do que aconteceu, como prints e mensagens salvas", correct: true }, { text: "Brinquedos trazidos para a sala de aula", correct: false }, { text: "Apenas as opiniões que os amigos dão", correct: false }] },
+        { q: "Para que servem os prints guardados pela vítima?", options: [{ text: "Comprovar o fato aos adultos responsáveis (pais, professores ou direção)", correct: true }, { text: "Espalhar em outros grupos da internet", correct: false }, { text: "Chantagear os colegas depois da aula", correct: false }] },
+        { q: "Salvar links e mensagens ofensivas é uma atitude de:", options: [{ text: "Inteligência e busca por justiça e proteção", correct: true }, { text: "Brincadeira de mau gosto", correct: false }, { text: "Vontade de virar o novo agressor", correct: false }] },
+        { q: "A quem a vítima deve apresentar as evidências salvas?", options: [{ text: "Adultos de confiança, como pais, professores ou gestão da escola", correct: true }, { text: "Desconhecidos nas redes sociais", correct: false }, { text: "Aos próprios agressores no recreio", correct: false }] },
+        { q: "Guardar as provas da agressão demonstra que a vítima está agindo com:", options: [{ text: "Maturidade, segurança e responsabilidade", correct: true }, { text: "Medo e falta de coragem", correct: false }, { text: "Vontade de enganar a escola", correct: false }] }
+      ]
+    },
+    {
+      id: 9,
+      text: "Dica 9 - Pedir Ajuda é uma Atitude Consciente: Sofrer em silêncio ou fingir que nada aconteceu não faz o cyberbullying sumir. A atitude correta envolve proteger a si mesma registrando o fato e buscando o apoio de pessoas de confiança.",
+      questions: [
+        { q: "Fingir que nada aconteceu faz o problema do cyberbullying sumir?", options: [{ text: "Não, passar pelo problema sozinho ou fingir não faz o abuso parar", correct: true }, { text: "Sim, se ignorar, a maldade desaparece na hora", correct: false }, { text: "Sim, basta desligar o celular por dez minutos", correct: false }] },
+        { q: "A atitude correta e madura da vítima inclui:", options: [{ text: "Proteger a si mesma registrando os fatos e pedindo ajuda a adultos", correct: true }, { text: "Sofrer em silêncio sem contar a ninguém", correct: false }, { text: "Abandonar os estudos para sempre", correct: false }] },
+        { q: "Conversar com um adulto de confiança sobre as agressões na rede demonstra:", options: [{ text: "Uma atitude consciente de proteção e busca por soluções", correct: true }, { text: "Fraqueza e falta de coragem", correct: false }, { text: "Desobediência às regras da escola", correct: false }] },
+        { q: "Isolar-se e esconder o sofrimento provoca:", options: [{ text: "Continuidade do problema e sofrimento emocional", correct: true }, { text: "Solução rápida do conflito", correct: false }, { text: "Aprovação imediata dos agressores", correct: false }] },
+        { q: "O papel das pessoas de confiança na vida da vítima é:", options: [{ text: "Acolher, proteger e tomar as providências adequadas", correct: true }, { text: "Rir das mensagens ofensivas recebidas", correct: false }, { text: "Punir a vítima por ter lido o aplicativo", correct: false }] }
+      ]
+    },
+
+    // TEMA 4: O PAPEL DO OBSERVADOR (DICAS 10 A 12)
+    {
+      id: 10,
+      text: "Dica 10 - O perigo de ser Omisso: Omissão é ver algo errado acontecendo com outra pessoa e não fazer nada para ajudar, agindo como se não fosse com você. Ficar em silêncio ajuda o agressor a continuar atacando.",
+      questions: [
+        { q: "O que significa a palavra omissão (ficar omisso)?", options: [{ text: "Ver algo errado acontecendo com alguém e não fazer nada para ajudar", correct: true }, { text: "Ajudar um colega no momento em que ele mais precisa", correct: false }, { text: "Denunciar imediatamente a mensagem para o professor", correct: false }] },
+        { q: "O que acontece quando o observador fica em silêncio diante de um ataque na rede?", options: [{ text: "O silêncio ajuda o agressor a continuar praticando a violência", correct: true }, { text: "O agressor se arrepende e apaga a mensagem", correct: false }, { text: "A vítima fica protegida automaticamente", correct: false }] },
+        { q: "Ver uma humilhação na internet e não fazer nada é:", options: [{ text: "Uma falha com o dever ético de respeitar e defender o próximo", correct: true }, { text: "A atitude mais inteligente e neutra que existe", correct: false }, { text: "Uma regra obrigatória da escola", correct: false }] },
+        { q: "Quem presenciar a violência e ficar calado está:", options: [{ text: "Permitindo que a humilhação do colega continue", correct: true }, { text: "Ajudando a escola a manter a paz", correct: false }, { text: "Cumprindo seus deveres morais", correct: false }] },
+        { q: "Para não ser omisso, qual deve ser a postura do observador?", options: [{ text: "Adotar atitudes positivas para apoiar a vítima e cessar o abuso", correct: true }, { text: "Fingir que não leu a mensagem e fechar o app", correct: false }, { text: "Rir com o restante da turma", correct: false }] }
+      ]
+    },
+    {
+      id: 11,
+      text: "Dica 11 - O que é ser Cúmplice? Cúmplice é quem colabora para que uma maldade continue, mesmo sem ter sido o criador original. Curtir, enviar figurinhas de risada ou retransmitir uma piada ruim transforma você em cúmplice.",
+      questions: [
+        { q: "O que é uma pessoa cúmplice no cyberbullying?", options: [{ text: "A pessoa que ajuda a maldade a continuar, mesmo sem ter criado o post", correct: true }, { text: "A pessoa que defende a vítima dos ataques", correct: false }, { text: "O professor responsável por dar conselhos", correct: false }] },
+        { q: "Qual destas atitudes transforma o observador em cúmplice do agressor?", options: [{ text: "Curtir, enviar figurinhas de risada ou retransmitir a ofensa", correct: true }, { text: "Avisar o professor ou a gestão da escola", correct: false }, { text: "Mandar uma mensagem no privado apoiando a vítima", correct: false }] },
+        { q: "Se você não escreveu a piada maldosa, mas a compartilhou no grupo, você é:", options: [{ text: "Cúmplice da agressão por ter espalhado o conteúdo", correct: true }, { text: "Uma vítima da situação sem nenhuma culpa", correct: false }, { text: "Um herói da paz virtual", correct: false }] },
+        { q: "Mandar figurinhas debochadas numa postagem que humilha um colega serve para:", options: [{ text: "Incentivar e colaborar para que o ataque continue (cumplicidade)", correct: true }, { text: "Proteger os sentimentos da vítima", correct: false }, { text: "Apagar o fogo do conflito", correct: false }] },
+        { q: "Para NÃO ser cúmplice do cyberbullying, você deve evitar:", options: [{ text: "Curtir, comentar com deboche ou repassar o conteúdo ofensivo", correct: true }, { text: "Denunciar a publicação aos responsáveis", correct: false }, { text: "Acolher o colega atingido", correct: false }] }
+      ]
+    },
+    {
+      id: 12,
+      text: "Dica 12 - Como o Observador deve Agir: Para interromper a violência, o observador deve recusar-se a repassar o conteúdo, oferecer apoio moral no privado para quem foi atacado e denunciar o abuso aos adultos responsáveis.",
+      questions: [
+        { q: "Para ajudar a quebrar o ciclo do cyberbullying, qual a primeira atitude do observador?", options: [{ text: "Não retransmitir nem espalhar o conteúdo ofensivo para mais ninguém", correct: true }, { text: "Enviar a mensagem para alunos de outras escolas", correct: false }, { text: "Fazer montagens ainda piores com a foto", correct: false }] },
+        { q: "Como o observador pode ajudar diretamente a pessoa que sofreu o ataque?", options: [{ text: "Oferecendo apoio moral e mostrando que se importa com ela no privado", correct: true }, { text: "Rindo das mensagens no grupo da sala", correct: false }, { text: "Dizendo que a culpa foi dela", correct: false }] },
+        { q: "Qual é a ação correta em relação aos canais da escola ou do aplicativo?", options: [{ text: "Reportar e denunciar a agressão aos responsáveis", correct: true }, { text: "Apagar a conta de todos os alunos", correct: false }, { text: "Fingir que a mensagem era uma piada legal", correct: false }] },
+        { q: "O observador ético combina três ações fundamentais:", options: [{ text: "Não repassar a ofensa, apoiar a vítima e denunciar o abuso", correct: true }, { text: "Rir no grupo, curtir o post e guardar segredo", correct: false }, { text: "Brigar fisicamente, xingar e sair da escola", correct: false }] },
+        { q: "Apostar no acolhimento ao colega atingido demonstra:", options: [{ text: "Empatia, respeito e responsabilidade no ambiente virtual", correct: true }, { text: "Vontade de virar o novo agressor", correct: false }, { text: "Medo de usar redes sociais", correct: false }] }
+      ]
+    },
+
+    // TEMA 5: AÇÕES COLETIVAS E COMUNIDADE (DICAS 13 A 15)
+    {
+      id: 13,
+      text: "Dica 13 - O Conceito de 'Reino dos Fins' (Comunidade Ética): O filósofo Kant pensou em uma comunidade ideal onde todas as pessoas se respeitam mutuamente e ninguém é tratado como um objeto descartável.",
+      questions: [
+        { q: "O que é o 'Reino dos Fins' pensado pelo filósofo Kant?", options: [{ text: "A ideia de uma comunidade ideal onde todas as pessoas se respeitam", correct: true }, { text: "Um jogo de videogame medieval famoso", correct: false }, { text: "Um livro antigo de histórias em quadrinhos", correct: false }] },
+        { q: "Num grupo que funciona como uma 'comunidade ética', as pessoas são tratadas como:", options: [{ text: "Seres com valor e dignidade, que merecem respeito", correct: true }, { text: "Objetos descartáveis que podem ser zombados", correct: false }, { text: "Inimigos que precisam lutar", correct: false }] },
+        { q: "Na escola, a construção dessa comunidade de respeito depende da união de quem?", options: [{ text: "De todos — alunos, famílias, professores e funcionários", correct: true }, { text: "Apenas dos professores de filosofia", correct: false }, { text: "Somente dos donos dos aplicativos", correct: false }] },
+        { q: "Tratar um colega como descartável é o oposto de viver em:", options: [{ text: "Uma comunidade ética fundada no respeito", correct: true }, { text: "Uma sala de aula com computadores", correct: false }, { text: "Um grupo grande de mensagens", correct: false }] },
+        { q: "Para construir um ambiente seguro contra o cyberbullying, a escola precisa:", options: [{ text: "Unir a comunidade em torno do respeito e do valor de cada pessoa", correct: true }, { text: "Separar os alunos em grupos isolados", correct: false }, { text: "Permitir piadas maldosas uma vez por semana", correct: false }] }
+      ]
+    },
+    {
+      id: 14,
+      text: "Dica 14 - O que é Respeito Mútuo? Mútuo significa recíproco, de todos para todos. Respeito mútuo é a garantia de que a mesma consideração que eu espero receber dos outros será oferecida por mim a eles.",
+      questions: [
+        { q: "O que significa a palavra mútuo?", options: [{ text: "Algo recíproco, que funciona de todos para todos", correct: true }, { text: "Algo feito em segredo sem ninguém saber", correct: false }, { text: "Uma regra que só vale para os mais novos", correct: false }] },
+        { q: "O que é o respeito mútuo?", options: [{ text: "A garantia de que o respeito que espero receber também será oferecido por mim", correct: true }, { text: "Exigir respeito dos outros sem respeitar ninguém", correct: false }, { text: "Tratar bem apenas os amigos mais ricos", correct: false }] },
+        { q: "Punições isoladas dadas a um único aluno resolvem o cyberbullying para sempre?", options: [{ text: "Não, se a comunidade não construir acordos coletivos de respeito mútuo", correct: true }, { text: "Sim, punir uma pessoa resolve tudo", correct: false }, { text: "Sim, basta expulsar o aluno", correct: false }] },
+        { q: "O respeito mútuo funciona de forma verdadeira quando:", options: [{ text: "A consideração e o cuidado existem de todos para com todos", correct: true }, { text: "Apenas uma pessoa é respeitada pela turma", correct: false }, { text: "As regras mudam a todo momento", correct: false }] },
+        { q: "Como a escola constrói um ambiente livre de agressões virtuais?", options: [{ text: "Criando acordos coletivos e praticando o respeito mútuo no dia a dia", correct: true }, { text: "Impedindo conversas durante o intervalo", correct: false }, { text: "Deixando cada um criar suas próprias regras sozinho", correct: false }] }
+      ]
+    },
+    {
+      id: 15,
+      text: "Dica 15 - Compromisso de Todos: Prevenir e combater a violência virtual não é responsabilidade de uma única pessoa nem das empresas de tecnologia. Trata-se de uma construção coletiva, em que todos assumem o dever do respeito.",
+      questions: [
+        { q: "De quem é a responsabilidade de prevenir e combater o cyberbullying?", options: [{ text: "Trata-se de um compromisso coletivo de toda a comunidade escolar", correct: true }, { text: "Apenas das empresas que criaram os aplicativos", correct: false }, { text: "Exclusivamente das vítimas", correct: false }] },
+        { q: "Dizer que a responsabilidade é 'apenas da empresa do aplicativo' está:", options: [{ text: "Incorreto, pois a prevenção exige o compromisso moral de cada pessoa", correct: true }, { text: "Correto, pois os alunos não têm controle do que escrevem", correct: false }, { text: "Correto, porque o aplicativo deveria escrever sozinho", correct: false }] },
+        { q: "Como cada membro da comunidade escolar contribui contra a violência?", options: [{ text: "Assumindo o dever individual e coletivo de cultivar o respeito no cotidiano", correct: true }, { text: "Deixando tudo para a direção resolver sozinha", correct: false }, { text: "Fingindo que o problema não acontece", correct: false }] },
+        { q: "A construção de uma internet segura e respeitosa é um trabalho:", options: [{ text: "Coletivo, unindo esforços de todos os envolvidos", correct: true }, { text: "Individual de uma pessoa só", correct: false }, { text: "Impossível de ser feito em escolas", correct: false }] },
+        { q: "O que acontece quando alunos, pais e professores trabalham juntos?", options: [{ text: "A comunidade fica mais forte e protegida contra as agressões virtuais", correct: true }, { text: "O uso de celulares é proibido no país", correct: false }, { text: "Os agressores ganham mais espaço", correct: false }] }
+      ]
+    },
+
+    // TEMA 6: ANÁLISE DE MATERIAIS DE CONSCIENTIZAÇÃO (DICAS 16 A 18)
+    {
+      id: 16,
+      text: "Dica 16 - A Regra do Respeito Universal: 'Aja sempre de uma forma que você gostaria que se tornasse uma regra para todas as pessoas do mundo'. Ou seja: não pratique com os outros o que você não aceitaria que fizessem com você na internet.",
+      questions: [
+        { q: "O que ensina a Regra Universal do respeito?", options: [{ text: "Aja sempre de uma forma que gostaria que virasse regra para todos no mundo", correct: true }, { text: "Trate bem apenas quem concorda com tudo o que você fala", correct: false }, { text: "Escreva mensagens maldosas apenas com perfis secretos", correct: false }] },
+        { q: "A Regra Universal sobre o comportamento na internet pode ser resumida na frase:", options: [{ text: "Não faça com os outros aquilo que você não gostaria que fizessem com você", correct: true }, { text: "Grito mais alto para ter razão nas discussões", correct: false }, { text: "Os mais fortes têm o direito de zoar com os fracos", correct: false }] },
+        { q: "Se você não gostaria de ser ridicularizado num grupo da internet, você:", options: [{ text: "Não deve humilhar nem ridicularizar ninguém na rede", correct: true }, { text: "Deve humilhar os outros antes que façam com você", correct: false }, { text: "Pode humilhar colegas de outras turmas", correct: false }] },
+        { q: "Por que a Regra Universal é chamada de 'universal'?", options: [{ text: "Porque vale para todas as pessoas, em qualquer lugar e situação", correct: true }, { text: "Porque só funciona fora do Brasil", correct: false }, { text: "Porque só precisa ser seguida na aula", correct: false }] },
+        { q: "Ao criar um cartaz ou vídeo, aplicar a Regra Universal significa incentivar:", options: [{ text: "O respeito mútuo e a empatia no meio digital", correct: true }, { text: "A competição da piada mais engraçada", correct: false }, { text: "A agressão contra alunos indisciplinados", correct: false }] }
+      ]
+    },
+    {
+      id: 17,
+      text: "Dica 17 - O que significa uma Abordagem Integrada? Uma campanha integrada aborda o problema por inteiro: orienta a vítima a buscar ajuda, chama o observador à responsabilidade e convida o agressor a rever suas atitudes.",
+      questions: [
+        { q: "O que significa dizer que uma campanha tem uma abordagem integrada?", options: [{ text: "Que junta todas as partes do problema (vítima, agressor e observador)", correct: true }, { text: "Que trata apenas da punição do agressor ignorando o resto", correct: false }, { text: "Que só pode ser lida em computadores na tomada", correct: false }] },
+        { q: "Um material educativo com abordagem integrada ajuda a vítima ao:", options: [{ text: "Ensiná-la a buscar ajuda e canais de apoio reais", correct: true }, { text: "Dizer para ela resolver o problema sozinha na rua", correct: false }, { text: "Mostrar que a culpa da agressão foi dela", correct: false }] },
+        { q: "O que a abordagem integrada faz em relação ao agressor?", options: [{ text: "Convida-o a refletir sobre suas atitudes e mudar de comportamento", correct: true }, { text: "Dá prêmios pelas piadas mais populares", correct: false }, { text: "Diz que a atitude dele é normal", correct: false }] },
+        { q: "Como a abordagem integrada orienta o observador?", options: [{ text: "Alerta sobre sua responsabilidade e ensina a não ser cúmplice", correct: true }, { text: "Manda ele rir para não virar o próximo alvo", correct: false }, { text: "Pede para apagar todos os contatos do telefone", correct: false }] },
+        { q: "Por que um vídeo que fala com a vítima, agressor e observador é eficiente?", options: [{ text: "Porque atende a todos os lados do problema sem deixar ninguém de fora", correct: true }, { text: "Porque é mais longo e ocupa o tempo da aula", correct: false }, { text: "Porque substitui a necessidade de professores", correct: false }] }
+      ]
+    },
+    {
+      id: 18,
+      text: "Dica 18 - Elementos de uma Boa Campanha: Para ser eficiente, uma campanha não deve apenas punir. Ela deve unir um princípio de respeito universal com orientações práticas para a vida dos estudantes e indicar canais reais de apoio.",
+      questions: [
+        { q: "Uma boa campanha de conscientização deve focar apenas em punir?", options: [{ text: "Não, ela deve unir princípios de respeito com orientações práticas e apoio", correct: true }, { text: "Sim, punir é a única coisa que funciona em escolas", correct: false }, { text: "Sim, para assustar os alunos", correct: false }] },
+        { q: "Além de ensinar valores éticos, o que mais um bom material deve divulgar?", options: [{ text: "Canais reais de apoio, escuta e denúncia na escola", correct: true }, { text: "Links para jogos de computador e redes famosas", correct: false }, { text: "Anúncios de celulares mais caros do mercado", correct: false }] },
+        { q: "O que torna um vídeo ou podcast escolar eficiente no combate às agressões?", options: [{ text: "Trazer mensagens que combinem respeito universal com dicas práticas", correct: true }, { text: "Falar apenas sobre regras antigas que não servem na internet", correct: false }, { text: "Mostrar imagens assustadoras para dar medo", correct: false }] },
+        { q: "Por que indicar um 'canal de escuta e denúncia' num cartaz é importante?", options: [{ text: "Porque oferece uma solução prática para quem precisa de ajuda imediata", correct: true }, { text: "Para preencher o espaço em branco no papel", correct: false }, { text: "Para fazer propaganda de produtos", correct: false }] },
+        { q: "Em resumo, uma campanha de conscientização de sucesso consegue:", options: [{ text: "Ensinar valores de respeito, orientar atitudes e oferecer ajuda prática", correct: true }, { text: "Fazer todos pararem de usar a internet para sempre", correct: false }, { text: "Garantir que ninguém tire nota baixa nas provas", correct: false }] }
+      ]
+    }
+  ];
+
+  // --- 6 QUESTÕES OFICIAIS DO SIMULADO (KANT & CYBERBULLYING / SARESP) ---
+  const SIMULADO_QUESTIONS = [
+    {
+      id: 1,
+      type: "fill",
+      title: "Questão 1 - Preencher Lacunas (Nível Fácil)",
+      hint: "💡 <strong>Dica:</strong> Lembre-se de que Kant defende a dignidade humana, e que o cyberbullying envolve três papéis essenciais.",
+      stem: "O filósofo Immanuel Kant defendia que cada pessoa possui um valor único chamado [Lacuna 1]. Em uma situação de violência virtual na escola, essa regra de respeito é quebrada ao identificar-se quem sofre a maldade ([Lacuna 2]), quem ataca ([Lacuna 3]) e quem assiste sem intervir ([Lacuna 4]).",
+      wordOptions: ["dignidade", "vítima", "agressor", "observador", "juiz"],
+      correct: ["dignidade", "vítima", "agressor", "observador"]
+    },
+    {
+      id: 2,
+      type: "mc",
+      title: "Questão 2 - Múltipla Escolha (Nível Fácil)",
+      hint: "💡 <strong>Dica:</strong> A conscientização que desenvolve a razão deve educar e engajar, em vez de apenas proibir ou punir.",
+      stem: "Segundo o pensamento de Kant, a educação é o caminho para que os estudantes aprendam a usar a razão e ajam com autonomia. Qual das alternativas apresenta uma ação eficaz de conscientização no ambiente escolar?",
+      options: [
+        "A) Proibir totalmente o uso de internet e redes sociais dentro e fora da escola.",
+        "B) Produzir cartazes, podcasts e vídeos curtos feitos pelos próprios alunos para debater o respeito virtual.",
+        "C) Suspender da escola os alunos que demonstrarem dúvidas sobre como usar a internet.",
+        "D) Ignorar as publicações maldosas, pois o que acontece na internet não afeta o ambiente escolar."
+      ],
+      correct: 1
+    },
+    {
+      id: 3,
+      type: "mc",
+      title: "Questão 3 - Múltipla Escolha (Nível Médio)",
+      hint: "💡 <strong>Dica:</strong> Responder a uma injustiça praticando outra maldade (vingança) não é racional. É preciso registrar e buscar ajuda.",
+      stem: "Marina recebeu várias mensagens ofensivas no grupo da turma por causa do seu cabelo. Kant ensinava que o revide (vingança) não é uma atitude justa nem racional. Para agir de forma adequada e conter o problema, a vítima deve:",
+      options: [
+        "A) Enviar ofensas ainda piores no grupo para se vingar e mostrar força.",
+        "B) Apagar todas as mensagens imediatamente e fingir que nada aconteceu.",
+        "C) Salvar as evidências (prints) e buscar apoio de adultos de confiança ou da escola.",
+        "D) Abandonar os estudos e nunca mais utilizar computadores ou celulares."
+      ],
+      correct: 2
+    },
+    {
+      id: 4,
+      type: "mc",
+      title: "Questão 4 - Múltipla Escolha (Nível Médio)",
+      hint: "💡 <strong>Dica:</strong> O observador que cala é omisso; o que ri é cúmplice. A atitude ética é apoiar, não espalhar e denunciar.",
+      stem: "Gustavo viu uma foto constrangedora de Gabriel com uma legenda maldosa no grupo da sala. Analisando a situação do ponto de vista do observador, a atitude responsável para interromper o ciclo do cyberbullying é:",
+      options: [
+        "A) Espalhar a foto para grupos de outras turmas fora da escola.",
+        "B) Enviar figurinhas de risada para continuar sendo aceito pelo grupo.",
+        "C) Não retransmitir o conteúdo ofensivo, acolher o colega atingido e denunciar a publicação aos responsáveis.",
+        "D) Confrontar o agressor com agressão física durante o horário do intervalo."
+      ],
+      correct: 2
+    },
+    {
+      id: 5,
+      type: "order",
+      title: "Questão 5 - Ordenar Etapas (Nível Difícil)",
+      hint: "💡 <strong>Dica:</strong> Ordene os passos que o observador ético deve seguir: interromper a propagação (1), prestar apoio (2), guardar o registro (3) e acionar a gestão (4).",
+      stem: "Arraste e solte os blocos abaixo para ordenar corretamente os passos de uma postura ética do observador diante do cyberbullying:",
+      items: [
+        "Recusar-se a curtir, rir ou retransmitir a mensagem ofensiva no grupo.",
+        "Acolher a vítima no privado, demonstrando apoio e empatia.",
+        "Registrar as evidências (capturas de tela) da agressão praticada.",
+        "Reportar o caso aos canais de denúncia ou aos adultos de confiança da escola."
+      ]
+    },
+    {
+      id: 6,
+      type: "essay",
+      title: "Questão 6 - Questão Discursiva (Nível Difícil)",
+      hint: "💡 <strong>Dica:</strong> A Regra Universal orienta: não faça com os outros o que não gostaria que fizessem com você na internet.",
+      stem: "Um roteiro de vídeo criado por alunos trouxe a frase: 'Se você não quer ser humilhado na internet, não humilhe ninguém. Respeitar o outro no mundo digital é um dever de todos!'. Explique como essa regra moral ajuda a prevenir o cyberbullying na escola.",
+      correctModel: "Essa regra (baseada na ética kantiana) convoca a reflexão antes de agir, fazendo com que o estudante aplique a reciprocidade: ao perceber que não desejaria ser humilhado, ele assume o dever moral de não praticar a agressão e de não ser cúmplice, garantindo a dignidade de todos no ambiente digital."
+    }
+  ];
+
+  // --- VARIÁVEIS DE ESTADO ---
+  let currentClueIndex = 0;
+  let collectedCluesCount = 0;
+  let questionIndices = new Array(18).fill(0);
+  let userAnswers = {};
+  let isSpinning = false;
+  let spinAngle = 0;
+
+  // --- PARÂMETROS DE VELOCIDADE PROGRESSIVA ---
+  let baseScrollSpeed = 3.5;
+  let baseCarSpeed = 8;
+  let scrollSpeed = 3.5;
+  let carSpeed = 8;
+
+  function updateDifficulty() {
+    scrollSpeed = baseScrollSpeed + (collectedCluesCount * 0.55);
+    carSpeed = baseCarSpeed + (collectedCluesCount * 0.6);
+    
+    const speedMultiplier = (1 + (collectedCluesCount * 0.15)).toFixed(1);
+    document.getElementById('hud-speed').innerText = `${speedMultiplier}x`;
+  }
+
+  // --- NAVEGAÇÃO ---
+  function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  // --- LÓGICA DA CANVAS ---
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let carX = 0;
+  let carY = 0;
+  let roadOffset = 0;
+  let items = [];
+  let isMovingLeft = false;
+  let isMovingRight = false;
+  let animationFrameId = null;
+
+  function initCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight - 110;
+    carX = canvas.width / 2 - 15;
+    carY = canvas.height - 90;
+    updateDifficulty();
+    spawnItems();
+  }
+
+  function spawnItems() {
+    items = [];
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -100,
+      type: 'green'
+    });
+    items.push({
+      x: Math.random() * (canvas.width - 60) + 30,
+      y: -320,
+      type: 'red'
+    });
+  }
+
+  function startGame() {
+    showScreen('screen-game');
+    initCanvas();
+    if (!animationFrameId) {
+      gameLoop();
+    }
+  }
+
+  function gameLoop() {
+    updateGame();
+    drawGame();
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+
+  function updateGame() {
+    if (isSpinning) {
+      spinAngle += 0.35;
+      if (spinAngle >= Math.PI * 6) {
+        isSpinning = false;
+        spinAngle = 0;
+      }
+      return;
+    }
+
+    if (isMovingLeft && carX > 20) carX -= carSpeed;
+    if (isMovingRight && carX < canvas.width - 50) carX += carSpeed;
+
+    roadOffset = (roadOffset + (scrollSpeed * 1.2)) % 40;
+
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i];
+      item.y += scrollSpeed;
+
+      if (Math.abs(carX + 15 - item.x) < 25 && Math.abs(carY + 25 - item.y) < 25) {
+        if (item.type === 'green') {
+          item.y = -9999;
+          triggerCheckpoint();
+          break;
+        } else if (item.type === 'red') {
+          item.y = -9999;
+          isSpinning = true;
+          spinAngle = 0;
+          break;
+        }
+      }
+
+      if (item.y > canvas.height + 50) {
+        item.y = -180 - Math.random() * 150;
+        item.x = Math.random() * (canvas.width - 60) + 30;
+      }
+    }
+  }
+
+  function drawGame() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(10, 0, 5, canvas.height);
+    ctx.fillRect(canvas.width - 15, 0, 5, canvas.height);
+
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([20, 20]);
+    ctx.lineDashOffset = -roadOffset;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    items.forEach(item => {
+      if (item.y < -500) return;
+      ctx.save();
+      if (item.type === 'green') {
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 10, item.y - 12, 20, 24);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(item.x - 7, item.y - 9, 14, 18);
+        ctx.fillStyle = '#2ecc71';
+        ctx.fillRect(item.x - 5, item.y - 6, 10, 3);
+        ctx.fillRect(item.x - 5, item.y, 10, 3);
+      } else {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(item.x, item.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', item.x, item.y);
+      }
+      ctx.restore();
+    });
+
+    ctx.save();
+    ctx.translate(carX + 15, carY + 25);
+    if (isSpinning) {
+      ctx.rotate(spinAngle);
+    }
+
+    ctx.fillStyle = '#d4af37';
+    ctx.fillRect(-15, -25, 30, 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-12, -20, 5, 40);
+    ctx.fillRect(-2, -20, 4, 40);
+    ctx.fillRect(7, -20, 5, 40);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(-18, -20, 4, 10);
+    ctx.fillRect(14, -20, 4, 10);
+    ctx.fillRect(-18, 10, 4, 10);
+    ctx.fillRect(14, 10, 4, 10);
+
+    ctx.restore();
+  }
+
+  // Controles
+  const btnLeft = document.getElementById('btn-left');
+  const btnRight = document.getElementById('btn-right');
+
+  btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingLeft = true; });
+  btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); isMovingLeft = false; });
+  btnLeft.addEventListener('mousedown', () => isMovingLeft = true);
+  btnLeft.addEventListener('mouseup', () => isMovingLeft = false);
+
+  btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); isMovingRight = true; });
+  btnRight.addEventListener('touchend', (e) => { e.preventDefault(); isMovingRight = false; });
+  btnRight.addEventListener('mousedown', () => isMovingRight = true);
+  btnRight.addEventListener('mouseup', () => isMovingRight = false);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = true;
+    if (e.key === 'ArrowRight') isMovingRight = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft') isMovingLeft = false;
+    if (e.key === 'ArrowRight') isMovingRight = false;
+  });
+
+  // --- CHECKPOINT FLUXO EM 3 ETAPAS ---
+  function triggerCheckpoint() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    document.getElementById('modal-clue-title').innerText = `DICA ${currentClueIndex + 1} DE 18`;
+    document.getElementById('modal-clue-text').innerText = clueData.text;
+
+    document.getElementById('modal-step-reading').style.display = 'block';
+    document.getElementById('modal-step-question').style.display = 'none';
+    document.getElementById('modal-step-feedback').style.display = 'none';
+
+    document.getElementById('game-modal').style.display = 'flex';
+  }
+
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function goToQuestionStep() {
+    const clueData = CLUES_DATA[currentClueIndex];
+    const qIdx = questionIndices[currentClueIndex];
+    const questionObj = clueData.questions[qIdx];
+
+    document.getElementById('modal-q-title').innerText = questionObj.q;
+
+    const optionsContainer = document.getElementById('modal-options');
+    optionsContainer.innerHTML = '';
+
+    const shuffledOptions = shuffleArray(questionObj.options);
+
+    shuffledOptions.forEach((opt) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => answerCheckpoint(opt.correct);
+      optionsContainer.appendChild(btn);
+    });
+
+    document.getElementById('modal-step-reading').style.display = 'none';
+    document.getElementById('modal-step-question').style.display = 'block';
+  }
+
+  function answerCheckpoint(isCorrect) {
+    document.getElementById('modal-step-question').style.display = 'none';
+    document.getElementById('modal-step-feedback').style.display = 'block';
+
+    if (isCorrect) {
+      collectedCluesCount++;
+      currentClueIndex++;
+      document.getElementById('hud-clues').innerText = collectedCluesCount;
+      updateDifficulty();
+
+      document.getElementById('modal-clue-title').innerText = "RESPOSTA CORRETA! ⚡";
+      document.getElementById('modal-feedback-text').innerText = `Muito bem! Você compreendeu a Dica Kantiana! A velocidade aumentou para ${(1 + (collectedCluesCount * 0.15)).toFixed(1)}x! Prepare-se!`;
+
+      if (collectedCluesCount >= 18) {
+        document.getElementById('game-modal').style.display = 'none';
+        showScreen('screen-game-end');
+      }
+    } else {
+      questionIndices[currentClueIndex] = (questionIndices[currentClueIndex] + 1) % 5;
+
+      document.getElementById('modal-clue-title').innerText = "OPS! RESPOSTA INCORRETA";
+      document.getElementById('modal-feedback-text').innerText = "Não tem problema! Na próxima tentativa de pegar essa dica, você responderá uma pergunta diferente. Preste atenção!";
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('game-modal').style.display = 'none';
+    spawnItems();
+  }
+
+  // --- SIMULADO E DRAG AND DROP ---
+  let draggedWord = null;
+
+  function renderSimulado() {
+    const container = document.getElementById('simulado-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach((q) => {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+
+      let qContentHTML = `<div class="quiz-q-title">${q.title}</div>`;
+
+      if (q.hint) {
+        qContentHTML += `<div class="question-hint-box">${q.hint}</div>`;
+      }
+
+      qContentHTML += `<p style="margin-bottom:12px; font-weight:bold; line-height:1.4;">${q.stem}</p>`;
+
+      if (q.type === 'fill') {
+        let shuffledWords = shuffleArray(q.wordOptions);
+        let wordBankHTML = `<p style="font-size:0.95rem; color:#aaa; margin-bottom:6px;">Clique ou arraste as palavras abaixo para cada lacuna:</p><div class="word-bank" id="word-bank">`;
+        shuffledWords.forEach((word) => {
+          wordBankHTML += `<div class="draggable-word" draggable="true" ondragstart="dragWord(event)" onclick="clickWord(this)">${word}</div>`;
+        });
+        wordBankHTML += `</div>`;
+
+        let fillHTML = `<div style="font-size:1.1rem; line-height:2.2;">`;
+        fillHTML += `O filósofo Immanuel Kant defendia que cada pessoa possui um valor único chamado <div class="drop-zone" id="drop-zone-0" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 1]</div>. Em uma situação de violência virtual na escola, essa regra de respeito é quebrada ao identificar-se quem sofre a maldade (<div class="drop-zone" id="drop-zone-1" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 2]</div>), quem ataca (<div class="drop-zone" id="drop-zone-2" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 3]</div>) e quem assiste sem intervir (<div class="drop-zone" id="drop-zone-3" ondragover="allowDrop(event)" ondrop="dropWord(event)" onclick="clearZone(this)">[Lacuna 4]</div>).`;
+        fillHTML += `</div>`;
+
+        qContentHTML += wordBankHTML + fillHTML;
+      } else if (q.type === 'order') {
+        let shuffledItems = shuffleArray(q.items);
+        let orderHTML = `<p style="font-size:0.95rem; color:#aaa; margin-bottom:6px;">Arraste e solte os blocos na ordem correta (1 a 4):</p><div class="drag-order-container" id="drag-order-container">`;
+        shuffledItems.forEach((text) => {
+          orderHTML += `
+            <div class="drag-order-item" draggable="true" ondragstart="dragOrderItem(event)" ondragover="allowDrop(event)" ondrop="dropOrderItem(event)">
+              <span class="drag-handle">☰</span>
+              <span>${text}</span>
+            </div>
+          `;
+        });
+        orderHTML += `</div>`;
+        qContentHTML += orderHTML;
+      } else if (q.type === 'mc') {
+        let optionsHTML = '<div>';
+        q.options.forEach((opt, oIdx) => {
+          optionsHTML += `
+            <label class="quiz-option">
+              <input type="radio" name="q_q.id"value="{oIdx}">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
+        optionsHTML += '</div>';
+        qContentHTML += optionsHTML;
+      } else if (q.type === 'essay') {
+        qContentHTML += `<textarea id="essay-input" placeholder="Digite sua resposta detalhada com base nos princípios éticos de Kant..."></textarea>`;
+      }
+
+      qContentHTML += `<div class="teacher-help">Não entendeu? Procure o professor.</div>`;
+      qDiv.innerHTML = qContentHTML;
+      container.appendChild(qDiv);
+    });
+  }
+
+  // Lógica Drag and Drop para Lacunas
+  let selectedWordElement = null;
+
+  function dragWord(ev) {
+    draggedWord = ev.target.innerText;
+    ev.dataTransfer.setData("text", ev.target.innerText);
+  }
+
+  function clickWord(el) {
+    if (selectedWordElement) selectedWordElement.style.opacity = "1";
+    selectedWordElement = el;
+    selectedWordElement.style.opacity = "0.5";
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function dropWord(ev) {
+    ev.preventDefault();
+    let word = ev.dataTransfer ? ev.dataTransfer.getData("text") : draggedWord;
+    if (word) {
+      ev.target.innerText = word;
+      ev.target.style.background = "#29b6f6";
+      ev.target.style.color = "#000";
+    }
+  }
+
+  function clearZone(zoneEl) {
+    if (selectedWordElement) {
+      zoneEl.innerText = selectedWordElement.innerText;
+      zoneEl.style.background = "#29b6f6";
+      zoneEl.style.color = "#000";
+      selectedWordElement.style.opacity = "1";
+      selectedWordElement = null;
+    } else {
+      zoneEl.innerText = "[Lacuna]";
+      zoneEl.style.background = "#1a1a1a";
+      zoneEl.style.color = "#00e676";
+    }
+  }
+
+  // Lógica Drag and Drop para Ordenação
+  let draggedOrderItem = null;
+
+  function dragOrderItem(ev) {
+    draggedOrderItem = ev.currentTarget;
+    ev.dataTransfer.setData("text/html", ev.currentTarget.innerHTML);
+  }
+
+  function dropOrderItem(ev) {
+    ev.preventDefault();
+    let targetItem = ev.currentTarget;
+    if (targetItem && targetItem !== draggedOrderItem && targetItem.classList.contains('drag-order-item')) {
+      let tempHTML = targetItem.innerHTML;
+      targetItem.innerHTML = draggedOrderItem.innerHTML;
+      draggedOrderItem.innerHTML = tempHTML;
+    }
+  }
+
+  function finishSimulado() {
+    userAnswers = {};
+    let allAnswered = true;
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      if (q.type === 'fill') {
+        let userVals = [];
+        [0, 1, 2, 3].forEach(idx => {
+          const zone = document.getElementById(`drop-zone-${idx}`);
+          if (zone && !zone.innerText.includes('[Lacuna')) {
+            userVals.push(zone.innerText.trim());
+          }
+        });
+        if (userVals.length < 4) allAnswered = false;
+        userAnswers[q.id] = userVals;
+      } else if (q.type === 'order') {
+        const items = Array.from(document.querySelectorAll('#drag-order-container .drag-order-item span:nth-child(2)')).map(el => el.innerText.trim());
+        userAnswers[q.id] = items;
+      } else if (q.type === 'mc') {
+        const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+        if (selected) {
+          userAnswers[q.id] = parseInt(selected.value);
+        } else {
+          allAnswered = false;
+        }
+      } else if (q.type === 'essay') {
+        const txt = document.getElementById('essay-input').value.trim();
+        if (!txt) allAnswered = false;
+        userAnswers[q.id] = txt;
+      }
+    });
+
+    if (!allAnswered) {
+      alert("Por favor, responda a todas as 6 questões preenchendo as lacunas e ordenando os blocos antes de finalizar!");
+      return;
+    }
+
+    renderGabarito();
+    showScreen('screen-gabarito');
+  }
+
+  // --- GABARITO ---
+  function renderGabarito() {
+    const container = document.getElementById('gabarito-container');
+    container.innerHTML = '';
+
+    SIMULADO_QUESTIONS.forEach(q => {
+      const userAns = userAnswers[q.id];
+      const itemDiv = document.createElement('div');
+
+      if (q.type === 'mc') {
+        const isCorrect = userAns === q.correct;
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-correct"><strong>Sua resposta correta:</strong> ${q.options[userAns]}</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua resposta:</strong> ${userAns !== undefined ? q.options[userAns] : 'Não respondida'}</div>
+            <div class="ans-detail ans-correct"><strong>Resposta correta:</strong> ${q.options[q.correct]}</div>
+          `;
+        }
+      } else if (q.type === 'fill') {
+        const isCorrect = JSON.stringify(userAns.map(a => a.toLowerCase())) === JSON.stringify(q.correct.map(a => a.toLowerCase()));
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-correct"><strong>Sua resposta correta nas lacunas:</strong> ${userAns.join(', ')}</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua resposta nas lacunas:</strong> ${userAns.join(', ')}</div>
+            <div class="ans-detail ans-correct"><strong>Gabarito correto:</strong> ${q.correct.join(', ')}</div>
+          `;
+        }
+      } else if (q.type === 'order') {
+        const isCorrect = JSON.stringify(userAns) === JSON.stringify(q.items);
+        itemDiv.className = `result-item ${isCorrect ? 'correct' : ''}`;
+        if (isCorrect) {
+          itemDiv.innerHTML = `
+            <div class="result-status status-correct-text">Acertou!</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-correct"><strong>Ordem correta:</strong><br>${userAns.map((t,i)=>`${i+1}.${t}`).join('<br>')}</div>
+          `;
+        } else {
+          itemDiv.innerHTML = `
+            <div class="result-status status-wrong-text">Errou... Peça explicação para o professor.</div>
+            <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+            <div class="ans-detail ans-user"><strong>Sua ordem:</strong><br>${userAns.map((t,i)=>`${i+1}.${t}`).join('<br>')}</div>
+            <br>
+            <div class="ans-detail ans-correct"><strong>Ordem correta esperada:</strong><br>${q.items.map((t,i)=>`${i+1}.${t}`).join('<br>')}</div>
+          `;
+        }
+      } else if (q.type === 'essay') {
+        itemDiv.className = `result-item correct`;
+        itemDiv.innerHTML = `
+          <div class="result-status status-correct-text">Resposta Registrada!</div>
+          <div class="stem-normal"><strong>${q.title}:</strong> ${q.stem}</div>
+          <div class="ans-detail"><strong>Sua resposta:</strong><br>${userAns}</div>
+          <br>
+          <div class="ans-detail ans-correct"><strong>Gabarito Esperado (Modelo do Professor):</strong><br>${q.correctModel}</div>
+        `;
+      }
+
+      container.appendChild(itemDiv);
+    });
+  }
+
+  function resetAll() {
+    currentClueIndex = 0;
+    collectedCluesCount = 0;
+    questionIndices = new Array(18).fill(0);
+    userAnswers = {};
+    document.getElementById('hud-clues').innerText = '0';
+    updateDifficulty();
+    showScreen('screen-learning');
+  }
+
+  renderSimulado();
+</script>
+</body>
+</html>
+
+
