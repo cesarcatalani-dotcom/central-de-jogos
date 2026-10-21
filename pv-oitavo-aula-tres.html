@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>8º - PV - Aula 3</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 16px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">8º - PV - Aula 3</h1>
+<p id="scene-subtitle" class="text-[10px] text-amber-400">Capture o Inimigo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-shield-halved text-lg"></i>
+<span id="enter-prompt-text">Alcance os Inimigos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-jump" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-angles-up text-base"></i>
+<span id="jump-btn-label">PULAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">8º - PV - Aula 3</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">8º - PV - Aula 3</h1>
+<p class="text-xs text-slate-400 font-medium">Preparatório para Avaliações de Projeto de Vida, Ética e Cidadania</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>Como utilizar valores éticos como critérios fundamentais para tomar decisões sobre o seu futuro.</li>
+<li>A importância da responsabilidade, da honestidade e do respeito na rotina escolar e no trabalho em equipe.</li>
+<li>Como aplicar a "bússola ética" e a integridade pessoal para superar dilemas e fazer escolhas justas.</li>
+<li>Como conectar seu projeto de vida à responsabilidade social, à sustentabilidade e à cidadania ativa.</li>
+<li>O conceito de autonomia ética em Immanuel Kant para se tornar o verdadeiro protagonista da sua história.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+INICIAR JORNADA <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO E OBJETIVOS</h2>
+<p class="text-xs text-slate-400 font-medium">Leia atentamente antes de começar a perseguição</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ol class="space-y-2.5 list-decimal pl-4 leading-relaxed">
+<li><strong>Explore o Vale:</strong> Use as setas/D-Pad para movimentar a personagem pelo cenário e o botão <strong>PULAR</strong> para desviar de obstáculos.</li>
+<li><strong>Cuidado com o Perseguidor:</strong> Um <strong>inimigo vermelho ( ! )</strong> está perseguindo você! Se ele te alcançar, você e ele voltarão para o ponto inicial do mapa.</li>
+<li><strong>Capture os Inimigos Verdes na Sequência:</strong> Existem <strong>10 inimigos verdes</strong> (1 ao 10). Você só poderá pegar o inimigo da vez! Ele estará com um <strong>brilho dourado</strong> em destaque.</li>
+<li><strong>Acertou, Avançou:</strong> Ao responder corretamente à pergunta do inimigo verde, ele subirá ao céu e o próximo inimigo ficará disponível.</li>
+<li><strong>O Simulado Final:</strong> Após derrotar os 10 inimigos verdes, o <strong>Simulado Final</strong> será liberado para você concluir a fase e receber seu gabarito comentado!</li>
+</ol>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-start" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+ENTENDI! COMEÇAR JOGO <i class="fa-solid fa-play ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS INIMIGOS VERDES -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - 8º - PV - Aula 3</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<!-- Conteúdo do Simulado (Questões / Resultados) -->
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<!-- Dica curta da questão -->
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<!-- Enunciado e Opções -->
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BASE DE DADOS INTEGRADA DE DICAS, VERIFICAÇÕES E SIMULADO (8º - PV - Aula 3) ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "A ética funciona como um guia para nossas ações. Ao tomar decisões para o futuro, utilizar critérios éticos significa pensar além do ganho individual, considerando a honestidade, o respeito e o bem-estar de toda a comunidade.",
+verifications: [
+{ q: "O que significa utilizar critérios éticos para tomar decisões no futuro?", correct: "Refletir sobre as escolhas com base no respeito, honestidade e bem-estar coletivo.", wrongs: ["Buscar vantagens individuais sem se importar com os impactos nos outros.", "Agir por impulso para garantir resultados rápidos e imediatos."] },
+{ q: "Qual é o papel da ética na vida de uma pessoa que planeja seu futuro?", correct: "Funcionar como um guia para tomar decisões responsáveis e conscientes.", wrongs: ["Impedir que a pessoa faça escolhas pessoais ou mude de profissão.", "Garantir que apenas os interesses financeiros determinem suas ações."] }
+]
+},
+{
+id: 2,
+tipText: "O futuro não é algo pronto ou fruto do acaso; ele é construído pelas escolhas que fazemos diariamente. Por isso, assumir a responsabilidade pelas consequências de nossos atos é o primeiro passo para uma conduta ética.",
+verifications: [
+{ q: "Como o futuro de um indivíduo é construído?", correct: "Pelas escolhas diárias e pela responsabilidade sobre os próprios atos.", wrongs: ["Pela sorte e pelas decisões tomadas por outras pessoas.", "Por acontecimentos inevitáveis que não podemos mudar ou controlar."] },
+{ q: "A responsabilidade sobre os próprios atos exige que a pessoa:", correct: "Reconheça os impactos e as consequências que suas decisões causam na sociedade.", wrongs: ["Culpe outras pessoas quando uma decisão tomada não trouxer os resultados esperados.", "Evite fazer qualquer tipo de escolha ao longo da vida escolar e profissional."] }
+]
+},
+{
+id: 3,
+tipText: "No ambiente escolar, a ética se traduz em responsabilidade com os compromissos acadêmicos, pontualidade, honestidade nas avaliações e respeito ao trabalho dos colegas e professores.",
+verifications: [
+{ q: "De que forma a ética é demonstrada no dia a dia da escola?", correct: "Cumprindo prazos, respeitando a comunidade escolar e estudando com honestidade.", wrongs: ["Copiando tarefas dos colegas para garantir boas notas sem esforço.", "Participando apenas das atividades que garantam elogios públicos do professor."] },
+{ q: "O respeito ao aprendizado dos colegas se manifesta quando:", correct: "Colaboramos de forma honesta no ambiente escolar e nos trabalhos em grupo.", wrongs: ["Interrompemos as explicações da aula para chamar a atenção da turma.", "Fazemos as tarefas escolares apenas no momento da entrega das notas."] }
+]
+},
+{
+id: 4,
+tipText: "O sucesso duradouro exige dedicação real. Recorrer a atalhos desonestos para obter vantagens imediatas prejudica a formação pessoal e compromete a confiança nas relações futuras.",
+verifications: [
+{ q: "Por que o uso de atalhos desonestos prejudica o estudante?", correct: "Porque compromete o aprendizado real e destrói a confiança nas relações humanas.", wrongs: ["Porque acelera o aprendizado e facilita o sucesso em todas as matérias.", "Porque é uma prática recomendada para economizar tempo durante os estudos."] },
+{ q: "A busca pelo crescimento pessoal deve ser pautada por:", correct: "Meios legítimos, esforço e integridade.", wrongs: ["Trapaças aceitáveis em situações de dificuldade.", "Vantagens conquistadas a qualquer custo social."] }
+]
+},
+{
+id: 5,
+tipText: "Diante de um dilema — quando precisamos escolher entre o caminho mais fácil e o caminho correto —, a bússola ética nos ajuda a manter a integridade, garantindo que nossos objetivos sejam alcançados de forma justa.",
+verifications: [
+{ q: "Para que serve a 'bússola ética' quando enfrentamos um dilema?", correct: "Para nos orientar a escolher o caminho correto e justo, e não apenas o mais fácil.", wrongs: ["Para nos indicar a forma mais rápida de obter lucro financeiro em qualquer situação.", "Para nos obrigar a seguir a opinião da maioria das pessoas, mesmo se estiver errada."] },
+{ q: "Alcançar objetivos por meios legítimos garante que:", correct: "O crescimento pessoal ocorra com dignidade e respeito à própria consciência.", wrongs: ["Nunca mais seja necessário estudar ou trabalhar para atingir o sucesso.", "Todos os problemas da vida profissional sejam resolvidos de forma automática."] }
+]
+},
+{
+id: 6,
+tipText: "A integridade é a coerência entre o que defendemos e como agimos. Uma pessoa íntegra mantém seus valores éticos mesmo quando ninguém está olhando ou quando enfrenta pressões para agir incorretamente.",
+verifications: [
+{ q: "O que é a integridade pessoal?", correct: "A coerência entre o que se diz e o que se faz, mantendo os princípios morais.", wrongs: ["A capacidade de mudar de opinião sempre que houver um ganho material em jogo.", "O hábito de agir de forma ética apenas quando há fiscalização de autoridades."] },
+{ q: "Uma atitude verdadeiramente ética ocorre quando:", correct: "Agimos de acordo com nossos valores, independentemente de estarmos sendo observados.", wrongs: ["Seguimos as regras somente se houver uma recompensa financeira ao final do dia.", "Obedecemos às normas com o único objetivo de evitar punições públicas."] }
+]
+},
+{
+id: 7,
+tipText: "O projeto de vida de um jovem deve considerar o impacto coletivo de suas escolhas. Profissões e ações sustentáveis buscam unir o desenvolvimento pessoal à preservação do meio ambiente e ao bem-estar da comunidade.",
+verifications: [
+{ q: "Como a responsabilidade social se conecta ao projeto de vida?", correct: "Exigindo que o indivíduo pense no impacto de suas escolhas no meio ambiente e na sociedade.", wrongs: ["Determinando que as decisões pessoais devam focar unicamente no acúmulo de riquezas.", "Impedindo que o jovem escolha a carreira profissional que mais gosta."] },
+{ q: "Projetos de futuro pautados na sustentabilidade buscam:", correct: "Conciliar o desenvolvimento com a proteção ambiental e o respeito aos direitos humanos.", wrongs: ["O crescimento econômico sem preocupação com os recursos naturais.", "A eliminação de tecnologias do cotidiano para viver de forma isolada."] }
+]
+},
+{
+id: 8,
+tipText: "A cidadania ativa se expressa quando usamos nossos conhecimentos e competências futuras para combater a desigualdade, promovendo a justiça e o respeito aos direitos humanos no meio em que vivemos.",
+verifications: [
+{ q: "O exercício da cidadania na construção do futuro envolve:", correct: "Usar nossas competências para contribuir com uma sociedade mais justa e igualitária.", wrongs: ["Ignorar os problemas sociais da comunidade para evitar perda de tempo e energia.", "Defender que os direitos humanos valem apenas para grupos específicos da sociedade."] },
+{ q: "Decisões pautadas pela equidade e justiça social visam:", correct: "Garantir respeito, oportunidades e condições dignas para todas as pessoas.", wrongs: ["Beneficiar exclusivamente quem já possui maior poder aquisitivo.", "Reduzir o diálogo e a cooperação entre os membros da comunidade."] }
+]
+},
+{
+id: 9,
+tipText: "Segundo o filósofo Immanuel Kant, agir com autonomia ético-moral significa tomar decisões baseadas em princípios racionais e universais, e não por medo de punições ou interesse em recompensas.",
+verifications: [
+{ q: "O que caracteriza a autonomia ética na filosofia de Kant?", correct: "Tomar decisões guiado pela razão e por princípios corretos que valem para todos.", wrongs: ["Agir de forma honesta apenas quando houver risco de ser punido por uma lei.", "Fazer o que é certo somente se houver promessa de recompensa em dinheiro."] },
+{ q: "Qual é a diferença entre agir por medo de punição e agir por autonomia?", correct: "Quem age por autonomia escolhe o bem por princípios morais conscientes; quem teme a punição age por coação.", wrongs: ["Quem age por medo faz o correto por convicção; quem tem autonomia teme a autoridade.", "Não há diferença, pois o resultado final da ação é sempre idêntico em ambas as situações."] }
+]
+},
+{
+id: 10,
+tipText: "Ter autonomia no planejamento do futuro é assumir a autogestão do próprio projeto de vida. O jovem torna-se protagonista de sua história quando fundamenta suas escolhas na responsabilidade, na justiça e na integridade moral.",
+verifications: [
+{ q: "Quando um jovem se torna o protagonista de seu projeto de vida?", correct: "Quando assume a autogestão de sua vida pautando suas escolhas na ética e na responsabilidade.", wrongs: ["Quando deixa que familiares e amigos decidam todas as etapas do seu futuro.", "Quando rejeita o estudo e o trabalho, buscando soluções sem esforço."] },
+{ q: "Princípios éticos universais são aqueles que:", correct: "Podem ser aplicados e respeitados por qualquer pessoa para a garantia da dignidade humana.", wrongs: ["Mudam diariamente de acordo com o interesse financeiro do indivíduo.", "Valem apenas dentro do ambiente escolar e perdem o sentido no mercado de trabalho."] }
+]
+}
+];
+
+// --- DADOS DO SIMULADO FINAL (8º - PV - Aula 3) ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "Tomar decisões éticas envolve refletir sobre as consequências dos próprios atos em relação ao bem comum, pautando-se em valores como responsabilidade, integridade e respeito mútuo.",
+enunciado: "No decorrer da vida, todas as pessoas precisam fazer escolhas que impactam seu próprio futuro e o bem-estar das pessoas ao seu redor. Quando uma pessoa decide utilizar a ética como critério para tomar suas decisões, significa que ela busca:",
+options: [
+{ text: "Considerar apenas os seus interesses individuais e os ganhos financeiros imediatos, sem se preocupar com os outros.", correct: false },
+{ text: "Avaliar o impacto de suas ações na sociedade, agindo com responsabilidade, respeito e honestidade.", correct: true },
+{ text: "Deixar que outras pessoas ou a sorte decidam por ela, evitando assumir responsabilidades sobre seu futuro.", correct: false }
+],
+explanation: "Tomar decisões éticas envolve refletir sobre as consequências dos próprios atos em relação ao bem comum, pautando-se em valores como responsabilidade, integridade e respeito mútuo."
+},
+{
+id: 2,
+shortTip: "A ética no cotidiano escolar se manifesta na responsabilidade com os próprios estudos e no respeito ao trabalho e direito dos outros.",
+enunciado: "Imagine um estudante do 8º ano que está planejando quais compromissos assumirá no próximo ano letivo. Ao agir com ética em relação ao seu futuro acadêmico e pessoal, espera-se que ele:",
+options: [
+{ text: "Cumpra com seus deveres e prazos, respeitando os colegas e professores na construção do aprendizado coletivo.", correct: true },
+{ text: "Copie tarefas de colegas para garantir notas altas sem precisar gastar tempo estudando.", correct: false },
+{ text: "Dedique-se apenas às atividades que tragam recompensa ou elogios imediatos diante da turma.", correct: false }
+],
+explanation: "A ética no cotidiano escolar se manifesta na responsabilidade com os próprios estudos e no respeito ao trabalho e direito dos outros."
+},
+{
+id: 3,
+shortTip: "Os critérios éticos funcionam como uma bússola moral: eles asseguram que os objetivos futuros sejam alcançados através de meios legítimos, honrando a dignidade do próprio indivíduo e a dos demais.",
+enunciado: "Ao escolher um caminho profissional ou projeto de vida, é comum encontrar situações em que um caminho mais rápido pode exigir atalhos desonestos. O uso de valores éticos como critério de decisão para o futuro serve fundamentalmente para:",
+options: [
+{ text: "Garantir o sucesso imediato em qualquer empreendimento, independentemente das regras ou leis existentes.", correct: false },
+{ text: "Orientar a conduta de forma consciente, garantindo que o crescimento pessoal ocorra de maneira justa e digna.", correct: true },
+{ text: "Impedir que o indivíduo mude de ideia ou busque novas oportunidades ao longo da vida profissional.", correct: false }
+],
+explanation: "Os critérios éticos funcionam como uma bússola moral: eles asseguram que os objetivos futuros sejam alcançados através de meios legítimos, honrando a dignidade do próprio indivíduo e a dos demais."
+},
+{
+id: 4,
+shortTip: "A dimensão ética da cidadania exige que os projetos de futuro levem em conta a sustentabilidade, a justiça social e os Direitos Humanos.",
+enunciado: "Pensar no futuro de forma ética exige ir além das escolhas individuais. Significa entender que nossas decisões profissionais e sociais afetam o ambiente e a comunidade. Qual das atitudes abaixo reflete uma decisão de futuro pautada pela responsabilidade ético-social?",
+options: [
+{ text: "Priorizar carreiras e negócios que gerem lucro a qualquer custo, mesmo que causem degradação ambiental.", correct: false },
+{ text: "Escolher caminhos que promovam o desenvolvimento sustentável, a equidade e o respeito aos direitos humanos.", correct: true },
+{ text: "Ignorar os problemas da comunidade, focando exclusivamente na estabilidade financeira da própria família.", correct: false }
+],
+explanation: "A dimensão ética da cidadania exige que os projetos de futuro levem em conta a sustentabilidade, a justiça social e os Direitos Humanos."
+},
+{
+id: 5,
+shortTip: "A autonomia ética implica agir por convicção moral consciente, assumindo a responsabilidade pelas escolhas futuras de maneira coerente e universalizável.",
+enunciado: "O filósofo Immanuel Kant defendia que agir eticamente significa agir por autonomia, isto é, pela capacidade de decidir com base em princípios racionais e universais, e não apenas por medo de punição ou desejo de recompensa. Aplicando esse conceito ao planejamento do futuro de um jovem, a autonomia ética se expressa quando o indivíduo:",
+options: [
+{ text: "Toma decisões sobre sua vida motivado unicamente pelo receio de sofrer sanções ou reprovação dos seus familiares.", correct: false },
+{ text: "Rejeita todas as normas sociais e leis para construir um futuro baseado estritamente na satisfação dos seus desejos.", correct: false },
+{ text: "Assume a responsabilidade pelas próprias escolhas, pautando seu projeto de vida em princípios de integridade que valeriam para qualquer pessoa.", correct: true }
+],
+explanation: "A autonomia ética implica agir por convicção moral consciente, assumindo a responsabilidade pelas escolhas futuras de maneira coerente e universalizável."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0; // Sequência 0 a 9 (Inimigos 1 ao 10)
+let activeEnemyObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const enemies = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 90;
+
+// VELOCIDADES: Jogador (0.40)
+const PLAYER_SPEED = 0.40;
+
+// ESTADO DO SIMULADO
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// --- CRIAÇÃO DE PERSONAGENS (JOGADOR E INIMIGOS) ---
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+// Textura do Corpo com Número nas Costas
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+if (numberStr) {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr, 128, 128);
+} else {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('Φ', 128, 128);
+}
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+// Torso
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+// Cabeça
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+// Olhos e Expressão
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+} else if (expr === 'sad') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = 0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = -0.35; eyeGroup.add(browR);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02), browMat);
+mouth.position.set(0, -0.08, 0.25); eyeGroup.add(mouth);
+}
+}
+
+drawFace(expression);
+
+// Braços e Pernas
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = -0.016;
+const jumpStrength = 0.35;
+let walkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+document.getElementById('btn-jump').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!isJumping) {
+isJumping = true; jumpVelocity = jumpStrength;
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -90; i <= 90; i += 12) {
+[-90, 90].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+// --- CONSTRUÇÃO DO CENÁRIO Q5 ---
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+// Chão de relva
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(190, 190), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// Caminho de terra
+const path = new THREE.Mesh(new THREE.PlaneGeometry(20, 190), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01;
+path.rotation.x = -Math.PI / 2;
+scene.add(path);
+
+// Paredão de pedra
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(190, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -75);
+scene.add(cliff);
+colliders.push({ type: 'box', minX: -95, maxX: 95, minZ: -86, maxZ: -64 });
+
+// Cachoeira animada
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -64.8);
+scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+// Animais espalhados pelo vale
+for (let i = 0; i < 8; i++) {
+const animal = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.5, 2.4), new THREE.MeshStandardMaterial({ color: 0xa16207 }));
+animal.position.set(-40 + i * 12, 0.75, 10 + (i % 2) * 15);
+scene.add(animal);
+}
+
+addMapBoundaryFence('trees');
+
+// --- CRIAR OS 10 INIMIGOS VERDES (1 A 10) ---
+const enemyPositions = [
+{ id: 1, x: -25, z: -20 },
+{ id: 2, x: 25, z: 10 },
+{ id: 3, x: -15, z: 40 },
+{ id: 4, x: 35, z: -35 },
+{ id: 5, x: -40, z: 15 },
+{ id: 6, x: 10, z: -50 },
+{ id: 7, x: -50, z: -45 },
+{ id: 8, x: 45, z: 45 },
+{ id: 9, x: 0, z: 60 },
+{ id: 10, x: -30, z: 50 }
+];
+
+enemyPositions.forEach((cfg, idx) => {
+const enemyMesh = createCharacterMesh(0x16a34a, true, cfg.id.toString(), 'evil');
+enemyMesh.group.position.set(cfg.x, 0, cfg.z);
+scene.add(enemyMesh.group);
+
+// Marcador com Número
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(cfg.id.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0);
+enemyMesh.group.add(numberMarker);
+
+// Anel de Destaque Dourado (Apenas para o inimigo ativo)
+const auraGeo = new THREE.RingGeometry(0.8, 1.3, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2;
+auraMesh.position.y = 0.05;
+auraMesh.visible = (idx === 0);
+enemyMesh.group.add(auraMesh);
+
+const randomSpeed = 0.05 + Math.random() * 0.07;
+
+enemies.push({
+id: cfg.id,
+mesh: enemyMesh,
+marker: numberMarker,
+aura: auraMesh,
+angle: Math.random() * Math.PI * 2,
+speed: randomSpeed,
+changeTimer: Math.random() * 50,
+isDefeated: false,
+isAscending: false
+});
+});
+
+// --- CRIAR O INIMIGO VERMELHO PERSEGUIDOR ---
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -40);
+scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0);
+chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = {
+mesh: chaserMesh,
+marker: chaserMarker,
+speed: 0.08,
+startX: 0,
+startZ: -40
+};
+
+player.group.position.set(0, 0, 0);
+updateEnemyAuras();
+}
+
+function updateEnemyAuras() {
+enemies.forEach((e, idx) => {
+if (e.aura) {
+e.aura.visible = (!e.isDefeated && idx === currentTargetIndex);
+}
+});
+if (currentTargetIndex < enemies.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Inimigo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+// --- CONTROLE DAS TELAS INICIAIS ---
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-start').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Inimigo 1!");
+});
+
+// --- SISTEMA DE MENSAGENS E INTERAÇÃO COM INIMIGOS VERDES ---
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerEnemyInteraction(enemy) {
+activeEnemyObj = enemy;
+const dbData = gameDatabase[enemy.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Inimigo ${enemy.id} Capturado - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeEnemyObj.mesh.drawFace('sad');
+activeEnemyObj.isDefeated = true;
+activeEnemyObj.isAscending = true;
+defeatedCount++;
+
+currentTargetIndex++;
+updateEnemyAuras();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 inimigos foram capturados! Iniciando Simulado...");
+setTimeout(() => {
+startSimulado();
+}, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo inimigo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! O inimigo empurrou você...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeEnemyObj.mesh.group.position.x, player.group.position.z - activeEnemyObj.mesh.group.position.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+// --- SISTEMA DO SIMULADO FINAL E RELATÓRIO DE GABARITO ---
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({
+questionData: qData,
+selectedOption: opt,
+isCorrect: opt.correct
+});
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-4';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+// Animação de rotação/pulso do anel do inimigo ativo
+enemies.forEach(e => {
+if (e.aura && e.aura.visible) {
+e.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else if (!isJumping) {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (isJumping) {
+player.group.position.y += jumpVelocity; jumpVelocity += gravity;
+if (player.group.position.y <= 0) { player.group.position.y = 0; isJumping = false; jumpVelocity = 0; }
+}
+
+enemies.forEach((enemy, idx) => {
+enemy.marker.rotation.y = -characterAngle;
+if (enemy.isAscending) {
+enemy.mesh.group.position.y += delta * 6.0;
+if (enemy.mesh.group.position.y > 60.0) {
+scene.remove(enemy.mesh.group);
+enemy.isAscending = false;
+}
+} else if (!enemy.isDefeated) {
+enemy.changeTimer -= delta * 10;
+if (enemy.changeTimer <= 0) {
+enemy.angle += (Math.random() - 0.5) * 2.0;
+enemy.changeTimer = 15 + Math.random() * 35;
+}
+enemy.mesh.group.rotation.y = enemy.angle;
+const nextEX = enemy.mesh.group.position.x + Math.sin(enemy.angle) * enemy.speed;
+const nextEZ = enemy.mesh.group.position.z + Math.cos(enemy.angle) * enemy.speed;
+if (!checkCollision({ x: nextEX, z: nextEZ })) {
+enemy.mesh.group.position.x = nextEX;
+enemy.mesh.group.position.z = nextEZ;
+} else {
+enemy.angle += Math.PI * 0.75;
+}
+
+// APENAS O INIMIGO DA VEZ (currentTargetIndex) PODE SER INTERAGIDO
+const distToPlayer = Math.hypot(player.group.position.x - enemy.mesh.group.position.x, player.group.position.z - enemy.mesh.group.position.z);
+if (distToPlayer < 2.0 && idx === currentTargetIndex && document.getElementById('quiz-modal').classList.contains('hidden') && document.getElementById('simulado-modal').classList.contains('hidden')) {
+triggerEnemyInteraction(enemy);
+}
+}
+});
+
+// LÓGICA DO INIMIGO VERMELHO PERSEGUIDOR
+if (chaserEnemy && document.getElementById('start-modal').classList.contains('hidden') && document.getElementById('rules-modal').classList.contains('hidden')) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+}
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -4.8;
+const camOffsetZ = Math.cos(characterAngle) * -4.8;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 2.6 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
