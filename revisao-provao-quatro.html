@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>Revisão de Filosofia: Provão Paulista Seriado (4)</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 16px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">Provão Paulista (4)</h1>
+<p id="scene-subtitle" class="text-[10px] text-amber-400">Capture o Inimigo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-shield-halved text-lg"></i>
+<span id="enter-prompt-text">Alcance os Inimigos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-jump" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-angles-up text-base"></i>
+<span id="jump-btn-label">PULAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">Questão 5</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">Revisão de Filosofia: Provão Paulista Seriado (4)</h1>
+<p class="text-xs text-slate-400 font-medium">Preparatório para o Provão Paulista Seriado (3ª Série)</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>Como o avanço das novas tecnologias afeta o meio ambiente e o futuro da humanidade (<em>Hans Jonas e a Escola de Frankfurt</em>).</li>
+<li>O valor da ética, da empatia e do respeito ao próximo em sua diferença (<em>Emmanuel Levinas e a Alteridade</em>).</li>
+<li>Como combater o preconceito contra idosos (etarismo) e construir pontes entre diferentes gerações (<em>Zygmunt Bauman e Hannah Arendt</em>).</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+INICIAR JORNADA <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO E OBJETIVOS</h2>
+<p class="text-xs text-slate-400 font-medium">Leia atentamente antes de começar a perseguição</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ol class="space-y-2.5 list-decimal pl-4 leading-relaxed">
+<li><strong>Explore o Vale:</strong> Use as setas/D-Pad para movimentar a personagem pelo cenário e o botão <strong>PULAR</strong> para desviar de obstáculos.</li>
+<li><strong>Cuidado com o Perseguidor:</strong> Um <strong>inimigo vermelho ( ! )</strong> está perseguindo você! Se ele te alcançar, você e ele voltarão para o ponto inicial do mapa.</li>
+<li><strong>Capture os Inimigos Verdes na Sequência:</strong> Existem <strong>10 inimigos verdes</strong> (1 ao 10). Você só poderá pegar o inimigo da vez! Ele estará com um <strong>brilho dourado</strong> em destaque.</li>
+<li><strong>Acertou, Avançou:</strong> Ao responder corretamente à pergunta do inimigo verde, ele subirá ao céu e o próximo inimigo ficará disponível.</li>
+<li><strong>O Simulado Final:</strong> Após derrotar os 10 inimigos verdes, o <strong>Simulado Final do Provão Paulista</strong> será liberado para você concluir a fase e receber seu gabarito comentado!</li>
+</ol>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-start" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+ENTENDI! COMEÇAR JOGO <i class="fa-solid fa-play ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS INIMIGOS VERDES -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - Provão Paulista</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<!-- Conteúdo do Simulado (Questões / Resultados) -->
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<!-- Dica curta da questão -->
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<!-- Enunciado e Opções -->
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BASE DE DADOS INTEGRADA DE DICAS, VERIFICAÇÕES E SIMULADO ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "No passado, as ações humanas tinham um impacto local e passageiro. Hoje, com as novas tecnologias, a poluição e a exploração da natureza têm alcance global e efeitos de longo prazo. O filósofo Hans Jonas afirma que precisamos de uma nova ética baseada no 'Princípio Responsabilidade', cuidando do planeta para garantir que as gerações futuras também possam existir com qualidade de vida.",
+verifications: [
+{ q: "Por que a ética tradicional do passado não é suficiente para os dias de hoje?", correct: "Porque as tecnologias atuais geram impactos em escala global e de longo prazo.", wrongs: ["Porque antigamente a natureza não sofria nenhum tipo de impacto provocado pelo trabalho.", "Porque as pessoas do passado não se preocupavam em seguir valores morais e leis."] },
+{ q: "Qual é o foco principal do 'Princípio Responsabilidade' de Hans Jonas?", correct: "Proteger a natureza e garantir a sobrevivência das gerações futuras com qualidade.", wrongs: ["Garantir que as indústrias aumentem o lucro sem qualquer restrição técnica.", "Proibir o uso de qualquer tipo de tecnologia no cotidiano das cidades humanas."] },
+{ q: "Segundo a visão de Hans Jonas, como devemos agir diante dos avanços tecnológicos?", correct: "Agir prevendo os riscos para não comprometer a continuidade da vida humana na Terra.", wrongs: ["Confiar que o mercado financeiro resolverá sozinho todos os problemas ambientais.", "Usar os recursos naturais até o esgotamento para atender apenas ao presente."] }
+]
+},
+{
+id: 2,
+tipText: "Para tomar decisões éticas sobre tecnologias perigosas (como transgênicos ou energia nuclear), Hans Jonas propõe a 'Heurística do Temor'. Isso significa que, diante da incerteza sobre os impactos ambientais futuros de uma inovação, devemos antecipar o pior cenário possível e agir com cautela preventiva antes que seja tarde demais.",
+verifications: [
+{ q: "O que significa o conceito de 'Heurística do Temor' na teoria de Hans Jonas?", correct: "Antecipar riscos possíveis para agir com cautela e prevenir desastres ambientais.", wrongs: ["Sentir medo paralisante e recusar o convívio em sociedade com outras pessoas.", "Ignorar os avisos científicos sobre poluição e acelerar o consumo industrial."] },
+{ q: "Como a 'Heurística do Temor' orienta os cientistas e governantes?", correct: "Priorizando a precaução diante de tecnologias com impactos incertos no futuro.", wrongs: ["Liberando pesquisas perigosas desde que tragam retorno financeiro imediato.", "Impedindo totalmente a produção de energia elétrica em centros urbanos."] },
+{ q: "Diante de uma nova tecnologia sem efeitos totalmente conhecidos, qual deve ser a postura ética?", correct: "Agir de forma cautelosa para proteger a integridade do ecossistema global.", wrongs: ["Usar sem restrições e esperar os problemas surgirem para corrigi-los.", "Delegar toda a responsabilidade de escolha aos consumidores individuais."] }
+]
+},
+{
+id: 3,
+tipText: "A 'Razão Instrumental' ocorre quando a inteligência humana deixa de refletir sobre valores morais, justiça e bem-estar coletivo, passando a focar apenas na eficiência, nos custos e na produtividade. A natureza e até o ser humano passam a ser tratados como meros objetos e ferramentas a serem explorados em nome do lucro e do controle.",
+verifications: [
+{ q: "Como a 'Razão Instrumental' define o uso do pensamento humano?", correct: "Como cálculo técnico focado em eficiência, controle, custos e lucros.", wrongs: ["Como busca por virtudes éticas, solidariedade e justiça comunitária.", "Como apreciação artística e contemplação filosófica da vida natural."] },
+{ q: "O que acontece com a natureza quando ela é vista pela Razão Instrumental?", correct: "É tratada como um recurso a ser explorado de forma ininterrupta.", wrongs: ["Torna-se um sujeito de direitos sagrados e intocáveis pela indústria.", "Passa a ser preservada com base em princípios ecológicos comunitários."] },
+{ q: "Segundo a crítica da Escola de Frankfurt, qual o risco da Razão Instrumental?", correct: "Fazer com que o ser humano também seja tratado como objeto de exploração.", wrongs: ["Transformar a sociedade em um espaço sem tecnologia e sem indústrias.", "Garantir a liberdade plena e a igualdade social para todos os cidadãos."] }
+]
+},
+{
+id: 4,
+tipText: "Os filósofos Adorno e Horkheimer criticaram a ideia de que o avanço científico traz automaticamente a libertação humana. Na obra 'Dialética do Esclarecimento', eles mostram que o domínio da natureza pela técnica acabou criando novas formas de dominação, onde a eficiência técnica muitas vezes sufoca a liberdade e a autonomia do indivíduo.",
+verifications: [
+{ q: "Qual é a crítica central dos autores da Escola de Frankfurt à tecnologia?", correct: "Ela pode ser usada como instrumento de dominação e perda de liberdade.", wrongs: ["Ela garante a paz mundial de forma automática sem necessidade de leis.", "Ela eliminou toda a pobreza sem gerar novos problemas de desigualdade."] },
+{ q: "O que a obra 'Dialética do Esclarecimento' defende sobre o progresso técnico?", correct: "Que a ciência isolada do pensamento ético não garante a emancipação humana.", wrongs: ["Que a humanidade deve abandonar a linguagem escrita e retornar ao passado.", "Que as máquinas devem governar a sociedade sem interferência dos políticos."] },
+{ q: "Para superar os limites da Razão Instrumental, a sociedade precisa recuperar:", correct: "A capacidade de refletir criticamente sobre os fins e valores de suas ações.", wrongs: ["O ritmo de produção acelerado para atender exclusivamente aos mercados.", "A submissão cega a todas as decisões tomadas por especialistas técnicos."] }
+]
+},
+{
+id: 5,
+tipText: "O termo 'Alteridade' vem do latim 'alter' e significa 'o outro'. O filósofo Emmanuel Levinas ensina que a ética não começa em teorias abstratas ou leis escritas, mas no encontro direto com o 'Rosto do Outro'. Esse rosto nos faz um apelo ético antes de qualquer escolha: o dever moral de acolher a diferença do próximo sem tentar mudá-lo.",
+verifications: [
+{ q: "O que significa o conceito de 'Alteridade' na filosofia?", correct: "Reconhecer a condição do outro em sua diferença irredutível.", wrongs: ["Fazer com que todas as pessoas pensem e ajam do mesmo jeito.", "Buscar o benefício próprio acima dos interesses da comunidade."] },
+{ q: "Segundo Emmanuel Levinas, onde nasce a experiência ética verdadeira?", correct: "No encontro direto e no acolhimento do 'Rosto do Outro'.", wrongs: ["No cumprimento mecânico de regras impostas pelo Estado.", "Na assinatura de contratos comerciais com vantagens mútuas."] },
+{ q: "Qual é a atitude esperada ao nos depararmos com a alteridade do próximo?", correct: "Respeitar e acolher o próximo sem reduzir sua individualidade.", wrongs: ["Tentar moldar o outro para que ele siga nossa própria cultura.", "Ignorar quem pensa diferente até que essa pessoa mude de opinião."] }
+]
+},
+{
+id: 6,
+tipText: "Ao contrário de teorias que defendem que devemos fazer o bem apenas para receber algo em troca (reciprocidade), Levinas afirma que a responsabilidade pelo outro é incondicional e assimétrica. Isso significa que meu dever ético de respeitar e cuidar do próximo não depende de ele retribuir a atitude ou ser meu amigo.",
+verifications: [
+{ q: "O que caracteriza a responsabilidade ética incondicional segundo Levinas?", correct: "Ela existe independente de o outro retribuir o respeito recebido.", wrongs: ["Ela exige trocas financeiras equivalentes entre os envolvidos.", "Ela só se aplica aos membros da mesma família ou grupo social."] },
+{ q: "Por que a ética de Levinas é considerada 'assimétrica'?", correct: "Porque a obrigação moral de cuidar do outro surge antes de cobranças.", wrongs: ["Porque apenas os governantes possuem obrigações morais na sociedade.", "Porque é baseada em punições rígidas impostas pelo poder judiciário."] },
+{ q: "Qual das opções expressa a visão de Levinas sobre o agir ético?", correct: "A dignidade do outro exige respeito antes de qualquer interesse próprio.", wrongs: ["Devemos ajudar as pessoas apenas quando há promessa de recompensa.", "O bem só deve ser praticado com quem compartilha das mesmas ideias."] }
+]
+},
+{
+id: 7,
+tipText: "'Etarismo' é o preconceito, a discriminação ou a marginalização contra pessoas com base na idade, afetando especialmente os idosos. Na 'Modernidade Líquida', marcada pela rápida obsolescência das novidades digitais, a sabedoria acumulada pelos mais velhos corre o risco de ser descartada como algo ultrapassado e inútil.",
+verifications: [
+{ q: "Como se define a prática do 'Etarismo'?", correct: "Discriminação ou preconceito direcionado com base na idade do indivíduo.", wrongs: ["Respeito absoluto às tradições trazidas pelos povos mais antigos.", "Valorização da juventude em atividades esportivas e comunitárias."] },
+{ q: "De acordo com a crítica sobre a 'Modernidade Líquida', qual é o risco enfrentado pelos idosos?", correct: "Terem seus conhecimentos e memórias descartados como algo ultrapassado.", wrongs: ["Serem supervalorizados pelo mercado financeiro e pela publicidade.", "Ficarem isolados devido à escassez de novas tecnologias de comunicação."] },
+{ q: "O que a cultura do consumo acelerado tende a fazer com os saberes tradicionais?", correct: "Reduzir seu valor em comparação às novidades tecnológicas recentes.", wrongs: ["Tratá-los como patrimônios sagrados que não podem sofrer alterações.", "Estimular sua transmissão obrigatória em todas as redes de ensino."] }
+]
+},
+{
+id: 8,
+tipText: "Superar o etarismo exige empatia e solidariedade intergeracional — a troca cultural contínua entre jovens e idosos. Os idosos trazem a memória histórica e a experiência acumulada, enquanto os jovens trazem a renovação. A integração entre diferentes gerações fortalece a coesão social e o respeito aos direitos humanos.",
+verifications: [
+{ q: "O que é solidariedade intergeracional?", correct: "A troca constante de saberes, apoio e respeito entre gerações.", wrongs: ["A separação de jovens e idosos em bairros e cidades diferentes.", "O domínio das decisões sociais exclusivamente pelas pessoas mais jovens."] },
+{ q: "Qual é a importância da memória dos idosos para a sociedade?", correct: "Manter a identidade histórica e orientar as decisões do presente.", wrongs: ["Substituir as disciplinas científicas ministradas nas faculdades.", "Impedir que novas tecnologias sejam desenvolvidas pelas indústrias."] },
+{ q: "Como a empatia auxilia no combate ao preconceito contra a terceira idade?", correct: "Reconhecendo o idoso como sujeito de direitos e portador de vivências.", wrongs: ["Aceitando que o valor da pessoa depende da sua produção econômica.", "Forçando os mais velhos a se adaptarem sem qualquer tipo de apoio."] }
+]
+},
+{
+id: 9,
+tipText: "Para a filósofa Hannah Arendt, o conceito de 'Natalidade' representa a chegada dos recém-nascidos e jovens ao mundo. A educação tem o papel de acolher essas novas gerações, apresentando a elas a história e a cultura acumuladas do passado, para que eles possam ter bases sólidas e, a partir delas, transformar e renovar a sociedade.",
+verifications: [
+{ q: "O que significa o conceito de 'Natalidade' em Hannah Arendt?", correct: "A capacidade dos novos de trazer renovação e recomeços ao mundo.", wrongs: ["A taxa de crescimento populacional calculada por órgãos do governo.", "A obrigatoriedade de comemorar datas festivas nas instituições escolares."] },
+{ q: "Qual é a principal função da educação segundo Hannah Arendt?", correct: "Apresentar o mundo aos jovens permitindo que eles o renovem no futuro.", wrongs: ["Obrigar os estudantes a repetir os mesmos erros cometidos no passado.", "Isolar os jovens da convivência política com a comunidade adulta."] },
+{ q: "De acordo com essa perspectiva, a relação com o passado deve ser de:", correct: "Conhecimento crítico da tradição como base para novas criações.", wrongs: ["Apagamento total de registros históricos para iniciar do zero.", "Cópia fiel sem qualquer tipo de questionamento por parte dos novos."] }
+]
+},
+{
+id: 10,
+tipText: "Hannah Arendt afirma que os adultos têm uma 'responsabilidade pelo mundo'. Se a geração consolidada abandona a preservação das instituições e da cultura, o mundo corre o risco de ruína. A acolhida responsável dos jovens garante o equilíbrio entre a estabilidade da tradição e a inovação trazida pelo novo.",
+verifications: [
+{ q: "O que significa a 'responsabilidade pelo mundo' assumida pelos adultos?", correct: "Cuidar das instituições e da cultura que serão entregues aos novos.", wrongs: ["Garantir que os jovens fiquem imunes a qualquer cobrança social.", "Controlar todas as decisões dos jovens até a vida adulta avançada."] },
+{ q: "O que pode acontecer à sociedade se as gerações adultas omitirem seu cuidado?", correct: "O mundo pode entrar em ruína pela perda de continuidade histórica.", wrongs: ["A sociedade alcança a paz duradoura sem a necessidade de leis.", "As novas tecnologias passam a funcionar de forma totalmente perfeita."] },
+{ q: "Como Arendt equilibra tradição e inovação na vida pública?", correct: "Preservando a memória enquanto acolhe a capacidade de renovação.", wrongs: ["Eliminando o diálogo entre os mais velhos e os estudantes.", "Proibindo os jovens de opinarem sobre assuntos políticos atuais."] }
+]
+}
+];
+
+// --- DADOS DO SIMULADO FINAL (5 QUESTÕES DO PROVÃO PAULISTA) ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "Hans Jonas defende que as novas tecnologias exigem um novo imperativo ético: agir de modo a proteger a continuidade e a qualidade da vida humana futura na Terra.",
+enunciado: "Com base na crítica de Hans Jonas ao avanço tecnológico desmedido e seu impacto socioambiental, assinale a alternativa que expressa corretamente o novo imperativo ético proposto pelo autor para a sociedade contemporânea:",
+options: [
+{ text: "Promover o desenvolvimento econômico irrestrito, confiando que novas tecnologias resolverão futuros danos ambientais.", correct: false },
+{ text: "Agir de tal modo que os efeitos da ação humana sejam compatíveis com a permanência de uma vida autêntica na Terra.", correct: true },
+{ text: "Restringir a ética apenas ao campo das relações humanas interpessoais e imediatas, ignorando as gerações futuras.", correct: false }
+],
+explanation: "Você errou porque Hans Jonas propõe justamente ampliar a ética para o futuro. O 'Imperativo Tecnológico' exige proteger a permanência da vida autêntica na Terra contra os riscos globais das inovações."
+},
+{
+id: 2,
+shortTip: "A Razão Instrumental (Escola de Frankfurt) reduz o pensamento humano a um cálculo técnico de eficiência, custos e lucros, tratando a natureza e o ser humano como meros objetos de exploração.",
+enunciado: "No âmbito da Filosofia Contemporânea, o conceito de Razão Instrumental, desenvolvido pela Escola de Frankfurt, descreve uma transformação no modo de pensar humano. Esse conceito se caracteriza por:",
+options: [
+{ text: "Considerar a natureza como um sujeito de direitos sagrados que não pode ser modificado pelas atividades industriais.", correct: false },
+{ text: "Reduzir o conhecimento científico a um mero cálculo de eficiência, meios e custos, visando ao controle e ao lucro.", correct: true },
+{ text: "Utilizar a razão prioritariamente para a contemplação estética e o fortalecimento dos valores éticos comunitários.", correct: false }
+],
+explanation: "Você errou porque a Razão Instrumental não busca o bem comum ou a contemplação, mas sim a eficiência técnica, os custos e o controle, transformando a natureza e as pessoas em recursos produtivos."
+},
+{
+id: 3,
+shortTip: "Para Emmanuel Levinas, a ética nasce do encontro direto com o 'Rosto do Outro' (Alteridade), impondo-nos um dever incondicional de respeitar e acolher a diferença do próximo.",
+enunciado: "A partir da reflexão de Emmanuel Levinas sobre a alteridade, assinale a alternativa correta acerca de como a ética se estabelece nas relações humanas:",
+options: [
+{ text: "A ética surge do encontro com a irredutibilidade do 'Outro', exigindo acolhimento e respeito à sua diferença.", correct: true },
+{ text: "A responsabilidade ética depende da simetria e do benefício mútuo de trocas financeiras entre os indivíduos.", correct: false },
+{ text: "O outro deve ser assimilado e moldado obrigatoriamente de acordo com a cultura e as preferências do sujeito.", correct: false }
+],
+explanation: "Você errou porque Levinas rejeita a ideia de moldar o outro ou exigir trocas comerciais. A ética autêntica nasce do acolhimento e do respeito ao Rosto do Outro em sua diferença irredutível."
+},
+{
+id: 4,
+shortTip: "O etarismo é o preconceito por idade. Combati-lo na Modernidade Líquida exige valorizar o idoso como sujeito de direitos e guardar sua memória contra o descarte da cultura de consumo.",
+enunciado: "A partir da análise das relações intergeracionais na sociedade contemporânea, o combate ao etarismo (preconceito baseado na idade) e o fortalecimento do diálogo entre jovens e idosos exigem:",
+options: [
+{ text: "A substituição completa do conhecimento histórico tradicional por ferramentas de inteligência artificial.", correct: false },
+{ text: "O reconhecimento do idoso como sujeito de direitos e portador de memórias essenciais para a coesão social.", correct: true },
+{ text: "O isolamento das gerações em espaços segregados para evitar conflitos de opinião e de valores na comunidade.", correct: false }
+],
+explanation: "Você errou porque o combate ao etarismo não se faz isolando gerações ou descartando o passado, mas sim reconhecendo a dignidade do idoso, seus direitos e a riqueza de suas memórias para a sociedade."
+},
+{
+id: 5,
+shortTip: "Hannah Arendt defende o conceito de Natalidade: a educação deve acolher os mais jovens, apresentando-lhes o mundo e a tradição para que eles tenham bases sólidas e capacidade de renová-lo.",
+enunciado: "Com relação à responsabilidade das gerações adultas perante a chegada dos mais jovens à vida pública, a reflexão ética e política de Hannah Arendt defende que:",
+options: [
+{ text: "Os jovens devem ser moldados de forma rígida para reproduzir sem alterações os erros do passado.", correct: false },
+{ text: "A responsabilidade intergeracional consiste em acolher os novos no mundo, garantindo a continuidade e a capacidade de renovação.", correct: true },
+{ text: "A política e a educação devem ser guiadas pelo esquecimento da história e pelo descarte das tradições.", correct: false }
+],
+explanation: "Você errou porque Hannah Arendt não propõe a cópia cega do passado nem o apagamento da história. A responsabilidade adulta é acolher os jovens no mundo para que possam renová-lo mantendo a continuidade."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0; // Sequência 0 a 9 (Inimigos 1 ao 10)
+let activeEnemyObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const enemies = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 90;
+
+// VELOCIDADES: Jogador (0.40)
+const PLAYER_SPEED = 0.40;
+
+// ESTADO DO SIMULADO
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// --- CRIAÇÃO DE PERSONAGENS (JOGADOR E INIMIGOS) ---
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+// Textura do Corpo com Número nas Costas
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+if (numberStr) {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr, 128, 128);
+} else {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('Φ', 128, 128);
+}
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+// Torso
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+// Cabeça
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+// Olhos e Expressão
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+} else if (expr === 'sad') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = 0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = -0.35; eyeGroup.add(browR);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02), browMat);
+mouth.position.set(0, -0.08, 0.25); eyeGroup.add(mouth);
+}
+}
+
+drawFace(expression);
+
+// Braços e Pernas
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = -0.016;
+const jumpStrength = 0.35;
+let walkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+document.getElementById('btn-jump').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!isJumping) {
+isJumping = true; jumpVelocity = jumpStrength;
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -90; i <= 90; i += 12) {
+[-90, 90].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+// --- CONSTRUÇÃO DO CENÁRIO Q5 ---
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+// Chão de relva
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(190, 190), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// Caminho de terra
+const path = new THREE.Mesh(new THREE.PlaneGeometry(20, 190), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01;
+path.rotation.x = -Math.PI / 2;
+scene.add(path);
+
+// Paredão de pedra
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(190, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -75);
+scene.add(cliff);
+colliders.push({ type: 'box', minX: -95, maxX: 95, minZ: -86, maxZ: -64 });
+
+// Cachoeira animada
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -64.8);
+scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+// Animais espalhados pelo vale
+for (let i = 0; i < 8; i++) {
+const animal = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.5, 2.4), new THREE.MeshStandardMaterial({ color: 0xa16207 }));
+animal.position.set(-40 + i * 12, 0.75, 10 + (i % 2) * 15);
+scene.add(animal);
+}
+
+addMapBoundaryFence('trees');
+
+// --- CRIAR OS 10 INIMIGOS VERDES (1 A 10) ---
+const enemyPositions = [
+{ id: 1, x: -25, z: -20 },
+{ id: 2, x: 25, z: 10 },
+{ id: 3, x: -15, z: 40 },
+{ id: 4, x: 35, z: -35 },
+{ id: 5, x: -40, z: 15 },
+{ id: 6, x: 10, z: -50 },
+{ id: 7, x: -50, z: -45 },
+{ id: 8, x: 45, z: 45 },
+{ id: 9, x: 0, z: 60 },
+{ id: 10, x: -30, z: 50 }
+];
+
+enemyPositions.forEach((cfg, idx) => {
+const enemyMesh = createCharacterMesh(0x16a34a, true, cfg.id.toString(), 'evil');
+enemyMesh.group.position.set(cfg.x, 0, cfg.z);
+scene.add(enemyMesh.group);
+
+// Marcador com Número
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(cfg.id.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0);
+enemyMesh.group.add(numberMarker);
+
+// Anel de Destaque Dourado (Apenas para o inimigo ativo)
+const auraGeo = new THREE.RingGeometry(0.8, 1.3, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2;
+auraMesh.position.y = 0.05;
+auraMesh.visible = (idx === 0);
+enemyMesh.group.add(auraMesh);
+
+const randomSpeed = 0.05 + Math.random() * 0.07;
+
+enemies.push({
+id: cfg.id,
+mesh: enemyMesh,
+marker: numberMarker,
+aura: auraMesh,
+angle: Math.random() * Math.PI * 2,
+speed: randomSpeed,
+changeTimer: Math.random() * 50,
+isDefeated: false,
+isAscending: false
+});
+});
+
+// --- CRIAR O INIMIGO VERMELHO PERSEGUIDOR ---
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -40);
+scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0);
+chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = {
+mesh: chaserMesh,
+marker: chaserMarker,
+speed: 0.08,
+startX: 0,
+startZ: -40
+};
+
+player.group.position.set(0, 0, 0);
+updateEnemyAuras();
+}
+
+function updateEnemyAuras() {
+enemies.forEach((e, idx) => {
+if (e.aura) {
+e.aura.visible = (!e.isDefeated && idx === currentTargetIndex);
+}
+});
+if (currentTargetIndex < enemies.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Inimigo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+// --- CONTROLE DAS TELAS INICIAIS ---
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-start').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Inimigo 1!");
+});
+
+// --- SISTEMA DE MENSAGENS E INTERAÇÃO COM INIMIGOS VERDES ---
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerEnemyInteraction(enemy) {
+activeEnemyObj = enemy;
+const dbData = gameDatabase[enemy.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Inimigo ${enemy.id} Capturado - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeEnemyObj.mesh.drawFace('sad');
+activeEnemyObj.isDefeated = true;
+activeEnemyObj.isAscending = true;
+defeatedCount++;
+
+currentTargetIndex++;
+updateEnemyAuras();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 inimigos foram capturados! Iniciando Simulado...");
+setTimeout(() => {
+startSimulado();
+}, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo inimigo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! O inimigo empurrou você...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeEnemyObj.mesh.group.position.x, player.group.position.z - activeEnemyObj.mesh.group.position.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+// --- SISTEMA DO SIMULADO FINAL E RELATÓRIO DE GABARITO ---
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({
+questionData: qData,
+selectedOption: opt,
+isCorrect: opt.correct
+});
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-4';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+// Animação de rotação/pulso do anel do inimigo ativo
+enemies.forEach(e => {
+if (e.aura && e.aura.visible) {
+e.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else if (!isJumping) {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (isJumping) {
+player.group.position.y += jumpVelocity; jumpVelocity += gravity;
+if (player.group.position.y <= 0) { player.group.position.y = 0; isJumping = false; jumpVelocity = 0; }
+}
+
+enemies.forEach((enemy, idx) => {
+enemy.marker.rotation.y = -characterAngle;
+if (enemy.isAscending) {
+enemy.mesh.group.position.y += delta * 6.0;
+if (enemy.mesh.group.position.y > 60.0) {
+scene.remove(enemy.mesh.group);
+enemy.isAscending = false;
+}
+} else if (!enemy.isDefeated) {
+enemy.changeTimer -= delta * 10;
+if (enemy.changeTimer <= 0) {
+enemy.angle += (Math.random() - 0.5) * 2.0;
+enemy.changeTimer = 15 + Math.random() * 35;
+}
+enemy.mesh.group.rotation.y = enemy.angle;
+const nextEX = enemy.mesh.group.position.x + Math.sin(enemy.angle) * enemy.speed;
+const nextEZ = enemy.mesh.group.position.z + Math.cos(enemy.angle) * enemy.speed;
+if (!checkCollision({ x: nextEX, z: nextEZ })) {
+enemy.mesh.group.position.x = nextEX;
+enemy.mesh.group.position.z = nextEZ;
+} else {
+enemy.angle += Math.PI * 0.75;
+}
+
+// APENAS O INIMIGO DA VEZ (currentTargetIndex) PODE SER INTERAGIDO
+const distToPlayer = Math.hypot(player.group.position.x - enemy.mesh.group.position.x, player.group.position.z - enemy.mesh.group.position.z);
+if (distToPlayer < 2.0 && idx === currentTargetIndex && document.getElementById('quiz-modal').classList.contains('hidden') && document.getElementById('simulado-modal').classList.contains('hidden')) {
+triggerEnemyInteraction(enemy);
+}
+}
+});
+
+// LÓGICA DO INIMIGO VERMELHO PERSEGUIDOR
+if (chaserEnemy && document.getElementById('start-modal').classList.contains('hidden') && document.getElementById('rules-modal').classList.contains('hidden')) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+}
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -4.8;
+const camOffsetZ = Math.cos(characterAngle) * -4.8;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 2.6 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
