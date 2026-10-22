@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>7º PV Aula 4</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 16px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">7º PV Aula 4</h1>
+<p id="scene-subtitle" class="text-[10px] text-amber-400">Capture o Inimigo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-shield-halved text-lg"></i>
+<span id="enter-prompt-text">Alcance os Inimigos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-jump" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-angles-up text-base"></i>
+<span id="jump-btn-label">PULAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">7º PV Aula 4</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">7º PV Aula 4</h1>
+<p class="text-xs text-slate-400 font-medium">Preparatório para Avaliações de Projeto de Vida e Engajamento Social</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>Engajamento comunitário: Identificação e apoio às necessidades da família e escola.</li>
+<li>Empatia na rotina escolar: Ações de cooperação e acolhimento aos colegas.</li>
+<li>Autoavaliação e convivência: Divisão justa das responsabilidades em casa.</li>
+<li>Identificação de necessidades: Soluções inclusivas para os problemas do entorno.</li>
+<li>Cidadania ativa: Coresponsabilidade na construção de um ambiente melhor.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+INICIAR JORNADA <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO E OBJETIVOS</h2>
+<p class="text-xs text-slate-400 font-medium">Leia atentamente antes de começar a perseguição</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ol class="space-y-2.5 list-decimal pl-4 leading-relaxed">
+<li><strong>Explore o Vale:</strong> Use as setas/D-Pad para movimentar a personagem pelo cenário e o botão <strong>PULAR</strong> para desviar de obstáculos.</li>
+<li><strong>Cuidado com o Perseguidor:</strong> Um <strong>inimigo vermelho ( ! )</strong> está perseguindo você! Se ele te alcançar, você e ele voltarão para o ponto inicial do mapa.</li>
+<li><strong>Capture os Inimigos Verdes na Sequência:</strong> Existem <strong>10 inimigos verdes</strong> (1 ao 10). Você só poderá pegar o inimigo da vez! Ele estará com um <strong>brilho dourado</strong> em destaque.</li>
+<li><strong>Acertou, Avançou:</strong> Ao responder corretamente à pergunta do inimigo verde, ele subirá ao céu e o próximo inimigo ficará disponível.</li>
+<li><strong>O Simulado Final:</strong> Após derrotar os 10 inimigos verdes, o <strong>Simulado Final</strong> será liberado para você concluir a fase e receber seu gabarito comentado!</li>
+</ol>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-start" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+ENTENDI! COMEÇAR JOGO <i class="fa-solid fa-play ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS INIMIGOS VERDES -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - 7º PV Aula 4</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<!-- Conteúdo do Simulado (Questões / Resultados) -->
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<!-- Dica curta da questão -->
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<!-- Enunciado e Opções -->
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BASE DE DADOS INTEGRADA DE DICAS, VERIFICAÇÕES E SIMULADO (7º PV Aula 4) ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "Ajudar as pessoas começa quando prestamos atenção ao nosso redor. Ser colaborativo é ver que alguém precisa de apoio em casa ou na escola e agir para ajudar sem precisar que ninguém peça.",
+verifications: [
+{ q: "Como podemos demonstrar que somos pessoas colaborativas no dia a dia?", correct: "Ajudando quem precisa assim que notamos uma dificuldade.", wrongs: ["Esperando que os outros façam todas as tarefas sozinhos.", "Fazendo apenas as atividades que trazem diversão rápida."] },
+{ q: "O que é preciso fazer antes de ajudar alguém em casa ou na escola?", correct: "Observar com atenção as necessidades ao nosso redor.", wrongs: ["Exigir um prêmio em dinheiro para começar a tarefa.", "Pedir para outra pessoa resolver o problema por nós."] }
+]
+},
+{
+id: 2,
+tipText: "Nossas atitudes diárias constroem um ambiente melhor para todos. Quando assumimos pequenas responsabilidades, mostramos respeito e cuidado com a nossa família e com nossos colegas.",
+verifications: [
+{ q: "O que acontece quando assumimos pequenas tarefas no nosso dia a dia?", correct: "Criamos um ambiente mais harmonioso e seguro para todos.", wrongs: ["Deixamos de aprender coisas importantes para a nossa vida.", "Impedimos que as outras pessoas consigam nos ajudar."] },
+{ q: "Como mostramos cuidado e respeito pelas pessoas da nossa convivência?", correct: "Cumprindo nossos deveres com atenção e responsabilidade.", wrongs: ["Ignorando as regras organizadas pela família e escola.", "Refazendo as tarefas apenas quando recebemos bronca."] }
+]
+},
+{
+id: 3,
+tipText: "Ter empatia na escola é se colocar no lugar do outro. Se um colega está com dificuldades nos estudos ou triste, podemos oferecer apoio para que ele se sinta acolhido e seguro.",
+verifications: [
+{ q: "Qual destas atitudes mostra que um estudante tem empatia na escola?", correct: "Apoiar o colega que está com dúvidas nos exercícios.", wrongs: ["Rir dos erros cometidos pelos colegas durante as aulas.", "Deixar o colega estudando sozinho no canto da sala."] },
+{ q: "O que significa se colocar no lugar de outra pessoa na sala de aula?", correct: "Entender o que o outro sente e tentar ajudar com carinho.", wrongs: ["Pegar os materiais do colega sem pedir autorização.", "Mudar de carteira sem avisar os professores da escola."] }
+]
+},
+{
+id: 4,
+tipText: "Cuidar do espaço escolar é um dever de todos. Manter a sala limpa, guardar os materiais e respeitar os momentos de fala ajuda a turma inteira a aprender melhor.",
+verifications: [
+{ q: "Por que é importante manter a sala de aula limpa e organizada?", correct: "Porque um espaço limpo facilita o aprendizado de todos.", wrongs: ["Porque assim não precisamos fazer as tarefas do dia.", "Porque a sala limpa é usada apenas para jogos rápidos."] },
+{ q: "Como podemos ajudar durante as explicações dos professores na aula?", correct: "Escutando com atenção e respeitando os momentos de fala.", wrongs: ["Conversando alto com os colegas do lado durante a explicação.", "Guardando os materiais no meio da aula sem fazer barulho."] }
+]
+},
+{
+id: 5,
+tipText: "Avaliar o próprio engajamento é fazer uma autoavaliação sincera. É parar um pouco e pensar: 'Eu estou ajudando de verdade na minha casa ou estou deixando tudo nas costas dos outros?'",
+verifications: [
+{ q: "O que significa fazer uma autoavaliação sobre o nosso comportamento?", correct: "Refletir com sinceridade sobre as nossas próprias ações.", wrongs: ["Culpar os amigos quando uma tarefa dá errada.", "Pedir para os familiares avaliarem nossos cadernos."] },
+{ q: "Para saber se estamos ajudando em casa, devemos perguntar se:", correct: "Estamos colaborando com a divisão das tarefas da rotina.", wrongs: ["Estamos guardando os brinquedos apenas quando manda.", "Estamos assistindo televisão o dia todo sem parar."] }
+]
+},
+{
+id: 6,
+tipText: "Quando dividimos as tarefas em casa, a rotina fica mais leve para a família. Ajudar a arrumar a mesa ou organizar o próprio quarto são formas simples e valiosas de colaborar.",
+verifications: [
+{ q: "Qual é uma forma simples de colaborar com a rotina da nossa casa?", correct: "Manter o próprio quarto organizado e arrumar a mesa.", wrongs: ["Deixar as roupas espalhadas pelo chão do quarto.", "Esperar que os pais façam tudo sem ajuda de ninguém."] },
+{ q: "O que acontece quando todos na família dividem os deveres diários?", correct: "A rotina da casa fica mais leve e agradável para todos.", wrongs: ["As tarefas demoram muito mais tempo para terminar.", "Os adultos precisam trabalhar o dobro do tempo normal."] }
+]
+},
+{
+id: 7,
+tipText: "Ficar atento ao entorno ajuda a identificar problemas no ambiente escolar. Quando notamos que algo não vai bem, podemos conversar com os colegas e propor soluções positivas.",
+verifications: [
+{ q: "O que devemos fazer ao notar um problema na convivência da escola?", correct: "Conversar com o grupo para pensar em boas soluções.", wrongs: ["Ignorar a situação e fingir que nada está acontecendo.", "Reclamar com os colegas sem tentar resolver nada."] },
+{ q: "Como a turma pode melhorar a convivência durante o recreio da escola?", correct: "Criando brincadeiras que incluam todos os estudantes.", wrongs: ["Separando os alunos mais novos dos alunos mais velhos.", "Usando o espaço do pátio apenas para a sua turma."] }
+]
+},
+{
+id: 8,
+tipText: "A inclusão acontece quando garantimos que ninguém fique de fora das atividades. Acolher os colegas mais novos ou envergonhados torna a escola um lugar seguro para todos.",
+verifications: [
+{ q: "De que forma podemos praticar a inclusão no ambiente escolar?", correct: "Convidando colegas tímidos para participar das brincadeiras.", wrongs: ["Escolhendo sempre os mesmos amigos para os trabalhos.", "Deixando que os alunos novos brinquem sem ajuda."] },
+{ q: "Por que é importante acolher os estudantes que chegam à escola?", correct: "Para fazer com que todos se sintam seguros e bem-vindos.", wrongs: ["Para garantir notas mais altas nas provas de estudo.", "Para evitar que os professores façam chamadas longas."] }
+]
+},
+{
+id: 9,
+tipText: "A cidadania ativa significa entender que nossas ações fazem a diferença no mundo. Não devemos esperar apenas pelas autoridades; nós também podemos transformar nossa comunidade.",
+verifications: [
+{ q: "O que um estudante que pratica a cidadania ativa costuma fazer?", correct: "Colabora com ações que melhoram o ambiente ao seu redor.", wrongs: ["Deixa que o governo resolva os problemas da sua rua sozinho.", "Espera ganhar presentes para poder cuidar da sua escola."] },
+{ q: "Quem é responsável por cuidar dos espaços que usamos no dia a dia?", correct: "Cada um de nós em conjunto com toda a comunidade.", wrongs: ["Apenas os funcionários encarregados da limpeza local.", "Somente os professores e os diretores do colégio."] }
+]
+},
+{
+id: 10,
+tipText: "Coresponsabilidade é saber que o bem-estar do grupo depende de cada um. Quando unimos forças para cuidar da família, da escola e do bairro, construímos um futuro melhor.",
+verifications: [
+{ q: "O que significa o conceito de coresponsabilidade em um grupo?", correct: "Compreender que a melhoria de um espaço depende de todos nós.", wrongs: ["Entender que apenas uma pessoa deve fazer todo o trabalho duro.", "Deixar que os adultos tomem todas as decisões da nossa vida."] },
+{ q: "Qual é o resultado de uma comunidade onde todos se ajudam mutuamente?", correct: "A construção de um ambiente mais justo, forte e acolhedor.", wrongs: ["O surgimento de brigas frequentes entre os moradores do bairro.", "A falta de tempo livre para o descanso das crianças e jovens."] }
+]
+}
+];
+
+// --- DADOS DO SIMULADO FINAL (7º PV Aula 4) ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "O engajamento comunitário e familiar se manifesta quando a pessoa observa as necessidades ao seu redor e age de forma proativa para colaborar e apoiar o grupo.",
+enunciado: "Apoiar as pessoas da nossa família e da nossa escola começa com a observação das necessidades do ambiente em que vivemos. Quando um estudante decide ajudar ativamente no seu dia a dia, ele demonstra engajamento ao:",
+options: [
+{ text: "Esperar que outras pessoas resolvam todos os problemas e tarefas antes de tomar qualquer atitude.", correct: false },
+{ text: "Perceber as dificuldades do seu entorno e colaborar com tarefas e ações de apoio mútuo.", correct: true },
+{ text: "Realizar apenas suas vontades individuais, sem se preocupar com as rotinas da casa e da sala de aula.", correct: false }
+],
+explanation: "O engajamento comunitário e familiar se manifesta quando a pessoa observa as necessidades ao seu redor e age de forma proativa para colaborar e apoiar o grupo."
+},
+{
+id: 2,
+shortTip: "Ajudar os colegas em suas dificuldades de aprendizado e manter o ambiente organizado são formas diretas de praticar a empatia e o apoio mútuo na escola.",
+enunciado: "No ambiente escolar, a convivência diária nos apresenta diversas oportunidades para ajudar colegas e professores. Assinale a alternativa que apresenta uma atitude empática e colaborativa na rotina da escola:",
+options: [
+{ text: "Oferecer ajuda a um colega que está com dificuldades para entender uma matéria ou organizar seus materiais.", correct: true },
+{ text: "Ignorar os avisos de organização da sala de aula, deixando o lixo no chão para que outros limpem.", correct: false },
+{ text: "Fazer comentários desnecessários sobre o desempenho de outros estudantes durante a apresentação de trabalhos.", correct: false }
+],
+explanation: "Ajudar os colegas em suas dificuldades de aprendizado e manter o ambiente organizado são formas diretas de praticar a empatia e o apoio mútuo na escola."
+},
+{
+id: 3,
+shortTip: "Avaliar o próprio engajamento exige refletir se nossas escolhas e comportamentos ajudam a dividir tarefas e melhorar o clima comunitário e familiar.",
+enunciado: "Avaliar o próprio engajamento significa olhar para as nossas atitudes cotidianas e refletir sobre quanto estamos dispostos a contribuir para o bem-estar coletivo. Um estudante que faz uma autoavaliação crítica do seu papel na família deve considerar se:",
+options: [
+{ text: "Suas atitudes contribuem para dividir as responsabilidades diárias e cultivar um ambiente harmonioso.", correct: true },
+{ text: "Suas opiniões são sempre aceitas por todos os familiares sem nenhum tipo de questionamento ou conversa.", correct: false },
+{ text: "Suas obrigações escolares são mais importantes do que respeitar as regras de convivência de sua casa.", correct: false }
+],
+explanation: "Avaliar o próprio engajamento exige refletir se nossas escolhas e comportamentos ajudam a dividir tarefas e melhorar o clima comunitário e familiar."
+},
+{
+id: 4,
+shortTip: "Identificar uma necessidade na comunidade escolar e agir com diálogo para criar soluções inclusivas demonstra um alto nível de engajamento e responsabilidade social.",
+enunciado: "Durante o intervalo, um grupo de alunos do 7º ano notou que muitos estudantes do 6º ano ficavam isolados e sem espaço para brincar ou conversar. Para responder de forma ética e engajada a essa demanda do entorno, os alunos devem:",
+options: [
+{ text: "Transferir a responsabilidade apenas para a direção da escola, evitando se envolver no assunto.", correct: false },
+{ text: "Dialogar com os colegas e criar propostas de atividades inclusivas para promover a acolhida durante o recreio.", correct: true },
+{ text: "Reservar o espaço do pátio exclusivamente para a sua própria turma, impedindo o acesso dos mais novos.", correct: false }
+],
+explanation: "Identificar uma necessidade na comunidade escolar e agir com diálogo para criar soluções inclusivas demonstra um alto nível de engajamento e responsabilidade social."
+},
+{
+id: 5,
+shortTip: "A coresponsabilidade e a cidadania ativa pressupõem que a melhoria da sociedade e dos grupos nos quais estamos inseridos depende da participação de cada um no cuidado com o outro.",
+enunciado: "A reflexão sobre a coresponsabilidade nos mostra que não somos apenas espectadores do meio em que vivemos, mas agentes capazes de transformar a realidade da nossa família e escola. Ao avaliar seu envolvimento social com base na cidadania ativa, o jovem compreende que:",
+options: [
+{ text: "A ajuda comunitária deve ocorrer somente quando houver promessa de recompensa financeira ou nota escolar.", correct: false },
+{ text: "O bem-estar coletivo depende do empenho e da colaboração de cada indivíduo na busca de soluções para os problemas do grupo.", correct: true },
+{ text: "As necessidades do entorno devem ser resolvidas apenas pelas autoridades políticas, sem a participação dos cidadãos.", correct: false }
+],
+explanation: "A coresponsabilidade e a cidadania ativa pressupõem que a melhoria da sociedade e dos grupos nos quais estamos inseridos depende da participação de cada um no cuidado com o outro."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0; // Sequência 0 a 9 (Inimigos 1 ao 10)
+let activeEnemyObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const enemies = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 90;
+
+// VELOCIDADES: Jogador (0.40)
+const PLAYER_SPEED = 0.40;
+
+// ESTADO DO SIMULADO
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+// --- CRIAÇÃO DE PERSONAGENS (JOGADOR E INIMIGOS) ---
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+// Textura do Corpo com Número nas Costas
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+if (numberStr) {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr, 128, 128);
+} else {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('Φ', 128, 128);
+}
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+// Torso
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+// Cabeça
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+// Olhos e Expressão
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+} else if (expr === 'sad') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = 0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = -0.35; eyeGroup.add(browR);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02), browMat);
+mouth.position.set(0, -0.08, 0.25); eyeGroup.add(mouth);
+}
+}
+
+drawFace(expression);
+
+// Braços e Pernas
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = -0.016;
+const jumpStrength = 0.35;
+let walkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+document.getElementById('btn-jump').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!isJumping) {
+isJumping = true; jumpVelocity = jumpStrength;
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -90; i <= 90; i += 12) {
+[-90, 90].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+// --- CONSTRUÇÃO DO CENÁRIO Q5 ---
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+// Chão de relva
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(190, 190), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+// Caminho de terra
+const path = new THREE.Mesh(new THREE.PlaneGeometry(20, 190), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01;
+path.rotation.x = -Math.PI / 2;
+scene.add(path);
+
+// Paredão de pedra
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(190, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -75);
+scene.add(cliff);
+colliders.push({ type: 'box', minX: -95, maxX: 95, minZ: -86, maxZ: -64 });
+
+// Cachoeira animada
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -64.8);
+scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+// Animais espalhados pelo vale
+for (let i = 0; i < 8; i++) {
+const animal = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.5, 2.4), new THREE.MeshStandardMaterial({ color: 0xa16207 }));
+animal.position.set(-40 + i * 12, 0.75, 10 + (i % 2) * 15);
+scene.add(animal);
+}
+
+addMapBoundaryFence('trees');
+
+// --- CRIAR OS 10 INIMIGOS VERDES (1 A 10) ---
+const enemyPositions = [
+{ id: 1, x: -25, z: -20 },
+{ id: 2, x: 25, z: 10 },
+{ id: 3, x: -15, z: 40 },
+{ id: 4, x: 35, z: -35 },
+{ id: 5, x: -40, z: 15 },
+{ id: 6, x: 10, z: -50 },
+{ id: 7, x: -50, z: -45 },
+{ id: 8, x: 45, z: 45 },
+{ id: 9, x: 0, z: 60 },
+{ id: 10, x: -30, z: 50 }
+];
+
+enemyPositions.forEach((cfg, idx) => {
+const enemyMesh = createCharacterMesh(0x16a34a, true, cfg.id.toString(), 'evil');
+enemyMesh.group.position.set(cfg.x, 0, cfg.z);
+scene.add(enemyMesh.group);
+
+// Marcador com Número
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(cfg.id.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0);
+enemyMesh.group.add(numberMarker);
+
+// Anel de Destaque Dourado (Apenas para o inimigo ativo)
+const auraGeo = new THREE.RingGeometry(0.8, 1.3, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2;
+auraMesh.position.y = 0.05;
+auraMesh.visible = (idx === 0);
+enemyMesh.group.add(auraMesh);
+
+const randomSpeed = 0.05 + Math.random() * 0.07;
+
+enemies.push({
+id: cfg.id,
+mesh: enemyMesh,
+marker: numberMarker,
+aura: auraMesh,
+angle: Math.random() * Math.PI * 2,
+speed: randomSpeed,
+changeTimer: Math.random() * 50,
+isDefeated: false,
+isAscending: false
+});
+});
+
+// --- CRIAR O INIMIGO VERMELHO PERSEGUIDOR ---
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -40);
+scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0);
+chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = {
+mesh: chaserMesh,
+marker: chaserMarker,
+speed: 0.08,
+startX: 0,
+startZ: -40
+};
+
+player.group.position.set(0, 0, 0);
+updateEnemyAuras();
+}
+
+function updateEnemyAuras() {
+enemies.forEach((e, idx) => {
+if (e.aura) {
+e.aura.visible = (!e.isDefeated && idx === currentTargetIndex);
+}
+});
+if (currentTargetIndex < enemies.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Inimigo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+// --- CONTROLE DAS TELAS INICIAIS ---
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-start').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Inimigo 1!");
+});
+
+// --- SISTEMA DE MENSAGENS E INTERAÇÃO COM INIMIGOS VERDES ---
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerEnemyInteraction(enemy) {
+activeEnemyObj = enemy;
+const dbData = gameDatabase[enemy.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Inimigo ${enemy.id} Capturado - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeEnemyObj.mesh.drawFace('sad');
+activeEnemyObj.isDefeated = true;
+activeEnemyObj.isAscending = true;
+defeatedCount++;
+
+currentTargetIndex++;
+updateEnemyAuras();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 inimigos foram capturados! Iniciando Simulado...");
+setTimeout(() => {
+startSimulado();
+}, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo inimigo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! O inimigo empurrou você...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeEnemyObj.mesh.group.position.x, player.group.position.z - activeEnemyObj.mesh.group.position.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+// --- SISTEMA DO SIMULADO FINAL E RELATÓRIO DE GABARITO ---
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({
+questionData: qData,
+selectedOption: opt,
+isCorrect: opt.correct
+});
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-4';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+// Animação de rotação/pulso do anel do inimigo ativo
+enemies.forEach(e => {
+if (e.aura && e.aura.visible) {
+e.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else if (!isJumping) {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (isJumping) {
+player.group.position.y += jumpVelocity; jumpVelocity += gravity;
+if (player.group.position.y <= 0) { player.group.position.y = 0; isJumping = false; jumpVelocity = 0; }
+}
+
+enemies.forEach((enemy, idx) => {
+enemy.marker.rotation.y = -characterAngle;
+if (enemy.isAscending) {
+enemy.mesh.group.position.y += delta * 6.0;
+if (enemy.mesh.group.position.y > 60.0) {
+scene.remove(enemy.mesh.group);
+enemy.isAscending = false;
+}
+} else if (!enemy.isDefeated) {
+enemy.changeTimer -= delta * 10;
+if (enemy.changeTimer <= 0) {
+enemy.angle += (Math.random() - 0.5) * 2.0;
+enemy.changeTimer = 15 + Math.random() * 35;
+}
+enemy.mesh.group.rotation.y = enemy.angle;
+const nextEX = enemy.mesh.group.position.x + Math.sin(enemy.angle) * enemy.speed;
+const nextEZ = enemy.mesh.group.position.z + Math.cos(enemy.angle) * enemy.speed;
+if (!checkCollision({ x: nextEX, z: nextEZ })) {
+enemy.mesh.group.position.x = nextEX;
+enemy.mesh.group.position.z = nextEZ;
+} else {
+enemy.angle += Math.PI * 0.75;
+}
+
+// APENAS O INIMIGO DA VEZ (currentTargetIndex) PODE SER INTERAGIDO
+const distToPlayer = Math.hypot(player.group.position.x - enemy.mesh.group.position.x, player.group.position.z - enemy.mesh.group.position.z);
+if (distToPlayer < 2.0 && idx === currentTargetIndex && document.getElementById('quiz-modal').classList.contains('hidden') && document.getElementById('simulado-modal').classList.contains('hidden')) {
+triggerEnemyInteraction(enemy);
+}
+}
+});
+
+// LÓGICA DO INIMIGO VERMELHO PERSEGUIDOR
+if (chaserEnemy && document.getElementById('start-modal').classList.contains('hidden') && document.getElementById('rules-modal').classList.contains('hidden')) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+}
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -4.8;
+const camOffsetZ = Math.cos(characterAngle) * -4.8;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 2.6 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
