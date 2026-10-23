@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-jogos-educativos-v8';
+const CACHE_NAME = 'hub-jogos-educativos-v9';
 
 // Lista exata de arquivos para armazenar em cache
 const ASSETS_TO_CACHE = [
@@ -17,7 +17,8 @@ const ASSETS_TO_CACHE = [
   'tarefa-sp-3.html',
   'tarefa-sp-dois.html',
   'tarefa-sp-quatro.html',
-  'tarefa-sp-cinco.html'
+  'tarefa-sp-cinco.html',
+  'tarefa-sp-seis.html'
 ];
 
 // Instalação do Service Worker com cache tolerante a falhas
