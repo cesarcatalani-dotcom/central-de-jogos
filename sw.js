@@ -1,14 +1,17 @@
-const CACHE_NAME = 'hub-jogos-educativos-v9';
+const CACHE_NAME = 'hub-jogos-educativos-v10';
 
 // Lista exata de arquivos para armazenar em cache
 const ASSETS_TO_CACHE = [
   'index.html',
   '6º-Aula-3.html',
+  'sexto-pv-aula-quatro.html',
   '7º-TI-Aulas-3-4.html',
   'setimo-pv-aula-quatro.html',
   'ti-oitavo-aulas-tres-quatro.html',
   'pv-oitavo-aula-tres.html',
   '9º-Aulas-4.html',
+  'nono-pv-aula-cinco.html',
+  'nono-acessibilizado-aula-cinco.html',
   'terceira-aula-nove.html',
   'filo-race-alienacao.html',
   'mario-empatia.html',
@@ -18,6 +21,7 @@ const ASSETS_TO_CACHE = [
   'tarefa-sp-dois.html',
   'tarefa-sp-quatro.html',
   'tarefa-sp-cinco.html',
+  'tsp-cinco-acessibilizada.html',
   'tarefa-sp-seis.html'
 ];
 
