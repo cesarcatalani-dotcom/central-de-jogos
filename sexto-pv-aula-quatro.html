@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>Tarefa SP 5</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 8px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+
+/* --- REGRAS DE TAMANHO DE FONTE --- */
+.text-\[10px\] { font-size: 13px !important; line-height: 19px !important; }
+.text-\[11px\] { font-size: 14px !important; line-height: 21px !important; }
+.text-xs { font-size: 0.95rem !important; line-height: 1.45rem !important; }
+.text-sm { font-size: 1.1rem !important; line-height: 1.6rem !important; }
+.text-base { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-lg { font-size: 1.375rem !important; line-height: 1.875rem !important; }
+.text-xl { font-size: 1.5rem !important; line-height: 2.0rem !important; }
+
+/* Ajustes de tamanho dos contêineres */
+.max-w-sm { max-width: 28rem !important; }
+.max-w-md { max-width: 32rem !important; }
+.max-w-lg { max-width: 36rem !important; }
+.max-w-xl { max-width: 40rem !important; }
+.w-52 { width: 11.5rem !important; }
+.h-36 { height: 7.8rem !important; }
+.dpad-btn { font-size: 1.2rem !important; border-radius: 8px !important; }
+.jump-btn span { font-size: 0.75rem !important; }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">Tarefa SP 5</h1>
+<p id="scene-subtitle" class="text-[10px] text-amber-400">Capture o Inimigo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-shield-halved text-lg"></i>
+<span id="enter-prompt-text">Alcance os Alvos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto mb-2">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-jump" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-[#f59e0b] text-base"></i>
+<span id="jump-btn-label">PULAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">Tarefa SP 5</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">Tarefa SP 5</h1>
+<p class="text-xs text-slate-400 font-medium">Análise de Cenários e Decisões Coletivas para o Futuro</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>Análise de cenários: mapear possibilidades futuras antes de tomar decisões importantes.</li>
+<li>Papel das pessoas: identificar como as conexões e relacionamentos influenciam nossas escolhas de vida.</li>
+<li>Teste de decisões: simular diferentes caminhos futuros para avaliar riscos e oportunidades.</li>
+<li>Diálogo e cooperação: a importância de ouvir o outro para tomar decisões mais conscientes.</li>
+<li>Construção coletiva: como planejar o futuro criando soluções juntas com a comunidade e família.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 1.1: VERIFICAÇÃO DE LEITURA DA TELA INICIAL -->
+<div id="start-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação dos Objetivos</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para prosseguir</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="start-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="start-quiz-options" class="space-y-2"></div>
+</div>
+<div id="start-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO</h2>
+<p class="text-xs text-slate-400 font-medium">Leia com atenção antes de começar</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ul class="space-y-2 list-disc pl-4 leading-relaxed">
+<li>Mova-se e pule usando o controle na tela.</li>
+<li>Fuja do inimigo vermelho perseguidor (ele reseta sua posição ao te tocar).</li>
+<li>Alcance em ordem os 10 inimigos verdes numerados para abrir os quizzes.</li>
+<li>Após o décimo inimigo, faça o simulado final e mostre o gabarito ao professor.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2.1: VERIFICAÇÃO DE LEITURA DAS REGRAS -->
+<div id="rules-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação das Regras</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para iniciar a partida</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="rules-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="rules-quiz-options" class="space-y-2"></div>
+</div>
+<div id="rules-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS ALVOS -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-[11px] font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - Tarefa SP 5</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BANCO DE QUESTÕES DE VERIFICAÇÃO INICIAL E DE REGRAS ---
+const startModalQuestions = [
+{
+q: "Para tomar decisões conscientes sobre o futuro, o primeiro passo é:",
+opts: [
+"Analisar cenários e avaliar como nossas escolhas afetam a nós e aos outros.",
+"Decidir no impulso sem pensar nas consequências a longo prazo.",
+"Ignorar o conselho e a perspectiva das pessoas ao nosso redor."
+],
+correctIndex: 0
+},
+{
+q: "Como o diálogo contribui na construção de decisões para o futuro?",
+opts: [
+"Permite impor a vontade de uma única pessoa sobre o grupo.",
+"Promove o entendimento mútuo e a criação de soluções coletivas.",
+"Aumenta a confusão e impede qualquer tomada de decisão."
+],
+correctIndex: 1
+},
+{
+q: "Testar decisões em diferentes cenários serve para:",
+opts: [
+"Garantir que nunca teremos que mudar de opinião no futuro.",
+"Simular possibilidades e avaliar caminhos mais seguros e viáveis.",
+"Adiar para sempre qualquer escolha importante na vida."
+],
+correctIndex: 1
+}
+];
+
+const rulesModalQuestions = [
+{
+q: "O que o estudante deve fazer para se mover no jogo?",
+opts: [
+"Mover-se e pular usando os controles digitais na tela.",
+"Digitar comandos em uma linha de código.",
+"Balançar o aparelho celular continuamente."
+],
+correctIndex: 0
+},
+{
+q: "O que acontece ao encostar no inimigo vermelho perseguidor?",
+opts: [
+"Ganhar pontos extras e velocidade máxima.",
+"Ele te alcança e reseta sua posição no mapa.",
+"A partida é encerrada imediatamente sem aviso."
+],
+correctIndex: 1
+},
+{
+q: "O que deve ser feito após capturar os 10 alvos verdes?",
+opts: [
+"Fechar o jogo sem salvar o progresso.",
+"Aguardar um temporizador automático de 10 minutos.",
+"Realizar o simulado final e mostrar o gabarito ao professor."
+],
+correctIndex: 2
+}
+];
+
+let startQuizIndex = 0;
+let rulesQuizIndex = 0;
+
+// --- BASE DE DADOS INTEGRADA DE DICAS, VERIFICAÇÕES E SIMULADO ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "DICA 1: Analisar cenários é olhar para o presente e imaginar caminhos possíveis para o futuro, ponderando riscos e oportunidades.",
+verifications: [
+{ q: "O que significa analisar cenários antes de tomar uma decisão?", correct: "Mapear possibilidades e avaliar os prós e contras de cada caminho.", wrongs: ["Escolher no impulso sem considerar as consequências.", "Copiar exatamente o que a maioria das pessoas está fazendo."] },
+{ q: "Qual a vantagem de mapear diferentes cenários futuros?", correct: "Preparar-se melhor para incertezas e tomar escolhas conscientes.", wrongs: ["Ter certeza absoluta do que acontecerá daqui a dez anos.", "Evitar assumir qualquer tipo de responsabilidade na vida."] }
+]
+},
+{
+id: 2,
+tipText: "DICA 2: As pessoas ao nosso redor (família, amigos, comunidade) influenciam e apoiam nossos projetos de vida.",
+verifications: [
+{ q: "Qual o papel das pessoas em nossas escolhas para o futuro?", correct: "Oferecer apoio, perspectivas e redes de colaboração.", wrongs: ["Determinar tudo o que devemos fazer sem nos ouvir.", "Atrapalhar sempre qualquer projeto pessoal de vida."] }
+]
+},
+{
+id: 3,
+tipText: "DICA 3: Testar decisões em cenários simulados evita escolhas precipitadas no futuro real.",
+verifications: [
+{ q: "Por que é útil 'testar' caminhos futuros antes de agir?", correct: "Para prever desafios e planejar respostas para eventuais problemas.", wrongs: ["Para nunca mais precisar tomar decisões na vida.", "Para descobrir uma fórmula mágica que elimina todos os riscos."] }
+]
+},
+{
+id: 4,
+tipText: "DICA 4: O diálogo é a ferramenta principal para alinhar expectativas e entender diferentes opiniões em um grupo.",
+verifications: [
+{ q: "Como o diálogo ajuda na tomada de decisões coletivas?", correct: "Permite ouvir diferentes pontos de vista e construir um consenso.", wrongs: ["Serve apenas para convencer os outros a fazerem o que eu quero.", "Gera brigas e impede o avanço de qualquer projeto em conjunto."] }
+]
+},
+{
+id: 5,
+tipText: "DICA 5: Soluções coletivas surgem quando várias pessoas colaboram ativamente com ideias para um objetivo comum.",
+verifications: [
+{ q: "O que caracteriza uma solução coletiva eficiente?", correct: "O envolvimento e o benefício de todos os membros do grupo.", wrongs: ["O benefício exclusivo do líder do projeto.", "A exclusão das pessoas que pensam diferente."] }
+]
+},
+{
+id: 6,
+tipText: "DICA 6: Como os cenários podem mudar, a flexibilidade e a capacidade de adaptação são fundamentais no planejamento.",
+verifications: [
+{ q: "O que fazer quando um cenário planejado muda de repente?", correct: "Reavaliar as opções com flexibilidade e buscar novos caminhos.", wrongs: ["Desistir totalmente do futuro e não fazer mais nada.", "Ignorar a mudança e continuar fazendo a mesma coisa errada."] }
+]
+},
+{
+id: 7,
+tipText: "DICA 7: Empatia é colocar-se no lugar do outro para entender como nossas decisões impactam quem nos cerca.",
+verifications: [
+{ q: "Como a empatia melhora a tomada de decisão em grupo?", correct: "Garante que a decisão respeite as necessidades de todas as pessoas.", wrongs: ["Faz com que a pessoa ignore seus próprios objetivos de vida.", "Impede que o grupo consiga tomar qualquer decisão prática."] }
+]
+},
+{
+id: 8,
+tipText: "DICA 8: Decisões fundamentadas em dados reais e conversas abertas reduzem incertezas sobre o amanhã.",
+verifications: [
+{ q: "Como podemos reduzir a incerteza ao planejar o futuro?", correct: "Buscando informações confiáveis e promovendo diálogos abertos.", wrongs: ["Acreditando em boatos e decisões impensadas.", "Evitando conversar com pessoas mais experientes."] }
+]
+},
+{
+id: 9,
+tipText: "DICA 9: O futuro não é algo fixo e pronto; ele é construído pelas escolhas e ações que realizamos hoje.",
+verifications: [
+{ q: "Qual a relação entre as escolhas de hoje e o cenário futuro?", correct: "As decisões atuais constroem ativamente as oportunidades de amanhã.", wrongs: ["O futuro não tem nenhuma relação com o que fazemos hoje.", "Tudo já está decidido e nossas escolhas não mudam nada."] }
+]
+},
+{
+id: 10,
+tipText: "DICA 10: Construir o futuro em conjunto exige responsabilidade, respeito mútuo e cooperação contínua.",
+verifications: [
+{ q: "Qual o principal benefício de construir decisões de forma coletiva?", correct: "Gera soluções mais sólidas, sustentáveis e aceitas por todos.", wrongs: ["Faz com que o trabalho seja feito apenas por uma pessoa.", "Elimina a necessidade de diálogo e escuta ativa no grupo."] }
+]
+}
+];
+
+// --- DADOS DO SIMULADO FINAL ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "DICA DA QUESTÃO 1: A análise de cenários permite avaliar caminhos e se preparar para diferentes situações futuras.",
+enunciado: "Ao planejar o futuro profissional ou pessoal, a análise de cenários serve para:",
+options: [
+{ text: "(A) Adivinhar com certeza absoluta o que vai acontecer no próximo ano.", correct: false },
+{ text: "(B) Mapear diferentes possibilidades, prever riscos e aproveitar oportunidades de forma estratégica.", correct: true },
+{ text: "(C) Escolher a opção mais rápida sem considerar o impacto nas outras pessoas.", correct: false },
+{ text: "(D) Evitar tomar qualquer tipo de decisão e esperar as coisas acontecerem.", correct: false },
+{ text: "(E) Seguir exatamente o mesmo caminho que outras pessoas seguiram no passado.", correct: false }
+],
+explanation: "A análise de cenários é uma ferramenta de planejamento que nos permite avaliar caminhos e nos preparar estrategicamente para o futuro."
+},
+{
+id: 2,
+shortTip: "DICA DA QUESTÃO 2: Entender o papel das pessoas ao nosso redor fortalece a criação de redes de apoio.",
+enunciado: "Quando pensamos no papel das pessoas na construção do nosso futuro, é correto afirmar que:",
+options: [
+{ text: "(A) Devemos tomar decisões sem ouvir ninguém para manter a independência total.", correct: false },
+{ text: "(B) As pessoas ao nosso redor influenciam nossa trajetória, podendo atuar como redes de apoio e parceiras em projetos comuns.", correct: true },
+{ text: "(C) Nossas escolhas individuais nunca afetam a comunidade ou a família.", correct: false },
+{ text: "(D) A opinião das outras pessoas é o único fator que deve determinar nossos passos.", correct: false },
+{ text: "(E) É impossível construir projetos coletivos mantendo individualidade.", correct: false }
+],
+explanation: "Nossas escolhas ocorrem em um contexto social; entender a influência mútua entre nós e as pessoas ao redor fortalece nossas decisões."
+},
+{
+id: 3,
+shortTip: "DICA DA QUESTÃO 3: Testar decisões é simular consequências antes de agir no mundo real.",
+enunciado: "O ato de 'testar decisões para o futuro em diferentes cenários' significa:",
+options: [
+{ text: "(A) Mudar de ideia todos os dias sem manter nenhum compromisso.", correct: false },
+{ text: "(B) Simular as consequências de cada escolha antes de colocá-la em prática, avaliando qual é a mais viável.", correct: true },
+{ text: "(C) Aceitar a primeira alternativa que surgir para economizar tempo.", correct: false },
+{ text: "(D) Tomar atitudes arriscadas só para ver o que acontece.", correct: false },
+{ text: "(E) Delegar para outra pessoa a responsabilidade das suas próprias decisões.", correct: false }
+],
+explanation: "Testar cenários é um exercício reflexivo para ponderar prós e contras de cada caminho antes de tomar atitudes definitivas."
+},
+{
+id: 4,
+shortTip: "DICA DA QUESTÃO 4: Soluções coletivas dependem da escuta ativa e do diálogo genuíno.",
+enunciado: "Para construir soluções coletivas em momentos de incerteza, o elemento mais indispensável é:",
+options: [
+{ text: "(A) A imposição da vontade da pessoa mais forte do grupo.", correct: false },
+{ text: "(B) A promoção do diálogo aberto, escuta ativa e busca por consensos integradores.", correct: true },
+{ text: "(C) O cancelamento de reuniões e debates para evitar conflitos de opinião.", correct: false },
+{ text: "(D) A votação rápida sem espaço para perguntas ou debates.", correct: false },
+{ text: "(E) A escolha de uma solução que beneficie apenas os líderes do grupo.", correct: false }
+],
+explanation: "Soluções coletivas e sustentáveis dependem fundamentalmente da participação e do diálogo aberto entre todos os envolvidos."
+},
+{
+id: 5,
+shortTip: "DICA DA QUESTÃO 5: Planejar o futuro de forma dialogada desenvolve autonomia e protagonismo social.",
+enunciado: "A construção do futuro por meio da colaboração e da análise de cenários contribui diretamente para:",
+options: [
+{ text: "(A) O aumento da dependência e da falta de autonomia dos indivíduos.", correct: false },
+{ text: "(B) O fortalecimento da cidadania, do protagonismo e da capacidade de resolver problemas em grupo.", correct: true },
+{ text: "(C) A eliminação imediata de todos os desafios futuros da vida.", correct: false },
+{ text: "(D) O isolamento individual das pessoas na sociedade.", correct: false },
+{ text: "(E) A proibição de mudanças de planos ao longo da vida.", correct: false }
+],
+explanation: "A análise consciente de cenários combinada com o diálogo desenvolve o protagonismo, a cidadania e a autonomia individual."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0;
+let activeTargetObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const targets = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 120;
+
+const PLAYER_SPEED = 0.40;
+
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr || 'Φ', 128, 128);
+
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+}
+}
+
+drawFace(expression);
+
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+function createTargetMesh(idNumber, isCurrent) {
+const group = new THREE.Group();
+
+const baseColor = isCurrent ? 0x16a34a : 0xdc2626;
+const targetMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.2 });
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+pole.position.y = 0.9; pole.castShadow = true; group.add(pole);
+
+const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.15, 32), targetMat);
+disc.rotation.x = Math.PI / 2; disc.position.y = 1.8; disc.castShadow = true; group.add(disc);
+
+const innerRing = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.16, 32), whiteMat);
+innerRing.rotation.x = Math.PI / 2; innerRing.position.y = 1.8; group.add(innerRing);
+
+const centerDot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.17, 32), targetMat);
+centerDot.rotation.x = Math.PI / 2; centerDot.position.y = 1.8; group.add(centerDot);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(idNumber.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0); group.add(numberMarker);
+
+const auraGeo = new THREE.RingGeometry(0.9, 1.4, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2; auraMesh.position.y = 0.05; auraMesh.visible = isCurrent; group.add(auraMesh);
+
+return { group, disc, centerDot, marker: numberMarker, aura: auraMesh, targetMat };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let walkCycle = 0;
+let chaserWalkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = -0.015;
+
+document.getElementById('btn-jump').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!isJumping) {
+isJumping = true;
+jumpVelocity = 0.28;
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -120; i <= 120; i += 12) {
+[-120, 120].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+
+const path = new THREE.Mesh(new THREE.PlaneGeometry(25, 250), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01; path.rotation.x = -Math.PI / 2; scene.add(path);
+
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(250, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -100); scene.add(cliff);
+colliders.push({ type: 'box', minX: -125, maxX: 125, minZ: -111, maxZ: -89 });
+
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -89.8); scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+const treePositions = [
+{ x: -35, z: -25 }, { x: 40, z: 20 }, { x: -50, z: 45 }, { x: 30, z: -60 }, { x: -15, z: 75 }
+];
+
+treePositions.forEach(pos => {
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.3, 8), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }));
+trunk.position.set(pos.x, 4, pos.z); trunk.castShadow = true; scene.add(trunk);
+const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 11, 8), new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 }));
+leaves.position.set(pos.x, 11, pos.z); leaves.castShadow = true; scene.add(leaves);
+colliders.push({ type: 'cylinder', x: pos.x, z: pos.z, radius: 1.5 });
+});
+
+addMapBoundaryFence('trees');
+
+const targetPositions = [
+{ id: 1, x: -30, z: -25 }, { id: 2, x: 35, z: 15 }, { id: 3, x: -20, z: 55 }, { id: 4, x: 50, z: -45 }, { id: 5, x: -55, z: 20 },
+{ id: 6, x: 15, z: -70 }, { id: 7, x: -70, z: -60 }, { id: 8, x: 60, z: 60 }, { id: 9, x: 0, z: 85 }, { id: 10, x: -45, z: 70 }
+];
+
+targetPositions.forEach((cfg, idx) => {
+const isCurrent = (idx === currentTargetIndex);
+const targetObj = createTargetMesh(cfg.id, isCurrent);
+targetObj.group.position.set(cfg.x, 0, cfg.z);
+scene.add(targetObj.group);
+
+targets.push({ id: cfg.id, mesh: targetObj, x: cfg.x, z: cfg.z, isDefeated: false });
+});
+
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -50); scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0); chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = { mesh: chaserMesh, marker: chaserMarker, speed: 0.085, startX: 0, startZ: -50 };
+
+player.group.position.set(0, 0, 0);
+updateTargetStates();
+}
+
+function updateTargetStates() {
+targets.forEach((t, idx) => {
+if (t.isDefeated) {
+t.mesh.group.visible = false;
+} else {
+t.mesh.group.visible = true;
+const isCurrent = (idx === currentTargetIndex);
+t.mesh.aura.visible = isCurrent;
+
+const colorHex = isCurrent ? 0x16a34a : 0xdc2626;
+t.mesh.disc.material.color.setHex(colorHex);
+t.mesh.centerDot.material.color.setHex(colorHex);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(t.id.toString(), 64, 64);
+t.mesh.marker.material.map = new THREE.CanvasTexture(canvas);
+t.mesh.marker.material.needsUpdate = true;
+}
+});
+
+if (currentTargetIndex < targets.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Inimigo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+function renderStartQuiz() {
+const qData = startModalQuestions[startQuizIndex];
+document.getElementById('start-quiz-question').textContent = qData.q;
+const container = document.getElementById('start-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('start-quiz-feedback');
+feedback.classList.add('hidden');
+
+qData.opts.forEach((optText, idx) => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = optText;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (idx === qData.correctIndex) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Excelente! Leitura confirmada.";
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Releia as informações...";
+startQuizIndex = (startQuizIndex + 1) % startModalQuestions.length;
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('start-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+function renderRulesQuiz() {
+const qData = rulesModalQuestions[rulesQuizIndex];
+document.getElementById('rules-quiz-question').textContent = qData.q;
+const container = document.getElementById('rules-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('rules-quiz-feedback');
+feedback.classList.add('hidden');
+
+qData.opts.forEach((optText, idx) => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = optText;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (idx === qData.correctIndex) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Tudo certo! Bom jogo!";
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Alvo 1!");
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Incorreto! Releia as regras do jogo...";
+rulesQuizIndex = (rulesQuizIndex + 1) % rulesModalQuestions.length;
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+renderStartQuiz();
+document.getElementById('start-quiz-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-next').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+renderRulesQuiz();
+document.getElementById('rules-quiz-modal').classList.remove('hidden');
+});
+
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerTargetInteraction(target) {
+activeTargetObj = target;
+const dbData = gameDatabase[target.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Inimigo ${target.id} Alcance - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeTargetObj.isDefeated = true;
+scene.remove(activeTargetObj.mesh.group);
+defeatedCount++;
+
+currentTargetIndex++;
+updateTargetStates();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 inimigos foram alcançados! Iniciando Simulado...");
+setTimeout(() => { startSimulado(); }, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo alvo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Você foi empurrado...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeTargetObj.x, player.group.position.z - activeTargetObj.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({ questionData: qData, selectedOption: opt, isCorrect: opt.correct });
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação de onde você errou:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const noticeMsg = document.createElement('div');
+noticeMsg.className = 'text-red-500 font-black text-center text-sm uppercase tracking-wide my-4 bg-red-500/10 p-3 rounded-xl border border-red-500/30';
+noticeMsg.textContent = 'COPIE AS RESPOSTAS CORRETAS NO CADERNO!';
+bodyContainer.appendChild(noticeMsg);
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-2';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+
+const isQuizOpen = !document.getElementById('quiz-modal').classList.contains('hidden');
+const isSimuladoOpen = !document.getElementById('simulado-modal').classList.contains('hidden');
+const isStartOpen = !document.getElementById('start-modal').classList.contains('hidden');
+const isStartQuizOpen = !document.getElementById('start-quiz-modal').classList.contains('hidden');
+const isRulesOpen = !document.getElementById('rules-modal').classList.contains('hidden');
+const isRulesQuizOpen = !document.getElementById('rules-quiz-modal').classList.contains('hidden');
+
+if (isQuizOpen || isSimuladoOpen || isStartOpen || isStartQuizOpen || isRulesOpen || isRulesQuizOpen) {
+clock.getDelta();
+renderer.render(scene, camera);
+return;
+}
+
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+targets.forEach((t) => {
+t.mesh.marker.rotation.y = -characterAngle;
+if (t.mesh.aura && t.mesh.aura.visible) {
+t.mesh.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (isJumping) {
+player.group.position.y += jumpVelocity;
+jumpVelocity += gravity;
+if (player.group.position.y <= 0) {
+player.group.position.y = 0;
+isJumping = false;
+}
+}
+
+if (currentTargetIndex < targets.length) {
+const currentTarget = targets[currentTargetIndex];
+const distToTarget = Math.hypot(player.group.position.x - currentTarget.x, player.group.position.z - currentTarget.z);
+if (distToTarget < 1.8) {
+triggerTargetInteraction(currentTarget);
+}
+}
+
+if (chaserEnemy) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+
+chaserWalkCycle += delta * 18;
+const chaserSwing = Math.sin(chaserWalkCycle) * 0.65;
+chaserEnemy.mesh.legLGroup.rotation.x = chaserSwing;
+chaserEnemy.mesh.legRGroup.rotation.x = -chaserSwing;
+chaserEnemy.mesh.armLGroup.rotation.x = -chaserSwing * 0.85;
+chaserEnemy.mesh.armRGroup.rotation.x = chaserSwing * 0.85;
+}
+
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -9.6;
+const camOffsetZ = Math.cos(characterAngle) * -9.6;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 5.2 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
