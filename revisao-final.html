@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>Contratualismo e Direitos Humanos</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 8px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+
+/* Ajustes de tamanho dos textos */
+.text-xs { font-size: 0.95rem !important; line-height: 1.45rem !important; }
+.text-sm { font-size: 1.1rem !important; line-height: 1.6rem !important; }
+.text-base { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-lg { font-size: 1.375rem !important; line-height: 1.875rem !important; }
+.text-xl { font-size: 1.5rem !important; line-height: 2.0rem !important; }
+
+/* Contêineres e D-Pad */
+.max-w-sm { max-width: 28rem !important; }
+.max-w-md { max-width: 32rem !important; }
+.max-w-lg { max-width: 36rem !important; }
+.max-w-xl { max-width: 40rem !important; }
+.w-52 { width: 11.5rem !important; }
+.h-36 { height: 7.8rem !important; }
+.dpad-btn { font-size: 1.2rem !important; border-radius: 8px !important; }
+.jump-btn span { font-size: 0.75rem !important; }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">Contratualismo e Direitos Humanos</h1>
+<p id="scene-subtitle" class="text-xs text-amber-400">Capture o Alvo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-scale-balanced text-lg"></i>
+<span id="enter-prompt-text">Alcance os Alvos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto mb-2">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-kick" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-futbol text-base"></i>
+<span id="jump-btn-label">CHUTAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-xs text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">Filosofia e Cidadania</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">Contratualismo e Direitos Humanos</h1>
+<p class="text-xs text-slate-400 font-medium">Da Ordem Social à Conquista da Dignidade</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>O estado de natureza e a origem do contrato social em Hobbes, Locke e Rousseau.</li>
+<li>A diferença entre o poder soberano (Hobbes), os direitos naturais (Locke) e a vontade geral (Rousseau).</li>
+<li>Como o pensamento iluminista e contratualista fundamentou as primeiras declarações de direitos.</li>
+<li>A Declaração Universal dos Direitos Humanos (1948) como resposta às atrocidades das guerras.</li>
+<li>As gerações de direitos: civis e políticos (liberdade), econômicos e sociais (igualdade) e difusos (solidariedade).</li>
+<li>O papel do Estado Democrático de Direito na promoção da dignidade da pessoa humana.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 1.1: VERIFICAÇÃO DE LEITURA DA TELA INICIAL -->
+<div id="start-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação dos Objetivos</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para prosseguir</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="start-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="start-quiz-options" class="space-y-2"></div>
+</div>
+<div id="start-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO</h2>
+<p class="text-xs text-slate-400 font-medium">Leia com atenção antes de começar</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ul class="space-y-2 list-disc pl-4 leading-relaxed">
+<li>Mova-se e chute usando o controle na tela.</li>
+<li>Acerte o alvo verde com a bola para ler o texto.</li>
+<li>Depois do décimo alvo, faça o simulado final.</li>
+<li>Mostre a tela do gabarito ao professor.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2.1: VERIFICAÇÃO DE LEITURA DAS REGRAS -->
+<div id="rules-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação das Regras</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para iniciar a partida</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="rules-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="rules-quiz-options" class="space-y-2"></div>
+</div>
+<div id="rules-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS ALVOS -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - Provão Paulista</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<!-- Conteúdo do Simulado (Questões / Resultados) -->
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<!-- Dica curta da questão -->
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<!-- Enunciado e Opções -->
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BANCO DE QUESTÕES DE VERIFICAÇÃO INICIAL E DE REGRAS ---
+const startModalQuestions = [
+{
+q: "O contratualismo investiga principalmente:",
+opts: [
+"A origem da sociedade civil e a legitimidade do poder do Estado por meio de um pacto.",
+"A evolução puramente biológica dos primeiros seres humanos no planeta.",
+"A obrigatoriedade das trocas comerciais entre nações industrializadas."
+],
+correctIndex: 0
+},
+{
+q: "Segundo John Locke, os direitos naturais inalienáveis do indivíduo são:",
+opts: [
+"O direito de exercer força bruta sem limites sobre os demais.",
+"A vida, a liberdade e a propriedade privada.",
+"Apenas os privilégios concedidos formalmente pelos reis absolutistas."
+],
+correctIndex: 1
+},
+{
+q: "A Declaração Universal dos Direitos Humanos (1948) foi criada para:",
+opts: [
+"Substituir as forças policiais locais de todos os países do mundo.",
+"Garantir benefícios econômicos restritos às nações mais ricas.",
+"Afirmar a dignidade intrínseca de todo ser humano após os horrores da Segunda Guerra."
+],
+correctIndex: 2
+}
+];
+
+const rulesModalQuestions = [
+{
+q: "O que o estudante deve fazer para se mover e chutar no jogo?",
+opts: [
+"Digitar os comandos no teclado do computador.",
+"Mover-se e chutar usando o controle na tela.",
+"Chacoalhar o celular para movimentar a bola."
+],
+correctIndex: 1
+},
+{
+q: "O que deve ser feito para abrir a leitura do texto?",
+opts: [
+"Acerte o alvo verde para ler o texto explicativo.",
+"Encoste no inimigo vermelho durante a corrida.",
+"Pressione o botão de pausa no topo da tela."
+],
+correctIndex: 0
+},
+{
+q: "O que o estudante deve fazer após concluir o décimo alvo?",
+opts: [
+"Sair do jogo e reiniciar a partida do início.",
+"Aguardar dez minutos até o tempo esgotar totalmente.",
+"Depois do décimo alvo, faça o simulado."
+],
+correctIndex: 2
+}
+];
+
+let startQuizIndex = 0;
+let rulesQuizIndex = 0;
+
+// --- BASE DE DADOS DOS 10 ALVOS (Contratualismo e Direitos Humanos) ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "DICA 1: Para Thomas Hobbes, o 'estado de natureza' é um estado de guerra de todos contra todos. Sem leis, os homens vivem com medo constante da morte violenta.",
+verifications: [
+{ q: "Qual é a condição humana no estado de natureza hobbesiano?", correct: "Conflito generalizado e insegurança constante.", wrongs: ["Cooperação pacífica espontânea.", "Isolamento total e harmônico."] },
+{ q: "O que motiva os homens a buscarem o pacto social em Hobbes?", correct: "O medo constante da morte violenta.", wrongs: ["O desejo de expandir impérios ultramarinos.", "A obrigação imposta por ordens religiosas."] },
+{ q: "Na visão hobbesiana, o que falta no estado de natureza para haver ordem?", correct: "Um poder comum soberano que mantenha todos sob respeito.", wrongs: ["Tecnologias de comunicação digital.", "O comércio livre de mercadorias."] }
+]
+},
+{
+id: 2,
+tipText: "DICA 2: Para sair da barbárie, Hobbes defende a criação do Estado (Leviatã), onde os cidadãos cedem sua liberdade em troca de segurança e preservação da vida.",
+verifications: [
+{ q: "Por que os indivíduos abrem mão de sua liberdade no contrato hobbesiano?", correct: "Para garantir a segurança física e a preservação da vida.", wrongs: ["Para acumular ouro nos cofres públicos.", "Para eleger governantes anualmente."] },
+{ q: "Qual é a principal função do Estado Soberano (Leviatã) segundo Hobbes?", correct: "Manter a paz e a ordem coibindo a violência entre os indivíduos.", wrongs: ["Garantir a igualdade econômica perfeita.", "Promover a descentralização do poder militar."] },
+{ q: "O pacto de submissão hobbesiano confere ao governante autoridade:", correct: "Soberana e absoluta para impor a lei.", wrongs: ["Temporária e sem força coativa.", "Exclusivamente consultiva e simbólica."] }
+]
+},
+{
+id: 3,
+tipText: "DICA 3: John Locke afirma que os homens possuem Direitos Naturais inalienáveis antes do Estado: a vida, a liberdade e a propriedade gerada pelo próprio trabalho.",
+verifications: [
+{ q: "Quais são os direitos naturais básicos defendidos por John Locke?", correct: "Vida, liberdade e propriedade privada.", wrongs: ["Poder supremo, honra militar e servidão.", "Cargos públicos, nobreza e isenção tributária."] },
+{ q: "Em Locke, como o ser humano legitima a posse sobre a terra e os bens?", correct: "Ao misturar seu trabalho aos recursos naturais.", wrongs: ["Por concessão arbitrária do monarca.", "Apenas por direito de conquista militar violenta."] },
+{ q: "Diferente de Hobbes, Locke considera que no estado de natureza os direitos:", correct: "Já existem como direitos naturais inalienáveis.", wrongs: ["Inexistem por completo até a criação de tribunais.", "Dependem da aprovação de um imperador."] }
+]
+},
+{
+id: 4,
+tipText: "DICA 4: Para Locke, o Estado existe como um árbitro imparcial. Se o governante violar os direitos naturais, o povo possui o legítimo Direito de Resistência para destituí-lo.",
+verifications: [
+{ q: "O que justifica a criação do Estado Civil segundo Locke?", correct: "A necessidade de leis escritas e juízes imparciais.", wrongs: ["A abolição total da propriedade privada.", "A destruição dos direitos individuais."] },
+{ q: "O que a teoria de Locke estabelece caso o poder político se torne tirânico?", correct: "O direito de resistência do povo contra o governo ilegítimo.", wrongs: ["A submissão incondicional da sociedade civil.", "A proibição permanente de manifestações."] },
+{ q: "O governo legítimo em Locke deve ter seu poder:", correct: "Limitado pela proteção aos direitos naturais dos cidadãos.", wrongs: ["Absoluto e livre de qualquer controle legal.", "Subordinado aos ditames exclusivos do clero."] }
+]
+},
+{
+id: 5,
+tipText: "DICA 5: Jean-Jacques Rousseau afirma que o homem nasce livre e bom ('bom selvagem'), mas a criação da propriedade privada deu origem à desigualdade e aos conflitos.",
+verifications: [
+{ q: "De acordo com Rousseau, qual evento histórico deu início à desigualdade social?", correct: "O surgimento da propriedade privada da terra.", wrongs: ["A invenção da escrita pelos sumérios.", "A criação dos parlamentos democráticos."] },
+{ q: "A célebre frase 'o homem nasce livre, mas por toda parte encontra-se a ferros' expressa:", correct: "A crítica rousseauísta às sociedades opressoras de sua época.", wrongs: ["A defesa da escravidão como ordem natural.", "O elogio à tirania monárquica medieval."] },
+{ q: "No estado de natureza rousseauísta, o ser humano é caracterizado por:", correct: "Viver livre, guiado pela piedade e pelo amor de si.", wrongs: ["Ser egoísta e viver em permanente guerra fratricida.", "Ser escravo dos avanços científicos urbanos."] }
+]
+},
+{
+id: 6,
+tipText: "DICA 6: Para Rousseau, a sociedade justa decorre da 'Vontade Geral', que visa o bem comum de todos, mantendo a soberania diretamente nas mãos do povo.",
+verifications: [
+{ q: "O que caracteriza a 'Vontade Geral' na teoria política de Rousseau?", correct: "A orientação para o interesse coletivo e o bem comum.", wrongs: ["A simples soma dos interesses egoístas individuais.", "A decisão exclusiva de uma elite burocrática."] },
+{ q: "Para Rousseau, a soberania popular é:", correct: "Inalienável e pertence originariamente ao povo.", wrongs: ["Transferida irrevogavelmente a um déspota.", "Exercida unicamente por juízes togados."] },
+{ q: "No contrato social legítimo de Rousseau, o cidadão:", correct: "Ganha a liberdade civil e a igualdade perante a lei.", wrongs: ["Renuncia a todos os seus direitos sem retorno moral.", "Fica proibido de participar das decisões públicas."] }
+]
+},
+{
+id: 7,
+tipText: "DICA 7: As teorias contratualistas e o Iluminismo inspiraram as primeiras declarações modernas de direitos, como a Declaração de Independência dos EUA (1776) e a Declaração Francesa (1789).",
+verifications: [
+{ q: "A Declaração dos Direitos do Homem e do Cidadão (1789) foi fruto de qual processo?", correct: "Da Revolução Francesa influenciada pelo Iluminismo.", wrongs: ["Da unificação feudal do Sacro Império.", "Da Revolução Gloriosa inglesa exclusivamente."] },
+{ q: "Qual princípio contratualista ecoa nas declarações liberais do século XVIII?", correct: "Os homens nascem e permanecem livres e iguais em direitos.", wrongs: ["O poder real emana diretamente da vontade divina.", "A nobreza deve manter imunidade jurídica absoluta."] },
+{ q: "As declarações de direitos liberais clássicas tinham como objetivo principal:", correct: "Limitar o arbítrio e os abusos do poder absolutista.", wrongs: ["Impor censura estatal aos meios de comunicação.", "Estabelecer monopólios econômicos estatais."] }
+]
+},
+{
+id: 8,
+tipText: "DICA 8: Após o terror da Segunda Guerra Mundial e o Holocausto, a ONU proclamou a Declaração Universal dos Direitos Humanos (1948), consagrando a dignidade universal.",
+verifications: [
+{ q: "Qual contexto histórico impulsionou a aprovação da DUDH em 1948 pela ONU?", correct: "As atrocidades cometidas durante a Segunda Guerra Mundial.", wrongs: ["A eclosão da Primeira Revolução Industrial.", "O término das Cruzadas no continente europeu."] },
+{ q: "O princípio da universalidade dos Direitos Humanos assegura que eles:", correct: "Valem para todos os indivíduos, sem distinção de raça, credo ou nacionalidade.", wrongs: ["Restringem-se apenas aos cidadãos que possuem propriedades.", "Aplicam-se unicamente às populações de países industrializados."] },
+{ q: "Os Direitos Humanos proclamados em 1948 fundamentam-se principalmente no conceito de:", correct: "Dignidade inerente à pessoa humana.", wrongs: ["Soberania militar ilimitada de cada Estado.", "Vantagem econômica em acordos de livre comércio."] }
+]
+},
+{
+id: 9,
+tipText: "DICA 9: Direitos de 1ª Geração focam na Liberdade (direitos civis/políticos). Direitos de 2ª Geração focam na Igualdade (direitos sociais: saúde, educação e trabalho).",
+verifications: [
+{ q: "Os direitos civis e políticos (como liberdade de expressão e voto) são classificados como:", correct: "Direitos de 1ª geração.", wrongs: ["Direitos de 2ª geração.", "Direitos de 3ª geração."] },
+{ q: "O acesso à saúde pública, educação e previdência social integra a:", correct: "2ª geração de direitos (direitos sociais e econômicos).", wrongs: ["1ª geração de direitos (liberdades negativas).", "Dimensão puramente biológica sem valor jurídico."] },
+{ q: "Para assegurar os direitos de 2ª geração, o Estado deve agir de maneira:", correct: "Ativa, criando serviços e políticas públicas.", wrongs: ["Passiva, ausentando-se totalmente da economia.", "Censora, limitando a circulação de cidadãos."] }
+]
+},
+{
+id: 10,
+tipText: "DICA 10: Os direitos de 3ª Geração representam a Fraternidade e a Solidariedade, abrangendo direitos coletivos como a preservação ambiental, a paz e a autodeterminação dos povos.",
+verifications: [
+{ q: "O direito a um meio ambiente ecologicamente equilibrado é um exemplo de direito de:", correct: "3ª geração (direitos difusos e coletivos).", wrongs: ["1ª geração (liberdade religiosa estrita).", "2ª geração (legislação previdenciária apenas)."] },
+{ q: "Qual valor do lema republicano francês está historicamente vinculado à 3ª geração?", correct: "Fraternidade.", wrongs: ["Propriedade privada irrestrita.", "Individualismo possessivo."] },
+{ q: "A consolidação das gerações de direitos humanos no Estado Democrático de Direito visa:", correct: "Garantir a dignidade humana em suas dimensões civis, sociais e planetárias.", wrongs: ["Fortalecer governos autoritários sem controle judicial.", "Substituir a constituição nacional por tratados mercantis."] }
+]
+}
+];
+
+// --- SIMULADO FINAL (Modelo Provão Paulista - 3ª Série EM) ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "DICA DA QUESTÃO 1: Para Hobbes, o pacto social serve para superar a violência do estado de natureza e garantir a segurança.",
+enunciado: "Na obra Leviatã, Thomas Hobbes afirma que, sem um governo forte, a vida do ser humano é 'solitária, miserável, desprezível, bestial e breve'. Para superar essa instabilidade permanente do estado de natureza, os homens instituem o pacto social cujo objetivo primordial é:",
+options: [
+{ text: "(A) assegurar a ampla liberdade para que cada cidadão exerça sua própria vingança privada.", correct: false },
+{ text: "(B) transferir o poder a uma autoridade comum capaz de garantir a paz e a segurança física.", correct: true },
+{ text: "(C) abolir qualquer tipo de autoridade estatal e incentivar o comércio livre de restrições.", correct: false },
+{ text: "(D) manter os conflitos armados entre clãs para selecionar naturalmente os governantes mais aptos.", correct: false },
+{ text: "(E) descentralizar o uso da força física e entregá-la a milícias locais voluntárias.", correct: false }
+],
+explanation: "Hobbes defende que os indivíduos abrem mão do direito de usar a força em troca da proteção da vida e da paz civil asseguradas pelo soberano absoluto (o Leviatã)."
+},
+{
+id: 2,
+shortTip: "DICA DA QUESTÃO 2: A DUDH de 1948 firma que a dignidade e os direitos pertencem a todos os indivíduos do planeta desde o nascimento.",
+enunciado: "Adotada em 1948 pela Assembleia Geral da ONU, no contexto de reconstrução moral após o fim da Segunda Guerra Mundial, a Declaração Universal dos Direitos Humanos consagrou historicamente o princípio de que:",
+options: [
+{ text: "(A) os direitos fundamentais dependem exclusivamente do poderio bélico e financeiro de cada nação.", correct: false },
+{ text: "(B) o poder dos governos sobre seus cidadãos é ilimitado e imune a qualquer fiscalização internacional.", correct: false },
+{ text: "(C) todos os seres humanos nascem livres e iguais em dignidade e em direitos.", correct: true },
+{ text: "(D) o direito à vida e à integridade física pode ser suspenso pelo Estado sem justificativa jurídica.", correct: false },
+{ text: "(E) apenas os cidadãos alfabetizados de potências industriais têm direito à cidadania plena.", correct: false }
+],
+explanation: "O artigo 1º da Declaração Universal dos Direitos Humanos declara solenemente a igualdade intrínseca e a dignidade inalienável de todos os membros da família humana."
+},
+{
+id: 3,
+shortTip: "DICA DA QUESTÃO 3: Locke vê o Estado como um juiz imparcial para proteger os direitos que já existiam na natureza (vida, liberdade e bens).",
+enunciado: "No 'Segundo Tratado sobre o Governo Civil', John Locke defende que os direitos à vida, à liberdade e aos bens decorrentes do trabalho são inalienáveis. A principal motivação dos indivíduos para instituírem o Estado civil reside na:",
+options: [
+{ text: "(A) necessidade de normas fixas e juízes imparciais para dirimir conflitos e proteger a propriedade.", correct: true },
+{ text: "(B) exigência de entregar todas as propriedades rurais e riquezas acumuladas para o controle da Coroa.", correct: false },
+{ text: "(C) constatação de que a natureza humana é naturalmente corrompida e incapaz de gerar trabalho.", correct: false },
+{ text: "(D) crença de que os reis governam por escolha direta e sagrada de Deus, sem deveres civis.", correct: false },
+{ text: "(E) vontade de anular a liberdade individual em benefício da autoridade ilimitada do clero.", correct: false }
+],
+explanation: "Locke demonstra que, no estado de natureza, a falta de leis positivas e de magistrados imparciais coloca em risco constante a fruição pacífica da vida, da liberdade e das posses."
+},
+{
+id: 4,
+shortTip: "DICA DA QUESTÃO 4: Vontade Geral em Rousseau busca o bem coletivo de toda a sociedade, não sendo a simples soma dos interesses particulares.",
+enunciado: "Jean-Jacques Rousseau estabelece, em 'Do Contrato Social', a diferença entre a 'Vontade Geral' e a 'vontade de todos'. Na concepção rousseauísta, a Vontade Geral é aquela que:",
+options: [
+{ text: "(A) expressa a soma mecânica dos interesses particulares e egoístas de grupos econômicos.", correct: false },
+{ text: "(B) é definida unicamente pelas deliberações de magistrados estrangeiros designados pelo soberano.", correct: false },
+{ text: "(C) busca exclusivamente o bem comum e a utilidade pública de todo o corpo político.", correct: true },
+{ text: "(D) representa a imposição absoluta da nobreza feudal sobre as classes trabalhadoras.", correct: false },
+{ text: "(E) autoriza a dissolução perene de leis e convenções cívicas da comunidade.", correct: false }
+],
+explanation: "Rousseau explica que a 'vontade de todos' atenta ao interesse privado de indivíduos isolados, enquanto a 'Vontade Geral' visa o interesse comum e a preservação do corpo cívico."
+},
+{
+id: 5,
+shortTip: "DICA DA QUESTÃO 5: 1ª geração impõe limites ao Estado (abstenção/liberdades); 2ª geração exige ações públicas (direitos sociais como saúde/educação).",
+enunciado: "O jurista e filósofo Norberto Bobbio enfatiza que os direitos humanos resultam de lutas históricas concretas que se organizam em gerações ou dimensões. A correlação correta entre as características dessas gerações de direitos é:",
+options: [
+{ text: "(A) Direitos de 1ª geração impõem deveres de prestação material ao Estado; direitos de 2ª geração exigem abstenção governamental.", correct: false },
+{ text: "(B) A 2ª geração (saúde, educação e trabalho) exige prestações públicas do Estado, ampliando as liberdades civis da 1ª geração.", correct: true },
+{ text: "(C) Direitos de 3ª geração descartam a proteção às liberdades individuais conquistadas na Idade Moderna.", correct: false },
+{ text: "(D) A positivação dos direitos sociais torna desnecessária a mobilização política da sociedade civil organizada.", correct: false },
+{ text: "(E) Direitos de 1ª geração dedicam-se primordialmente ao patrimônio genético planetário e à paz entre as nações.", correct: false }
+],
+explanation: "Enquanto a 1ª geração (liberdades civis e políticas) exige que o Estado não intervenha arbitrariamente, a 2ª geração (direitos sociais e econômicos) demanda a ação afirmativa do Estado na oferta de serviços públicos para garantir condições materiais de vida."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0;
+let activeTargetObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const targets = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 120;
+
+const PLAYER_SPEED = 0.40;
+
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+let soccerBallMesh = null;
+let ballState = {
+active: false,
+startX: 0, startY: 0, startZ: 0,
+targetX: 0, targetY: 0, targetZ: 0,
+progress: 0,
+speed: 1.0,
+maxHeight: 1.8
+};
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+if (numberStr) {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr, 128, 128);
+} else {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('⚖', 128, 128);
+}
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+} else if (expr === 'sad') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = 0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = -0.35; eyeGroup.add(browR);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02), browMat);
+mouth.position.set(0, -0.08, 0.25); eyeGroup.add(mouth);
+}
+}
+
+drawFace(expression);
+
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+function setCharacterTranslucent(charObj, translucent) {
+charObj.group.traverse((child) => {
+if (child.isMesh) {
+if (!child.userData.originalMaterial) {
+child.userData.originalMaterial = child.material;
+}
+if (translucent) {
+const mat = child.userData.originalMaterial.clone();
+mat.transparent = true;
+mat.opacity = 0.2;
+child.material = mat;
+if (!child.userData.outlineMesh) {
+const outlineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.8 });
+const outlineMesh = new THREE.Mesh(child.geometry, outlineMat);
+outlineMesh.scale.set(1.02, 1.02, 1.02);
+child.add(outlineMesh);
+child.userData.outlineMesh = outlineMesh;
+} else {
+child.userData.outlineMesh.visible = true;
+}
+} else {
+child.material = child.userData.originalMaterial;
+if (child.userData.outlineMesh) {
+child.userData.outlineMesh.visible = false;
+}
+}
+}
+});
+}
+
+function createSoccerBallMesh() {
+const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+const ball = new THREE.Mesh(ballGeo, ballMat);
+ball.castShadow = true;
+
+const spotGeo = new THREE.CircleGeometry(0.08, 5);
+const spotMat = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide });
+const spots = [
+[0, 0.301, 0, Math.PI/2, 0, 0],
+[0, -0.301, 0, -Math.PI/2, 0, 0],
+[0.301, 0, 0, 0, Math.PI/2, 0],
+[-0.301, 0, 0, 0, -Math.PI/2, 0],
+[0, 0, 0.301, 0, 0, 0],
+[0, 0, -0.301, 0, Math.PI, 0]
+];
+spots.forEach(sp => {
+const spot = new THREE.Mesh(spotGeo, spotMat);
+spot.position.set(sp[0], sp[1], sp[2]);
+spot.rotation.set(sp[3], sp[4], sp[5]);
+ball.add(spot);
+});
+
+ball.visible = false;
+return ball;
+}
+
+function createTargetMesh(idNumber, isCurrent) {
+const group = new THREE.Group();
+
+const baseColor = isCurrent ? 0x16a34a : 0xdc2626;
+const targetMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.2 });
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+pole.position.y = 0.9;
+pole.castShadow = true;
+group.add(pole);
+
+const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.15, 32), targetMat);
+disc.rotation.x = Math.PI / 2;
+disc.position.y = 1.8;
+disc.castShadow = true;
+group.add(disc);
+
+const innerRing = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.16, 32), whiteMat);
+innerRing.rotation.x = Math.PI / 2;
+innerRing.position.y = 1.8;
+group.add(innerRing);
+
+const centerDot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.17, 32), targetMat);
+centerDot.rotation.x = Math.PI / 2;
+centerDot.position.y = 1.8;
+group.add(centerDot);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(idNumber.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0);
+group.add(numberMarker);
+
+const auraGeo = new THREE.RingGeometry(0.9, 1.4, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2;
+auraMesh.position.y = 0.05;
+auraMesh.visible = isCurrent;
+group.add(auraMesh);
+
+return { group, disc, centerDot, marker: numberMarker, aura: auraMesh, targetMat };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+soccerBallMesh = createSoccerBallMesh();
+scene.add(soccerBallMesh);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let walkCycle = 0;
+let chaserWalkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+document.getElementById('btn-kick').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!ballState.active) {
+const kickDistance = 25.0;
+ballState.active = true;
+ballState.progress = 0;
+ballState.startX = player.group.position.x;
+ballState.startY = 0.3;
+ballState.startZ = player.group.position.z;
+
+ballState.targetX = player.group.position.x + Math.sin(characterAngle) * kickDistance;
+ballState.targetY = 0.3;
+ballState.targetZ = player.group.position.z + Math.cos(characterAngle) * kickDistance;
+
+soccerBallMesh.position.set(ballState.startX, ballState.startY, ballState.startZ);
+soccerBallMesh.visible = true;
+
+setCharacterTranslucent(player, true);
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -120; i <= 120; i += 12) {
+[-120, 120].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+const path = new THREE.Mesh(new THREE.PlaneGeometry(25, 250), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01;
+path.rotation.x = -Math.PI / 2;
+scene.add(path);
+
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(250, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -100);
+scene.add(cliff);
+colliders.push({ type: 'box', minX: -125, maxX: 125, minZ: -111, maxZ: -89 });
+
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -89.8);
+scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+const treePositions = [
+{ x: -35, z: -25 },
+{ x: 40, z: 20 },
+{ x: -50, z: 45 },
+{ x: 30, z: -60 },
+{ x: -15, z: 75 }
+];
+
+treePositions.forEach(pos => {
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+const leavesMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.3, 8), trunkMat);
+trunk.position.set(pos.x, 4, pos.z);
+trunk.castShadow = true;
+scene.add(trunk);
+
+const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 11, 8), leavesMat);
+leaves.position.set(pos.x, 11, pos.z);
+leaves.castShadow = true;
+scene.add(leaves);
+
+colliders.push({ type: 'cylinder', x: pos.x, z: pos.z, radius: 1.5 });
+});
+
+addMapBoundaryFence('trees');
+
+const targetPositions = [
+{ id: 1, x: -30, z: -25 },
+{ id: 2, x: 35, z: 15 },
+{ id: 3, x: -20, z: 55 },
+{ id: 4, x: 50, z: -45 },
+{ id: 5, x: -55, z: 20 },
+{ id: 6, x: 15, z: -70 },
+{ id: 7, x: -70, z: -60 },
+{ id: 8, x: 60, z: 60 },
+{ id: 9, x: 0, z: 85 },
+{ id: 10, x: -45, z: 70 }
+];
+
+targetPositions.forEach((cfg, idx) => {
+const isCurrent = (idx === currentTargetIndex);
+const targetObj = createTargetMesh(cfg.id, isCurrent);
+targetObj.group.position.set(cfg.x, 0, cfg.z);
+scene.add(targetObj.group);
+
+targets.push({
+id: cfg.id,
+mesh: targetObj,
+x: cfg.x,
+z: cfg.z,
+isDefeated: false
+});
+});
+
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -50);
+scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0);
+chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = {
+mesh: chaserMesh,
+marker: chaserMarker,
+speed: 0.085,
+startX: 0,
+startZ: -50
+};
+
+player.group.position.set(0, 0, 0);
+updateTargetStates();
+}
+
+function updateTargetStates() {
+targets.forEach((t, idx) => {
+if (t.isDefeated) {
+t.mesh.group.visible = false;
+} else {
+t.mesh.group.visible = true;
+const isCurrent = (idx === currentTargetIndex);
+t.mesh.aura.visible = isCurrent;
+
+const colorHex = isCurrent ? 0x16a34a : 0xdc2626;
+t.mesh.disc.material.color.setHex(colorHex);
+t.mesh.centerDot.material.color.setHex(colorHex);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(t.id.toString(), 64, 64);
+t.mesh.marker.material.map = new THREE.CanvasTexture(canvas);
+t.mesh.marker.material.needsUpdate = true;
+}
+});
+
+if (currentTargetIndex < targets.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Alvo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+// --- CONTROLE DAS TELAS INICIAIS E QUIZZES DE VERIFICAÇÃO ---
+function renderStartQuiz() {
+const qData = startModalQuestions[startQuizIndex];
+document.getElementById('start-quiz-question').textContent = qData.q;
+const container = document.getElementById('start-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('start-quiz-feedback');
+feedback.classList.add('hidden');
+
+const opts = [
+{ text: qData.opts[0], correct: qData.correctIndex === 0 },
+{ text: qData.opts[1], correct: qData.correctIndex === 1 },
+{ text: qData.opts[2], correct: qData.correctIndex === 2 }
+];
+
+opts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (opt.correct) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Excelente! Leitura confirmada.";
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Releia as informações...";
+startQuizIndex = (startQuizIndex + 1) % startModalQuestions.length;
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('start-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+function renderRulesQuiz() {
+const qData = rulesModalQuestions[rulesQuizIndex];
+document.getElementById('rules-quiz-question').textContent = qData.q;
+const container = document.getElementById('rules-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('rules-quiz-feedback');
+feedback.classList.add('hidden');
+
+const opts = [
+{ text: qData.opts[0], correct: qData.correctIndex === 0 },
+{ text: qData.opts[1], correct: qData.correctIndex === 1 },
+{ text: qData.opts[2], correct: qData.correctIndex === 2 }
+];
+
+opts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (opt.correct) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Tudo certo! Bom jogo!";
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Alvo 1!");
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Incorreto! Releia as regras do jogo...";
+rulesQuizIndex = (rulesQuizIndex + 1) % rulesModalQuestions.length;
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+renderStartQuiz();
+document.getElementById('start-quiz-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-next').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+renderRulesQuiz();
+document.getElementById('rules-quiz-modal').classList.remove('hidden');
+});
+
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerTargetInteraction(target) {
+activeTargetObj = target;
+const dbData = gameDatabase[target.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Alvo ${target.id} Alcance - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeTargetObj.isDefeated = true;
+scene.remove(activeTargetObj.mesh.group);
+defeatedCount++;
+
+currentTargetIndex++;
+updateTargetStates();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 alvos foram alcançados! Iniciando Simulado...");
+setTimeout(() => {
+startSimulado();
+}, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo alvo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Você foi empurrado...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeTargetObj.x, player.group.position.z - activeTargetObj.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+// --- SISTEMA DO SIMULADO FINAL E GABARITO ---
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({
+questionData: qData,
+selectedOption: opt,
+isCorrect: opt.correct
+});
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação de onde você errou:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const noticeMsg = document.createElement('div');
+noticeMsg.className = 'text-red-500 font-black text-center text-sm uppercase tracking-wide my-4 bg-red-500/10 p-3 rounded-xl border border-red-500/30';
+noticeMsg.textContent = 'COPIE AS RESPOSTAS CORRETAS NO CADERNO!';
+bodyContainer.appendChild(noticeMsg);
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-2';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+
+const isQuizOpen = !document.getElementById('quiz-modal').classList.contains('hidden');
+const isSimuladoOpen = !document.getElementById('simulado-modal').classList.contains('hidden');
+const isStartOpen = !document.getElementById('start-modal').classList.contains('hidden');
+const isStartQuizOpen = !document.getElementById('start-quiz-modal').classList.contains('hidden');
+const isRulesOpen = !document.getElementById('rules-modal').classList.contains('hidden');
+const isRulesQuizOpen = !document.getElementById('rules-quiz-modal').classList.contains('hidden');
+
+if (isQuizOpen || isSimuladoOpen || isStartOpen || isStartQuizOpen || isRulesOpen || isRulesQuizOpen) {
+clock.getDelta();
+renderer.render(scene, camera);
+return;
+}
+
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+targets.forEach((t, idx) => {
+t.mesh.marker.rotation.y = -characterAngle;
+if (t.mesh.aura && t.mesh.aura.visible) {
+t.mesh.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (ballState.active) {
+ballState.progress += delta * ballState.speed;
+if (ballState.progress >= 1.0) {
+ballState.progress = 1.0;
+ballState.active = false;
+soccerBallMesh.visible = false;
+
+setCharacterTranslucent(player, false);
+} else {
+const t = ballState.progress;
+soccerBallMesh.position.x = ballState.startX + (ballState.targetX - ballState.startX) * t;
+soccerBallMesh.position.z = ballState.startZ + (ballState.targetZ - ballState.startZ) * t;
+
+const arcY = Math.sin(t * Math.PI) * ballState.maxHeight;
+soccerBallMesh.position.y = ballState.startY + arcY;
+
+soccerBallMesh.rotation.x += delta * 12.0;
+soccerBallMesh.rotation.y += delta * 8.0;
+
+if (currentTargetIndex < targets.length) {
+const currentTarget = targets[currentTargetIndex];
+const distBallToTarget = Math.hypot(soccerBallMesh.position.x - currentTarget.x, soccerBallMesh.position.z - currentTarget.z);
+if (distBallToTarget < 2.2) {
+ballState.active = false;
+soccerBallMesh.visible = false;
+setCharacterTranslucent(player, false);
+triggerTargetInteraction(currentTarget);
+}
+}
+}
+}
+
+if (chaserEnemy) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+
+chaserWalkCycle += delta * 18;
+const chaserSwing = Math.sin(chaserWalkCycle) * 0.65;
+chaserEnemy.mesh.legLGroup.rotation.x = chaserSwing;
+chaserEnemy.mesh.legRGroup.rotation.x = -chaserSwing;
+chaserEnemy.mesh.armLGroup.rotation.x = -chaserSwing * 0.85;
+chaserEnemy.mesh.armRGroup.rotation.x = chaserSwing * 0.85;
+} else {
+chaserEnemy.mesh.legLGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.legRGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.armLGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.armRGroup.rotation.x *= 0.8;
+}
+
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -9.6;
+const camOffsetZ = Math.cos(characterAngle) * -9.6;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 5.2 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
