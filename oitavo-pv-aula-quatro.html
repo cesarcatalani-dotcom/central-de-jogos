@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+<title>Imprevistos e Futuro: Construindo a Resiliência</title>
+<!-- Tailwind CSS & FontAwesome -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #0f172a; touch-action: none; }
+#canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+.dpad-btn {
+background: rgba(30, 41, 59, 0.85);
+border: 2px solid rgba(245, 158, 11, 0.6);
+backdrop-filter: blur(8px);
+color: #f59e0b;
+display: flex; align-items: center; justify-content: center;
+border-radius: 8px; font-weight: bold;
+box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+transition: all 0.1s ease; cursor: pointer; touch-action: manipulation;
+}
+.dpad-btn:active, .dpad-btn.active { background: #f59e0b; color: #0f172a; transform: scale(0.92); }
+.jump-btn {
+background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+border: 2px solid #fef08a; color: #0f172a; border-radius: 50%; font-weight: 800;
+}
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.5); border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.8); }
+
+/* Ajustes de tamanho dos textos */
+.text-xs { font-size: 0.95rem !important; line-height: 1.45rem !important; }
+.text-sm { font-size: 1.1rem !important; line-height: 1.6rem !important; }
+.text-base { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-lg { font-size: 1.375rem !important; line-height: 1.875rem !important; }
+.text-xl { font-size: 1.5rem !important; line-height: 2.0rem !important; }
+
+/* Contêineres e D-Pad */
+.max-w-sm { max-width: 28rem !important; }
+.max-w-md { max-width: 32rem !important; }
+.max-w-lg { max-width: 36rem !important; }
+.max-w-xl { max-width: 40rem !important; }
+.w-52 { width: 11.5rem !important; }
+.h-36 { height: 7.8rem !important; }
+.dpad-btn { font-size: 1.2rem !important; border-radius: 8px !important; }
+.jump-btn span { font-size: 0.75rem !important; }
+</style>
+</head>
+<body class="text-white">
+<div id="canvas-container"></div>
+
+<!-- UI Overlay HUD -->
+<div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+<!-- Header -->
+<div class="bg-slate-900/80 backdrop-blur-md p-3 rounded-2xl border border-slate-700/50 shadow-2xl max-w-sm mx-auto w-full text-center pointer-events-auto flex items-center justify-between">
+<div>
+<h1 id="scene-title" class="font-bold text-sm text-slate-100">Imprevistos e Futuro</h1>
+<p id="scene-subtitle" class="text-xs text-amber-400">Capture o Alvo 1 em Destaque!</p>
+</div>
+<button id="btn-return-lobby" class="hidden bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+<i class="fa-solid fa-door-open"></i> Saguão
+</button>
+</div>
+
+<!-- Prompt de Interação e Avisos -->
+<div id="enter-prompt" class="self-center bg-amber-500 text-slate-950 font-extrabold px-5 py-2.5 rounded-2xl text-sm shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 border-2 border-amber-300">
+<i class="fa-solid fa-shield-halved text-lg"></i>
+<span id="enter-prompt-text">Alcance os Alvos na Sequência!</span>
+</div>
+
+<!-- Rodapé D-Pad -->
+<div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto mb-2">
+<div class="grid grid-cols-3 gap-2 w-52 h-36 mx-auto p-2 bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-700/80 shadow-2xl">
+<div></div>
+<button id="btn-up" class="dpad-btn text-xl"><i class="fa-solid fa-arrow-up"></i></button>
+<div></div>
+<button id="btn-left" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-left"></i></button>
+<button id="btn-kick" class="dpad-btn jump-btn text-xs flex-col gap-0.5">
+<i class="fa-solid fa-futbol text-base"></i>
+<span id="jump-btn-label">CHUTAR</span>
+</button>
+<button id="btn-right" class="dpad-btn text-xl"><i class="fa-solid fa-rotate-right"></i></button>
+</div>
+<div class="bg-slate-900/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700/50 text-xs text-slate-300 flex items-center justify-between shadow-xl">
+<div class="flex items-center gap-2">
+<span id="status-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+<span id="status-label">Perseguição Ativa</span>
+</div>
+<span id="location-tag" class="text-amber-400 font-semibold">Projeto de Vida & Socioemocional</span>
+</div>
+</div>
+</div>
+
+<!-- TELA 1: TELA INICIAL -->
+<div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h1 class="text-xl font-extrabold text-amber-400">Imprevistos e Futuro</h1>
+<p class="text-xs text-slate-400 font-medium">Construindo a Resiliência e Superando Frustrações</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl space-y-2">
+<h2 class="font-bold text-amber-300 text-base flex items-center gap-2">
+<i class="fa-solid fa-graduation-cap"></i> Neste jogo, você aprenderá:
+</h2>
+<ul class="space-y-2 text-xs leading-relaxed text-slate-300 list-disc pl-4">
+<li>Por que a frustração acontece quando a realidade não bate com a nossa expectativa.</li>
+<li>Como as profissões e as tecnologias mudam rápido e exigem flexibilidade.</li>
+<li>A importância de cuidar da saúde física e mental para evitar o esgotamento.</li>
+<li>O que é a "Falácia da Chegada": por que conquistar uma meta não resolve todos os problemas.</li>
+<li>Como a Dicotomia do Controle ajuda a focar naquilo que depende apenas de nós.</li>
+<li>A construir uma "margem de segurança" e ser mais forte diante dos imprevistos.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-start-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 1.1: VERIFICAÇÃO DE LEITURA DA TELA INICIAL -->
+<div id="start-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação dos Objetivos</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para prosseguir</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="start-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="start-quiz-options" class="space-y-2"></div>
+</div>
+<div id="start-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- TELA 2: REGRAS DO JOGO -->
+<div id="rules-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-xl font-extrabold text-amber-400">REGRAS DO JOGO</h2>
+<p class="text-xs text-slate-400 font-medium">Leia com atenção antes de começar</p>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-slate-200 custom-scrollbar flex-1">
+<div class="bg-slate-800/80 border border-slate-700 p-3.5 rounded-2xl space-y-2">
+<ul class="space-y-2 list-disc pl-4 leading-relaxed">
+<li>Mova-se e chute usando o controle na tela.</li>
+<li>Acerte o alvo verde com a bola para ler o texto.</li>
+<li>Depois do décimo alvo, faça o simulado final.</li>
+<li>Mostre a tela do gabarito ao professor.</li>
+</ul>
+</div>
+<div class="bg-amber-500/10 border border-amber-500/40 p-3 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1.5"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+<button id="btn-rules-next" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-base shadow-xl transition transform active:scale-95">
+AVANÇAR PARA VERIFICAÇÃO <i class="fa-solid fa-arrow-right ml-2"></i>
+</button>
+</div>
+</div>
+
+<!-- TELA 2.1: VERIFICAÇÃO DE LEITURA DAS REGRAS -->
+<div id="rules-quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div class="text-center space-y-1">
+<h2 class="text-lg font-extrabold text-amber-400">Verificação das Regras</h2>
+<p class="text-xs text-slate-400 font-medium">Responda para iniciar a partida</p>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<p id="rules-quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+<div id="rules-quiz-options" class="space-y-2"></div>
+</div>
+<div id="rules-quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DE DIÁLOGO / QUIZ DOS ALVOS -->
+<div id="quiz-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-5 max-w-md w-full shadow-2xl space-y-4 text-slate-100 max-h-[90vh] flex flex-col">
+<div id="quiz-tip-box" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200">
+<strong class="text-amber-400 block mb-1 text-sm font-bold"><i class="fa-solid fa-lightbulb mr-1.5"></i> Dica de Estudo:</strong>
+<span id="quiz-tip-text"></span>
+</div>
+<div class="overflow-y-auto pr-1 space-y-3 custom-scrollbar flex-1">
+<div>
+<h3 id="quiz-title" class="text-xs uppercase tracking-wider font-extrabold text-amber-400 mb-1">Verificação de Leitura</h3>
+<p id="quiz-question" class="text-sm font-semibold text-slate-100 leading-relaxed"></p>
+</div>
+<div id="quiz-options" class="space-y-2"></div>
+</div>
+<div id="quiz-feedback" class="hidden p-2.5 rounded-xl text-center text-xs font-bold"></div>
+<div class="bg-slate-800/80 border border-slate-700/60 p-2 rounded-xl text-center text-xs font-medium text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<!-- MODAL DO SIMULADO FINAL E GABARITO -->
+<div id="simulado-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 pointer-events-auto">
+<div class="bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 max-w-xl w-full shadow-2xl space-y-4 text-slate-100 max-h-[92vh] flex flex-col">
+<div class="text-center border-b border-slate-700/80 pb-3">
+<h2 id="simulado-header-title" class="text-lg font-extrabold text-amber-400">Simulado Final - Modelo SARESP (8º Ano)</h2>
+<p id="simulado-header-sub" class="text-xs text-slate-300 font-medium">Responda às 5 questões para concluir o jogo</p>
+</div>
+
+<!-- Conteúdo do Simulado (Questões / Resultados) -->
+<div id="simulado-body" class="overflow-y-auto pr-2 space-y-4 text-sm text-slate-200 custom-scrollbar flex-1">
+<!-- Dica curta da questão -->
+<div id="simulado-short-tip" class="bg-amber-500/10 border border-amber-500/40 p-3.5 rounded-2xl text-xs text-amber-200 font-medium">
+<strong class="text-amber-400 block mb-1 font-bold text-xs"><i class="fa-solid fa-lightbulb mr-1"></i> Dica de Estudo:</strong>
+<span id="simulado-short-tip-text"></span>
+</div>
+
+<!-- Enunciado e Opções -->
+<div class="space-y-2">
+<p id="simulado-question-text" class="font-semibold text-sm leading-relaxed text-slate-100"></p>
+<div id="simulado-options" class="space-y-2 pt-2"></div>
+</div>
+</div>
+
+<div class="bg-slate-800/80 border border-slate-700/60 p-2.5 rounded-xl text-center text-xs font-semibold text-amber-300">
+<i class="fa-solid fa-circle-info mr-1"></i> Não entendeu? Procure o professor.
+</div>
+</div>
+</div>
+
+<script>
+// --- BANCO DE QUESTÕES DE VERIFICAÇÃO INICIAL E DE REGRAS ---
+const startModalQuestions = [
+{
+q: "De acordo com o tema estudado, a frustração humana costuma acontecer quando:",
+opts: [
+"Existe uma grande distância entre aquilo que esperamos e o que realmente acontece.",
+"Tudo dá exatamente certo conforme o planejado sem nenhuma mudança.",
+"Deixamos de sonhar ou de fazer qualquer plano para o futuro."
+],
+correctIndex: 0
+},
+{
+q: "Diante de imprevistos e mudanças no mundo do trabalho, a melhor atitude é:",
+opts: [
+"Desistir de estudar e esperar que a sorte resolva as dificuldades.",
+"Desenvolver flexibilidade, aprender novas habilidades e ter planos alternativos.",
+"Acreditar que o futuro nunca mudará e manter planos rígidos."
+],
+correctIndex: 1
+},
+{
+q: "O conceito filosófico de 'Dicotomia do Controle' ensina que devemos focar:",
+opts: [
+"Em tentar controlar a opinião, os pensamentos e as ações de todas as outras pessoas.",
+"No clima, na chuva e nas decisões tomadas por governantes de outros países.",
+"Apenas naquilo que depende diretamente das nossas próprias escolhas e atitudes."
+],
+correctIndex: 2
+}
+];
+
+const rulesModalQuestions = [
+{
+q: "O que o estudante deve fazer para se mover e chutar no jogo?",
+opts: [
+"Digitar os comandos no teclado do computador.",
+"Mover-se e chutar usando o controle na tela.",
+"Chacoalhar o celular para movimentar a bola."
+],
+correctIndex: 1
+},
+{
+q: "O que deve ser feito para abrir a leitura do texto?",
+opts: [
+"Acerte o alvo verde para ler o texto explicativo.",
+"Encoste no inimigo vermelho durante a corrida.",
+"Pressione o botão de pausa no topo da tela."
+],
+correctIndex: 0
+},
+{
+q: "O que o estudante deve fazer após concluir o décimo alvo?",
+opts: [
+"Sair do jogo e reiniciar a partida do início.",
+"Aguardar dez minutos até o tempo esgotar totalmente.",
+"Depois do décimo alvo, faça o simulado."
+],
+correctIndex: 2
+}
+];
+
+let startQuizIndex = 0;
+let rulesQuizIndex = 0;
+
+// --- BASE DE DADOS DOS 10 ALVOS (Imprevistos, Frustração e Resiliência) ---
+const gameDatabase = [
+{
+id: 1,
+tipText: "DICA 1: A frustração nasce da diferença entre o que a gente imagina e o que realmente acontece. Entender que o mundo não segue o nosso roteiro evita muito sofrimento.",
+verifications: [
+{ q: "De onde geralmente nasce o sentimento de frustração?", correct: "Da distância entre o que esperávamos e a realidade dos acontecimentos.", wrongs: ["Da certeza de que tudo dará certo sem esforço.", "Do cumprimento exato de todas as nossas vontades."] },
+{ q: "Como podemos reduzir o impacto da frustração ao planejar um projeto?", correct: "Criando expectativas realistas e aceitando que imprevistos podem acontecer.", wrongs: ["Acreditando que nada jamais sairá do nosso controle.", "Desistindo de qualquer objetivo antes mesmo de começar."] },
+{ q: "Achar que o mundo tem a obrigação de atender a todas as nossas vontades gera:", correct: "Maior facilidade para se frustrar e desanimar.", wrongs: ["Garantia total de sucesso em todas as atividades.", "Imunidade contra erros e imprevistos."] }
+]
+},
+{
+id: 2,
+tipText: "DICA 2: Tecnologias e profissões mudam muito rápido. Aprender coisas novas com frequência e ser flexível vale muito mais do que dominar apenas uma única tarefa.",
+verifications: [
+{ q: "Por que muitas profissões e rotinas mudam de forma rápida na sociedade atual?", correct: "Por causa do surgimento contínuo de novas tecnologias e ferramentas digitais.", wrongs: ["Porque as pessoas pararam de trabalhar em grupo.", "Porque as leis proíbem o aprendizado de novas matérias."] },
+{ q: "Qual habilidade é essencial para lidar com a constante evolução das ferramentas?", correct: "A capacidade de continuar aprendendo e se adaptando a novidades.", wrongs: ["A recusa permanente em usar qualquer nova tecnologia.", "A memorização rígida de regras antigas sem questionar."] },
+{ q: "O que é 'obsolescência' no mundo dos estudos e do trabalho?", correct: "Quando um conhecimento ou método deixa de ser útil ou procurado.", wrongs: ["O momento em que alguém atinge a perfeição absoluta.", "A conquista de um prêmio de reconhecimento escolar."] }
+]
+},
+{
+id: 3,
+tipText: "DICA 3: Nosso corpo não é uma máquina de ferro! Noites sem dormir, estresse excessivo e falta de descanso causam esgotamento e atrapalham todos os planos.",
+verifications: [
+{ q: "Qual ilusão pode prejudicar jovens que estudam ou treinam em excesso?", correct: "Acreditar que o corpo nunca vai cansar e que pausas são desnecessárias.", wrongs: ["Saber a hora certa de descansar e dormir bem.", "Praticar atividades físicas moderadas regularmente."] },
+{ q: "O que é a síndrome de 'burnout'?", correct: "Um esgotamento físico e mental extremo provocado pelo estresse prolongado.", wrongs: ["Uma doença causada exclusivamente pela falta de videogame.", "Um aumento repentino na energia e na disposição física."] },
+{ q: "Qual é a melhor forma de proteger a saúde física diante de semanas de provas?", correct: "Manter boas noites de sono, alimentação equilibrada e pausas conscientes.", wrongs: ["Ficar acordado a noite inteira estudando à base de energéticos.", "Deixar de se alimentar para ganhar mais tempo livre."] }
+]
+},
+{
+id: 4,
+tipText: "DICA 4: Pessoas mudam de gostos e caminhos. Uma amizade de infância pode se distanciar com o tempo sem que ninguém tenha brigado. Isso faz parte do amadurecimento.",
+verifications: [
+{ q: "É natural que algumas amizades mudem ou fiquem mais distantes na adolescência?", correct: "Sim, pois cada pessoa amadurece, ganha novos interesses e rotinas diferentes.", wrongs: ["Não, isso sempre significa que alguém agiu com falsidade.", "Não, amigos de infância são obrigados a ter exatamente os mesmos gostos."] },
+{ q: "Qual é a atitude mais madura ao perceber que um colega fez novas amizades?", correct: "Respeitar a nova fase do colega e também abrir espaço para novas amizades.", wrongs: ["Brigar publicamente e exigir exclusividade nas conversas.", "Parar de falar com todo mundo e se isolar da turma."] },
+{ q: "O que gera decepção nos relacionamentos interpessoais?", correct: "Esperar que os amigos pensem e reajam sempre da mesma forma que nós.", wrongs: ["Compreender que cada pessoa tem suas próprias escolhas.", "Dialogar com respeito quando surge algum desentendimento."] }
+]
+},
+{
+id: 5,
+tipText: "DICA 5: 'Falácia da Chegada' é acreditar que alcançar um objetivo (passar de ano, comprar um celular) trará felicidade eterna. O segredo é valorizar o aprendizado no caminho!",
+verifications: [
+{ q: "O que define a chamada 'Falácia da Chegada'?", correct: "A crença de que atingir uma meta resolverá magicamente todos os problemas da vida.", wrongs: ["O medo de viajar de ônibus ou avião em viagens longas.", "A certeza de que estudar não serve para conquistar sonhos."] },
+{ q: "Por que algumas pessoas sentem um vazio logo após vencer um grande desafio?", correct: "Porque focaram apenas no troféu e esqueceram de aproveitar o aprendizado diário.", wrongs: ["Porque vencer desafios sempre destrói as emoções humanas.", "Porque ninguém comemora vitórias conquistadas com esforço."] },
+{ q: "Como manter a motivação saudável depois de alcançar uma meta importante?", correct: "Celebrar a conquista presente e buscar novos aprendizados com humildade.", wrongs: ["Parar completamente de se dedicar a qualquer outra atividade.", "Exigir que todos ao redor continuem elogiando a vitória para sempre."] }
+]
+},
+{
+id: 6,
+tipText: "DICA 6: Ter 'margem de segurança' significa ter um plano B. Sair de casa 15 minutos antes prevendo trânsito ou salvar o trabalho escolar na nuvem evita apuros inesperados.",
+verifications: [
+{ q: "Qual é o objetivo principal de criar uma 'margem de segurança' nos nossos planos?", correct: "Garantir recursos, tempo e alternativas caso surjam imprevistos.", wrongs: ["Fazer com que ninguém descubra quais são os nossos objetivos.", "Tornar as tarefas mais lentas e difíceis de concluir."] },
+{ q: "Quem costuma planejar alternativas reserva tende a reagir a problemas com:", correct: "Mais tranquilidade e capacidade de encontrar soluções rápidas.", wrongs: ["Desespero imediato e paralisação total das atitudes.", "Raiva descontrolada culpando os outros pelo atraso."] },
+{ q: "Qual atitude representa uma margem de segurança no contexto escolar?", correct: "Salvar um trabalho em mais de um local e terminar com antecedência.", wrongs: ["Começar a fazer a pesquisa meia hora antes da entrega.", "Deixar para imprimir o trabalho na última hora sem conferir a tinta."] }
+]
+},
+{
+id: 7,
+tipText: "DICA 7: Dicotomia do Controle: separe o que depende de você (seu esforço, honestidade, atitude) do que NÃO depende de você (o clima, as decisões dos outros, a sorte).",
+verifications: [
+{ q: "Segundo a Dicotomia do Controle, qual elemento está totalmente sob o seu domínio?", correct: "O quanto você se esforça e presta atenção durante as aulas.", wrongs: ["O humor do motorista do ônibus a caminho da escola.", "Se vai chover ou fazer sol no dia da gincana escolar."] },
+{ q: "O que devemos fazer em relação aos acontecimentos que não podemos controlar?", correct: "Aceitar a situação com calma e focar nas ações que podemos tomar.", wrongs: ["Gastar energia reclamando repetidamente de coisas imutáveis.", "Achar que somos culpados por tudo de ruim que ocorre no mundo."] },
+{ q: "Ficar furioso porque choveu no dia marcado para o piquenique é um exemplo de:", correct: "Gastar saúde mental com um fato que foge completamente ao controle humano.", wrongs: ["Uma atitude inteligente de protesto contra a atmosfera.", "Uma habilidade fundamental de liderança comunitária."] }
+]
+},
+{
+id: 8,
+tipText: "DICA 8: Ser 'antifrágil' significa não apenas aguentar o tranco, mas sair mais forte e experiente depois de errar. O erro é uma oportunidade valiosa de aprender!",
+verifications: [
+{ q: "Diferente de algo frágil que quebra na primeira queda, a pessoa antifrágil:", correct: "Aprende com a falha e desenvolve novas estratégias para melhorar.", wrongs: ["Nunca comete nenhum erro ao longo de toda a vida.", "Finge que o erro não aconteceu e culpa os colegas ao redor."] },
+{ q: "Qual é a reação mais construtiva diante de uma nota vermelha em uma prova?", correct: "Identificar as matérias em que teve dúvida e tirar as dúvidas com o professor.", wrongs: ["Rasgar a folha de prova e afirmar que a matéria é inútil.", "Concluir que nunca será capaz de aprender nenhum assunto difícil."] },
+{ q: "O que fortalece a resiliência de um estudante ao longo do ano letivo?", correct: "Superar pequenos desafios e imprevistos com paciência e persistência.", wrongs: ["Exigir que os pais façam todas as tarefas escolares por ele.", "Faltar às aulas sempre que houver um teste desafiador."] }
+]
+},
+{
+id: 9,
+tipText: "DICA 9: Não apoie toda a sua vida em um único pilar! Se seu bem-estar depender apenas de um jogo, de uma única pessoa ou de um esporte, você desaba se algo falhar.",
+verifications: [
+{ q: "Por que é perigoso apoiar a autoestima em um único aspecto da rotina?", correct: "Porque se algo der errado nessa área, todo o equilíbrio emocional desaba.", wrongs: ["Porque ter vários interesses impede o cérebro de se concentrar.", "Porque as pessoas de sucesso praticam apenas uma única atividade."] },
+{ q: "O que significa 'ter múltiplos pilares' de apoio na vida cotidiana?", correct: "Valorizar família, amigos, estudos, esportes, lazer e momentos consigo mesmo.", wrongs: ["Fazer dezenas de coisas com pressa sem aproveitar nenhuma delas.", "Mudar de escola todos os meses para não se acostumar com ninguém."] },
+{ q: "Quando um plano específico não dá certo, a pessoa com múltiplos pilares:", correct: "Consegue manter a calma apoiando-se em outras áreas importantes de sua vida.", wrongs: ["Fica sem nenhuma alternativa e perde a vontade de viver.", "Abandona todas as suas amizades e passa a viver isolada."] }
+]
+},
+{
+id: 10,
+tipText: "DICA 10: Saber mudar de rota é sinal de inteligência! Teimosia cega só machuca. Como o bambu que se curva com o vento sem quebrar, seja flexível diante das mudanças.",
+verifications: [
+{ q: "O que demonstra sabedoria quando percebemos que um plano antigo não funciona mais?", correct: "Ter a humildade de ajustar o rumo e traçar novas metas adequadas.", wrongs: ["Continuar insistindo no mesmo erro para provar que é teimoso.", "Desistir da própria dignidade e culpar a família pelos problemas."] },
+{ q: "Por que a teimosia em excesso costuma aumentar o nível de frustração?", correct: "Porque nos impede de enxergar novos caminhos e soluções criativas.", wrongs: ["Porque faz com que todas as pessoas concordem com a nossa ideia.", "Porque transforma qualquer problema em uma vitória imediata."] },
+{ q: "A metáfora do bambu que se dobra diante do vento forte ensina que:", correct: "A flexibilidade e a capacidade de adaptação nos mantêm de pé nas dificuldades.", wrongs: ["Apenas as estruturas duras e sem movimento conseguem resistir à tempestade.", "Devemos desistir na primeira rajada de vento sem oferecer resistência."] }
+]
+}
+];
+
+// --- SIMULADO FINAL (Modelo SARESP - 8º Ano do Ensino Fundamental) ---
+const simuladoData = [
+{
+id: 1,
+shortTip: "DICA DA QUESTÃO 1 (Fácil): Focar naquilo que não podemos mudar (como o clima) só gera desgaste emocional inútil.",
+enunciado: "Lucas passou semanas combinando um torneio de futebol com os amigos da rua para a tarde de sábado. No horário marcado, uma forte tempestade alagou a quadra do bairro, e o jogo precisou ser cancelado. Muito irritado, Lucas chutou o portão e brigou com os amigos. De acordo com o conceito de 'Dicotomia do Controle', a frustração de Lucas aumentou porque ele:",
+options: [
+{ text: "(A) gastou sua energia revoltando-se contra a chuva, algo que nenhum ser humano pode controlar.", correct: true },
+{ text: "(B) esqueceu de comprar bolas de futebol adequadas para campos alagados.", correct: false },
+{ text: "(C) convidou colegas de classe que não tinham chuteiras profissionais.", correct: false },
+{ text: "(D) dedicou pouco tempo aos treinos de corrida durante a semana.", correct: false },
+{ text: "(E) recusou-se a pagar uma taxa de aluguel cobrada pela prefeitura da cidade.", correct: false }
+],
+explanation: "A chuva é um evento natural fora do controle humano. Revoltar-se contra ela gera estresse inútil; o comportamento resiliente seria aceitar a situação e combinar uma atividade alternativa (plano B)."
+},
+{
+id: 2,
+shortTip: "DICA DA QUESTÃO 2 (Fácil): A 'Falácia da Chegada' é acreditar que um objetivo alcançado acabará com todas as dificuldades.",
+enunciado: "A chamada 'Falácia da Chegada' acontece quando imaginamos que alcançar uma meta resolverá todos os nossos problemas emocionais e trará felicidade inabalável. Um estudante do 8º ano que pensa de acordo com essa falácia diria:",
+options: [
+{ text: "(A) 'Estudar com dedicação me ajuda a aprender conteúdos novos todos os dias.'", correct: false },
+{ text: "(B) 'Quando eu finalmente comprar aquele celular novo, minha vida será perfeita e nunca mais ficarei triste.'", correct: true },
+{ text: "(C) 'Se eu não entender a explicação do professor, posso levantar a mão e tirar minhas dúvidas com calma.'", correct: false },
+{ text: "(D) 'Cuidar do sono e comer alimentos saudáveis me dá mais energia para os estudos.'", correct: false },
+{ text: "(E) 'Mesmo se o trabalho em grupo der trabalho, posso me divertir com meus colegas durante a pesquisa.'", correct: false }
+],
+explanation: "A 'Falácia da Chegada' consiste em condicionar a felicidade a um acontecimento futuro (um celular novo, passar de ano), acreditando que essa conquista isolada eliminará qualquer frustração futura."
+},
+{
+id: 3,
+shortTip: "DICA DA QUESTÃO 3 (Intermediária): A postura antifrágil utiliza o erro para descobrir deficiências e melhorar no próximo teste.",
+enunciado: "Mariana estudou bastante para uma prova de Ciências, esperando tirar nota 10. Ao receber a folha corrigida, viu que tirou 6,5 por ter cometido deslizes de atenção em duas questões. Sentiu-se decepcionada. Considerando uma atitude antifrágil e resiliente, a melhor reação de Mariana para lidar com essa frustração é:",
+options: [
+{ text: "(A) rasgar a prova, esconder o resultado dos pais e decidir não estudar mais Ciências durante o bimestre.", correct: false },
+{ text: "(B) culpar os colegas que tiraram notas mais altas, alegando que o professor foi injusto na correção.", correct: false },
+{ text: "(C) analisar os erros cometidos, entender o motivo da desatenção e refazer os exercícios para fixar a matéria.", correct: true },
+{ text: "(D) fingir que a nota não tem importância e parar de prestar atenção nas explicações dadas em sala de aula.", correct: false },
+{ text: "(E) exigir que o professor mude o gabarito sem apresentar nenhuma justificativa pedagógica.", correct: false }
+],
+explanation: "A resiliência e a antifragilidade envolvem encarar a nota baixa como uma informação valiosa sobre o que precisa ser aprimorado, utilizando o tropeço como degrau de aprendizado."
+},
+{
+id: 4,
+shortTip: "DICA DA QUESTÃO 4 (Intermediária): O crescimento na adolescência traz novos interesses e pode afastar amigos sem que haja inimizade.",
+enunciado: "Desde o 5º ano, Pedro e Gustavo eram inseparáveis. No 8º ano, Gustavo começou a praticar basquete no contraturno e fez amizades com o pessoal do time, passando menos tempo com Pedro. Sentindo-se deixado de lado, Pedro pensou que o colega tinha se tornado seu inimigo. Analisando as mudanças nas amizades durante a adolescência, conclui-se corretamente que:",
+options: [
+{ text: "(A) amigos verdadeiros nunca podem praticar esportes diferentes nem conversar com outros estudantes.", correct: false },
+{ text: "(B) Pedro deve parar de falar com todos os colegas da escola para evitar qualquer nova decepção futura.", correct: false },
+{ text: "(C) o afastamento entre amigos na adolescência pode ocorrer naturalmente pelo surgimento de novos interesses, sem significar traição ou inimizade.", correct: true },
+{ text: "(D) Gustavo cometeu uma falta grave de conduta escolar e deve receber uma advertência da direção.", correct: false },
+{ text: "(E) a única maneira de Pedro recuperar a autoestima é abandonar suas próprias atividades prediletas.", correct: false }
+],
+explanation: "Na adolescência, é comum que caminhos e gostos mudem. Compreender que o distanciamento pode decorrer de novos interesses evita mágoas infundadas e ajuda a valorizar novas amizades."
+},
+{
+id: 5,
+shortTip: "DICA DA QUESTÃO 5 (Difícil): Criar margem de segurança envolve ações práticas de reserva (tempo, cópias e alternativas) para evitar apuros.",
+enunciado: "Em projetos de vida e planejamento pessoal, criar uma 'margem de segurança' significa antecipar imprevistos para não depender exclusivamente da sorte. Uma equipe de estudantes do 8º ano foi convidada a apresentar uma feira de ciências em outra escola da cidade. Para aplicar o conceito de margem de segurança de forma responsável, os alunos devem:",
+options: [
+{ text: "(A) sair de casa no horário exato da abertura dos portões e confiar que os computadores de lá nunca terão falhas de conexão.", correct: false },
+{ text: "(B) desistir de participar da feira, pois a possibilidade de imprevistos torna qualquer viagem fora da escola muito arriscada.", correct: false },
+{ text: "(C) sair com antecedência para evitar atrasos no trânsito, salvar os slides em pen drive e na nuvem, e levar materiais de reserva para a maquete.", correct: true },
+{ text: "(D) deixar para imprimir os cartazes explicativos dez minutos antes do início das avaliações dos jurados.", correct: false },
+{ text: "(E) responsabilizar apenas um aluno por todos os custos, materiais e apresentações para facilitar o trabalho dos demais.", correct: false }
+],
+explanation: "A margem de segurança se concretiza em medidas preventivas práticas: folga no horário, duplicidade de arquivos (nuvem e pen drive) e material sobressalente, permitindo contornar falhas sem comprometer o objetivo."
+}
+];
+
+// --- VARIÁVEIS DE ESTADO ---
+let currentTargetIndex = 0;
+let activeTargetObj = null;
+let activeVerificationObj = null;
+let defeatedCount = 0;
+
+const targets = [];
+let chaserEnemy = null;
+const colliders = [];
+const animatedObjects = [];
+let MAP_LIMIT = 120;
+
+const PLAYER_SPEED = 0.40;
+
+let simuladoCurrentIndex = 0;
+const simuladoUserAnswers = [];
+
+let soccerBallMesh = null;
+let ballState = {
+active: false,
+startX: 0, startY: 0, startZ: 0,
+targetX: 0, targetY: 0, targetZ: 0,
+progress: 0,
+speed: 1.0,
+maxHeight: 1.8
+};
+
+// --- THREE.JS INITIALIZATION ---
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0284c7);
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+dirLight.position.set(20, 35, 20);
+dirLight.castShadow = true;
+scene.add(dirLight);
+
+function createCharacterMesh(bodyHex = 0x111111, isEvil = false, numberStr = null, expression = 'evil') {
+const group = new THREE.Group();
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+const bodyMat = new THREE.MeshStandardMaterial({ color: bodyHex, roughness: 0.6 });
+
+const canvas = document.createElement('canvas');
+canvas.width = 256; canvas.height = 256;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = '#' + new THREE.Color(bodyHex).getHexString();
+ctx.fillRect(0, 0, 256, 256);
+if (numberStr) {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(numberStr, 128, 128);
+} else {
+ctx.fillStyle = '#ffffff';
+ctx.font = 'bold 160px "Times New Roman", serif';
+ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText('🎯', 128, 128);
+}
+const bodyTex = new THREE.CanvasTexture(canvas);
+const bodyTexMat = new THREE.MeshStandardMaterial({ map: bodyTex, roughness: 0.6 });
+
+const torsoMat = [bodyMat, bodyMat, bodyMat, bodyMat, isEvil ? bodyTexMat : bodyTexMat, bodyTexMat];
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.4), torsoMat);
+torso.position.y = 1.35; torso.castShadow = true; group.add(torso);
+
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), whiteMat);
+head.position.y = 0.88; torso.add(head);
+
+const eyeGroup = new THREE.Group();
+head.add(eyeGroup);
+
+function drawFace(expr) {
+while(eyeGroup.children.length > 0) eyeGroup.remove(eyeGroup.children[0]);
+const eyeMat = new THREE.MeshBasicMaterial({ color: isEvil ? 0x990000 : 0x1e293b });
+const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 8), eyeMat);
+eyeL.position.set(-0.1, 0.05, 0.24); eyeGroup.add(eyeL);
+const eyeR = eyeL.clone(); eyeR.position.x = 0.1; eyeGroup.add(eyeR);
+
+if (expr === 'evil') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = -0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = 0.35; eyeGroup.add(browR);
+} else if (expr === 'sad') {
+const browMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const browL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browL.position.set(-0.1, 0.11, 0.25); browL.rotation.z = 0.35; eyeGroup.add(browL);
+const browR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.02, 0.02), browMat);
+browR.position.set(0.1, 0.11, 0.25); browR.rotation.z = -0.35; eyeGroup.add(browR);
+const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.02), browMat);
+mouth.position.set(0, -0.08, 0.25); eyeGroup.add(mouth);
+}
+}
+
+drawFace(expression);
+
+const armGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18); armGeo.translate(0, -0.375, 0);
+const armLGroup = new THREE.Group(); armLGroup.position.set(0.48, 0.45, 0); armLGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armLGroup);
+const armRGroup = new THREE.Group(); armRGroup.position.set(-0.48, 0.45, 0); armRGroup.add(new THREE.Mesh(armGeo, whiteMat)); torso.add(armRGroup);
+
+const legGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22); legGeo.translate(0, -0.475, 0);
+const legLGroup = new THREE.Group(); legLGroup.position.set(0.18, -0.55, 0); legLGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legLGroup);
+const legRGroup = new THREE.Group(); legRGroup.position.set(-0.18, -0.55, 0); legRGroup.add(new THREE.Mesh(legGeo, bodyMat)); torso.add(legRGroup);
+
+return { group, torso, head, armLGroup, armRGroup, legLGroup, legRGroup, drawFace };
+}
+
+function setCharacterTranslucent(charObj, translucent) {
+charObj.group.traverse((child) => {
+if (child.isMesh) {
+if (!child.userData.originalMaterial) {
+child.userData.originalMaterial = child.material;
+}
+if (translucent) {
+const mat = child.userData.originalMaterial.clone();
+mat.transparent = true;
+mat.opacity = 0.2;
+child.material = mat;
+if (!child.userData.outlineMesh) {
+const outlineMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.8 });
+const outlineMesh = new THREE.Mesh(child.geometry, outlineMat);
+outlineMesh.scale.set(1.02, 1.02, 1.02);
+child.add(outlineMesh);
+child.userData.outlineMesh = outlineMesh;
+} else {
+child.userData.outlineMesh.visible = true;
+}
+} else {
+child.material = child.userData.originalMaterial;
+if (child.userData.outlineMesh) {
+child.userData.outlineMesh.visible = false;
+}
+}
+}
+});
+}
+
+function createSoccerBallMesh() {
+const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+const ball = new THREE.Mesh(ballGeo, ballMat);
+ball.castShadow = true;
+
+const spotGeo = new THREE.CircleGeometry(0.08, 5);
+const spotMat = new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide });
+const spots = [
+[0, 0.301, 0, Math.PI/2, 0, 0],
+[0, -0.301, 0, -Math.PI/2, 0, 0],
+[0.301, 0, 0, 0, Math.PI/2, 0],
+[-0.301, 0, 0, 0, -Math.PI/2, 0],
+[0, 0, 0.301, 0, 0, 0],
+[0, 0, -0.301, 0, Math.PI, 0]
+];
+spots.forEach(sp => {
+const spot = new THREE.Mesh(spotGeo, spotMat);
+spot.position.set(sp[0], sp[1], sp[2]);
+spot.rotation.set(sp[3], sp[4], sp[5]);
+ball.add(spot);
+});
+
+ball.visible = false;
+return ball;
+}
+
+function createTargetMesh(idNumber, isCurrent) {
+const group = new THREE.Group();
+
+const baseColor = isCurrent ? 0x16a34a : 0xdc2626;
+const targetMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.2 });
+const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+
+const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+pole.position.y = 0.9;
+pole.castShadow = true;
+group.add(pole);
+
+const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.15, 32), targetMat);
+disc.rotation.x = Math.PI / 2;
+disc.position.y = 1.8;
+disc.castShadow = true;
+group.add(disc);
+
+const innerRing = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.16, 32), whiteMat);
+innerRing.rotation.x = Math.PI / 2;
+innerRing.position.y = 1.8;
+group.add(innerRing);
+
+const centerDot = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.17, 32), targetMat);
+centerDot.rotation.x = Math.PI / 2;
+centerDot.position.y = 1.8;
+group.add(centerDot);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(idNumber.toString(), 64, 64);
+
+const numberMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+numberMarker.position.set(0, 3.2, 0);
+group.add(numberMarker);
+
+const auraGeo = new THREE.RingGeometry(0.9, 1.4, 32);
+const auraMat = new THREE.MeshBasicMaterial({ color: 0xfcb83b, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+auraMesh.rotation.x = -Math.PI / 2;
+auraMesh.position.y = 0.05;
+auraMesh.visible = isCurrent;
+group.add(auraMesh);
+
+return { group, disc, centerDot, marker: numberMarker, aura: auraMesh, targetMat };
+}
+
+const player = createCharacterMesh(0x111111, false, null, 'normal');
+scene.add(player.group);
+
+soccerBallMesh = createSoccerBallMesh();
+scene.add(soccerBallMesh);
+
+let characterAngle = 0;
+const turnSpeed = 0.045;
+let walkCycle = 0;
+let chaserWalkCycle = 0;
+const dpadState = { up: false, left: false, right: false };
+
+function setupDpadButton(elementId, directionKey) {
+const btn = document.getElementById(elementId);
+const start = (e) => { e.preventDefault(); dpadState[directionKey] = true; btn.classList.add('active'); };
+const end = (e) => { e.preventDefault(); dpadState[directionKey] = false; btn.classList.remove('active'); };
+btn.addEventListener('pointerdown', start); btn.addEventListener('pointerup', end);
+btn.addEventListener('pointerleave', end); btn.addEventListener('pointercancel', end);
+}
+
+setupDpadButton('btn-up', 'up'); setupDpadButton('btn-left', 'left'); setupDpadButton('btn-right', 'right');
+
+document.getElementById('btn-kick').addEventListener('pointerdown', (e) => {
+e.preventDefault();
+if (!ballState.active) {
+const kickDistance = 25.0;
+ballState.active = true;
+ballState.progress = 0;
+ballState.startX = player.group.position.x;
+ballState.startY = 0.3;
+ballState.startZ = player.group.position.z;
+
+ballState.targetX = player.group.position.x + Math.sin(characterAngle) * kickDistance;
+ballState.targetY = 0.3;
+ballState.targetZ = player.group.position.z + Math.cos(characterAngle) * kickDistance;
+
+soccerBallMesh.position.set(ballState.startX, ballState.startY, ballState.startZ);
+soccerBallMesh.visible = true;
+
+setCharacterTranslucent(player, true);
+}
+});
+
+function checkCollision(targetPos) {
+const playerRadius = 0.45;
+if (Math.abs(targetPos.x) > MAP_LIMIT || Math.abs(targetPos.z) > MAP_LIMIT) return true;
+for (let c of colliders) {
+if (c.type === 'box') {
+if (targetPos.x > c.minX - playerRadius && targetPos.x < c.maxX + playerRadius &&
+targetPos.z > c.minZ - playerRadius && targetPos.z < c.maxZ + playerRadius) return true;
+} else if (c.type === 'cylinder') {
+if (Math.hypot(targetPos.x - c.x, targetPos.z - c.z) < c.radius + playerRadius) return true;
+}
+}
+return false;
+}
+
+function addMapBoundaryFence(type = 'trees') {
+for (let i = -120; i <= 120; i += 12) {
+[-120, 120].forEach(pos => {
+if (type === 'trees') {
+const t = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t.position.set(i, 5, pos); scene.add(t);
+const l = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l.position.set(i, 14, pos); scene.add(l);
+const t2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+t2.position.set(pos, 5, i); scene.add(t2);
+const l2 = new THREE.Mesh(new THREE.ConeGeometry(6, 14, 8), new THREE.MeshStandardMaterial({ color: 0x14532d }));
+l2.position.set(pos, 14, i); scene.add(l2);
+}
+});
+}
+}
+
+function buildQ5() {
+scene.background = new THREE.Color(0x0284c7);
+
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(250, 250), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+floor.rotation.x = -Math.PI / 2;
+scene.add(floor);
+
+const path = new THREE.Mesh(new THREE.PlaneGeometry(25, 250), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+path.position.y = 0.01;
+path.rotation.x = -Math.PI / 2;
+scene.add(path);
+
+const cliff = new THREE.Mesh(new THREE.BoxGeometry(250, 30, 20), new THREE.MeshStandardMaterial({ color: 0x525252 }));
+cliff.position.set(0, 15, -100);
+scene.add(cliff);
+colliders.push({ type: 'box', minX: -125, maxX: 125, minZ: -111, maxZ: -89 });
+
+const waterfall = new THREE.Mesh(new THREE.PlaneGeometry(25, 30), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 }));
+waterfall.position.set(0, 15, -89.8);
+scene.add(waterfall);
+animatedObjects.push({ obj: waterfall, type: 'waterfall' });
+
+const treePositions = [
+{ x: -35, z: -25 },
+{ x: 40, z: 20 },
+{ x: -50, z: 45 },
+{ x: 30, z: -60 },
+{ x: -15, z: 75 }
+];
+
+treePositions.forEach(pos => {
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+const leavesMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+const trunk = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.3, 8), trunkMat);
+trunk.position.set(pos.x, 4, pos.z);
+trunk.castShadow = true;
+scene.add(trunk);
+
+const leaves = new THREE.Mesh(new THREE.ConeGeometry(5, 11, 8), leavesMat);
+leaves.position.set(pos.x, 11, pos.z);
+leaves.castShadow = true;
+scene.add(leaves);
+
+colliders.push({ type: 'cylinder', x: pos.x, z: pos.z, radius: 1.5 });
+});
+
+addMapBoundaryFence('trees');
+
+const targetPositions = [
+{ id: 1, x: -30, z: -25 },
+{ id: 2, x: 35, z: 15 },
+{ id: 3, x: -20, z: 55 },
+{ id: 4, x: 50, z: -45 },
+{ id: 5, x: -55, z: 20 },
+{ id: 6, x: 15, z: -70 },
+{ id: 7, x: -70, z: -60 },
+{ id: 8, x: 60, z: 60 },
+{ id: 9, x: 0, z: 85 },
+{ id: 10, x: -45, z: 70 }
+];
+
+targetPositions.forEach((cfg, idx) => {
+const isCurrent = (idx === currentTargetIndex);
+const targetObj = createTargetMesh(cfg.id, isCurrent);
+targetObj.group.position.set(cfg.x, 0, cfg.z);
+scene.add(targetObj.group);
+
+targets.push({
+id: cfg.id,
+mesh: targetObj,
+x: cfg.x,
+z: cfg.z,
+isDefeated: false
+});
+});
+
+const chaserMesh = createCharacterMesh(0xd97706, true, "!", 'evil');
+chaserMesh.group.position.set(0, 0, -50);
+scene.add(chaserMesh.group);
+
+const chaserCanvas = document.createElement('canvas'); chaserCanvas.width = 128; chaserCanvas.height = 128;
+const chaserCtx = chaserCanvas.getContext('2d');
+chaserCtx.fillStyle = '#dc2626'; chaserCtx.beginPath(); chaserCtx.arc(64, 64, 58, 0, Math.PI * 2); chaserCtx.fill();
+chaserCtx.lineWidth = 8; chaserCtx.strokeStyle = '#ffffff'; chaserCtx.stroke();
+chaserCtx.fillStyle = '#ffffff'; chaserCtx.font = 'bold 80px sans-serif'; chaserCtx.textAlign = 'center'; chaserCtx.textBaseline = 'middle';
+chaserCtx.fillText('!', 64, 64);
+
+const chaserMarker = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(chaserCanvas), transparent: true }));
+chaserMarker.position.set(0, 3.2, 0);
+chaserMesh.group.add(chaserMarker);
+
+chaserEnemy = {
+mesh: chaserMesh,
+marker: chaserMarker,
+speed: 0.085,
+startX: 0,
+startZ: -50
+};
+
+player.group.position.set(0, 0, 0);
+updateTargetStates();
+}
+
+function updateTargetStates() {
+targets.forEach((t, idx) => {
+if (t.isDefeated) {
+t.mesh.group.visible = false;
+} else {
+t.mesh.group.visible = true;
+const isCurrent = (idx === currentTargetIndex);
+t.mesh.aura.visible = isCurrent;
+
+const colorHex = isCurrent ? 0x16a34a : 0xdc2626;
+t.mesh.disc.material.color.setHex(colorHex);
+t.mesh.centerDot.material.color.setHex(colorHex);
+
+const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 128;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = isCurrent ? '#15803d' : '#b91c1c';
+ctx.beginPath(); ctx.arc(64, 64, 58, 0, Math.PI * 2); ctx.fill();
+ctx.lineWidth = 8; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+ctx.fillText(t.id.toString(), 64, 64);
+t.mesh.marker.material.map = new THREE.CanvasTexture(canvas);
+t.mesh.marker.material.needsUpdate = true;
+}
+});
+
+if (currentTargetIndex < targets.length) {
+document.getElementById('scene-subtitle').textContent = `Capture o Alvo ${currentTargetIndex + 1} em Destaque!`;
+}
+}
+
+// --- CONTROLE DAS TELAS INICIAIS E QUIZZES DE VERIFICAÇÃO ---
+function renderStartQuiz() {
+const qData = startModalQuestions[startQuizIndex];
+document.getElementById('start-quiz-question').textContent = qData.q;
+const container = document.getElementById('start-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('start-quiz-feedback');
+feedback.classList.add('hidden');
+
+const opts = [
+{ text: qData.opts[0], correct: qData.correctIndex === 0 },
+{ text: qData.opts[1], correct: qData.correctIndex === 1 },
+{ text: qData.opts[2], correct: qData.correctIndex === 2 }
+];
+
+opts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (opt.correct) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Excelente! Leitura confirmada.";
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Releia as informações...";
+startQuizIndex = (startQuizIndex + 1) % startModalQuestions.length;
+setTimeout(() => {
+document.getElementById('start-quiz-modal').classList.add('hidden');
+document.getElementById('start-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+function renderRulesQuiz() {
+const qData = rulesModalQuestions[rulesQuizIndex];
+document.getElementById('rules-quiz-question').textContent = qData.q;
+const container = document.getElementById('rules-quiz-options');
+container.innerHTML = '';
+const feedback = document.getElementById('rules-quiz-feedback');
+feedback.classList.add('hidden');
+
+const opts = [
+{ text: qData.opts[0], correct: qData.correctIndex === 0 },
+{ text: qData.opts[1], correct: qData.correctIndex === 1 },
+{ text: qData.opts[2], correct: qData.correctIndex === 2 }
+];
+
+opts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+feedback.classList.remove('hidden');
+if (opt.correct) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Tudo certo! Bom jogo!";
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+showTemporaryMessage("Perseguição Iniciada! Alcance o Alvo 1!");
+}, 1200);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Incorreto! Releia as regras do jogo...";
+rulesQuizIndex = (rulesQuizIndex + 1) % rulesModalQuestions.length;
+setTimeout(() => {
+document.getElementById('rules-quiz-modal').classList.add('hidden');
+document.getElementById('rules-modal').classList.remove('hidden');
+}, 1500);
+}
+};
+container.appendChild(btn);
+});
+}
+
+document.getElementById('btn-start-next').addEventListener('click', () => {
+document.getElementById('start-modal').classList.add('hidden');
+renderStartQuiz();
+document.getElementById('start-quiz-modal').classList.remove('hidden');
+});
+
+document.getElementById('btn-rules-next').addEventListener('click', () => {
+document.getElementById('rules-modal').classList.add('hidden');
+renderRulesQuiz();
+document.getElementById('rules-quiz-modal').classList.remove('hidden');
+});
+
+function showTemporaryMessage(msg) {
+const prompt = document.getElementById('enter-prompt');
+document.getElementById('enter-prompt-text').textContent = msg;
+prompt.classList.remove('opacity-0', 'translate-y-4');
+prompt.classList.add('opacity-100', 'translate-y-0');
+setTimeout(() => {
+prompt.classList.remove('opacity-100', 'translate-y-0');
+prompt.classList.add('opacity-0', 'translate-y-4');
+}, 3500);
+}
+
+function triggerTargetInteraction(target) {
+activeTargetObj = target;
+const dbData = gameDatabase[target.id - 1];
+activeVerificationObj = dbData.verifications[Math.floor(Math.random() * dbData.verifications.length)];
+
+document.getElementById('quiz-tip-box').classList.remove('hidden');
+document.getElementById('quiz-tip-text').textContent = dbData.tipText;
+document.getElementById('quiz-title').textContent = `Alvo ${target.id} Alcance - Verificação de Leitura`;
+document.getElementById('quiz-question').textContent = activeVerificationObj.q;
+
+const optionsContainer = document.getElementById('quiz-options');
+optionsContainer.innerHTML = '';
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.add('hidden');
+
+const allOpts = shuffleArray([
+{ text: activeVerificationObj.correct, isCorrect: true },
+{ text: activeVerificationObj.wrongs[0], isCorrect: false },
+{ text: activeVerificationObj.wrongs[1], isCorrect: false }
+]);
+
+allOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed';
+btn.textContent = opt.text;
+btn.onclick = () => handleVerificationAnswer(opt.isCorrect);
+optionsContainer.appendChild(btn);
+});
+
+document.getElementById('quiz-modal').classList.remove('hidden');
+}
+
+function shuffleArray(arr) {
+const copy = [...arr];
+for (let i = copy.length - 1; i > 0; i--) {
+const j = Math.floor(Math.random() * (i + 1));
+[copy[i], copy[j]] = [copy[j], copy[i]];
+}
+return copy;
+}
+
+function handleVerificationAnswer(isCorrect) {
+const feedback = document.getElementById('quiz-feedback');
+feedback.classList.remove('hidden');
+if (isCorrect) {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+feedback.textContent = "Parabéns, você respondeu corretamente!";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+activeTargetObj.isDefeated = true;
+scene.remove(activeTargetObj.mesh.group);
+defeatedCount++;
+
+currentTargetIndex++;
+updateTargetStates();
+
+if (defeatedCount >= 10) {
+showTemporaryMessage("Todos os 10 alvos foram alcançados! Iniciando Simulado...");
+setTimeout(() => {
+startSimulado();
+}, 2000);
+} else {
+showTemporaryMessage(`Progresso: ${defeatedCount}/10! Próximo alvo: ${currentTargetIndex + 1}`);
+}
+}, 1500);
+} else {
+feedback.className = 'p-2.5 rounded-xl text-center text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40';
+feedback.textContent = "Resposta incorreta! Você foi empurrado...";
+setTimeout(() => {
+document.getElementById('quiz-modal').classList.add('hidden');
+const pushAngle = Math.atan2(player.group.position.x - activeTargetObj.x, player.group.position.z - activeTargetObj.z);
+player.group.position.x += Math.cos(pushAngle) * 8.0;
+player.group.position.z += Math.sin(pushAngle) * 8.0;
+showTemporaryMessage("Errou! Tente novamente...");
+}, 1800);
+}
+}
+
+// --- SISTEMA DO SIMULADO FINAL E GABARITO ---
+function startSimulado() {
+simuladoCurrentIndex = 0;
+simuladoUserAnswers.length = 0;
+renderSimuladoQuestion();
+document.getElementById('simulado-modal').classList.remove('hidden');
+}
+
+function renderSimuladoQuestion() {
+const qData = simuladoData[simuladoCurrentIndex];
+document.getElementById('simulado-header-title').textContent = `Simulado Final - Questão ${simuladoCurrentIndex + 1} de 5`;
+document.getElementById('simulado-short-tip-text').textContent = qData.shortTip;
+document.getElementById('simulado-question-text').textContent = qData.enunciado;
+
+const optionsContainer = document.getElementById('simulado-options');
+optionsContainer.innerHTML = '';
+
+const shuffledOpts = shuffleArray(qData.options);
+shuffledOpts.forEach(opt => {
+const btn = document.createElement('button');
+btn.className = 'w-full text-left bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl text-xs transition font-medium leading-relaxed text-slate-100';
+btn.textContent = opt.text;
+btn.onclick = () => {
+simuladoUserAnswers.push({
+questionData: qData,
+selectedOption: opt,
+isCorrect: opt.correct
+});
+simuladoCurrentIndex++;
+if (simuladoCurrentIndex < simuladoData.length) {
+renderSimuladoQuestion();
+} else {
+renderSimuladoGabarito();
+}
+};
+optionsContainer.appendChild(btn);
+});
+}
+
+function renderSimuladoGabarito() {
+document.getElementById('simulado-header-title').textContent = "Resultado e Gabarito do Simulado";
+document.getElementById('simulado-header-sub').textContent = "Confira seu desempenho abaixo com as explicações";
+document.getElementById('simulado-short-tip').classList.add('hidden');
+
+const bodyContainer = document.getElementById('simulado-body');
+bodyContainer.innerHTML = '';
+
+simuladoUserAnswers.forEach((ans, idx) => {
+const card = document.createElement('div');
+card.className = 'bg-slate-800/90 border border-slate-700 p-4 rounded-2xl space-y-2 text-xs';
+
+if (ans.isCorrect) {
+card.innerHTML = `
+<div class="flex items-center justify-between font-bold text-sm">
+<span class="text-slate-100">Questão ${idx + 1}</span>
+<span class="text-emerald-400 font-extrabold"><i class="fa-solid fa-circle-check mr-1"></i> Acertou!</span>
+</div>
+`;
+} else {
+const correctOpt = ans.questionData.options.find(o => o.correct);
+card.innerHTML = `
+<div class="font-bold text-sm text-slate-900 bg-slate-200 p-2.5 rounded-xl">
+${idx + 1}. ${ans.questionData.enunciado}
+</div>
+<div class="space-y-1.5 pt-1">
+<p class="text-rose-400 font-semibold bg-rose-500/10 p-2 rounded-lg border border-rose-500/30">
+<i class="fa-solid fa-xmark mr-1"></i> Sua resposta: ${ans.selectedOption.text}
+</p>
+<p class="text-emerald-400 font-semibold bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/30">
+<i class="fa-solid fa-check mr-1"></i> Resposta correta: ${correctOpt.text}
+</p>
+</div>
+<div class="bg-slate-900/80 p-2.5 rounded-xl border border-slate-700/80 text-amber-200/90 leading-relaxed pt-2">
+<strong class="text-amber-400 block mb-0.5"><i class="fa-solid fa-lightbulb mr-1"></i> Explicação de onde você errou:</strong>
+${ans.questionData.explanation}
+</div>
+`;
+}
+bodyContainer.appendChild(card);
+});
+
+const noticeMsg = document.createElement('div');
+noticeMsg.className = 'text-red-500 font-black text-center text-sm uppercase tracking-wide my-4 bg-red-500/10 p-3 rounded-xl border border-red-500/30';
+noticeMsg.textContent = 'COPIE AS RESPOSTAS CORRETAS NO CADERNO!';
+bodyContainer.appendChild(noticeMsg);
+
+const restartBtn = document.createElement('button');
+restartBtn.className = 'w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-2xl text-sm shadow-xl transition mt-2';
+restartBtn.innerHTML = 'CONCLUIR E JOGAR NOVAMENTE <i class="fa-solid fa-rotate-right ml-1"></i>';
+restartBtn.onclick = () => { location.reload(); };
+bodyContainer.appendChild(restartBtn);
+}
+
+// --- ANIMATION LOOP ---
+const clock = new THREE.Clock();
+function animate() {
+requestAnimationFrame(animate);
+
+const isQuizOpen = !document.getElementById('quiz-modal').classList.contains('hidden');
+const isSimuladoOpen = !document.getElementById('simulado-modal').classList.contains('hidden');
+const isStartOpen = !document.getElementById('start-modal').classList.contains('hidden');
+const isStartQuizOpen = !document.getElementById('start-quiz-modal').classList.contains('hidden');
+const isRulesOpen = !document.getElementById('rules-modal').classList.contains('hidden');
+const isRulesQuizOpen = !document.getElementById('rules-quiz-modal').classList.contains('hidden');
+
+if (isQuizOpen || isSimuladoOpen || isStartOpen || isStartQuizOpen || isRulesOpen || isRulesQuizOpen) {
+clock.getDelta();
+renderer.render(scene, camera);
+return;
+}
+
+const delta = clock.getDelta();
+const time = clock.getElapsedTime();
+
+animatedObjects.forEach(anim => {
+if (anim.type === 'waterfall') {
+anim.obj.material.opacity = 0.7 + Math.sin(time * 8) * 0.15;
+}
+});
+
+targets.forEach((t, idx) => {
+t.mesh.marker.rotation.y = -characterAngle;
+if (t.mesh.aura && t.mesh.aura.visible) {
+t.mesh.aura.rotation.z += delta * 2.0;
+}
+});
+
+if (dpadState.left) characterAngle += turnSpeed;
+if (dpadState.right) characterAngle -= turnSpeed;
+player.group.rotation.y = characterAngle;
+
+if (dpadState.up) {
+const nextX = player.group.position.x + Math.sin(characterAngle) * PLAYER_SPEED;
+const nextZ = player.group.position.z + Math.cos(characterAngle) * PLAYER_SPEED;
+if (!checkCollision({ x: nextX, z: nextZ })) {
+player.group.position.x = nextX;
+player.group.position.z = nextZ;
+}
+walkCycle += delta * 18;
+const swing = Math.sin(walkCycle) * 0.65;
+player.legLGroup.rotation.x = swing; player.legRGroup.rotation.x = -swing;
+player.armLGroup.rotation.x = -swing * 0.85; player.armRGroup.rotation.x = swing * 0.85;
+} else {
+player.legLGroup.rotation.x *= 0.8; player.legRGroup.rotation.x *= 0.8;
+player.armLGroup.rotation.x *= 0.8; player.armRGroup.rotation.x *= 0.8;
+}
+
+if (ballState.active) {
+ballState.progress += delta * ballState.speed;
+if (ballState.progress >= 1.0) {
+ballState.progress = 1.0;
+ballState.active = false;
+soccerBallMesh.visible = false;
+
+setCharacterTranslucent(player, false);
+} else {
+const t = ballState.progress;
+soccerBallMesh.position.x = ballState.startX + (ballState.targetX - ballState.startX) * t;
+soccerBallMesh.position.z = ballState.startZ + (ballState.targetZ - ballState.startZ) * t;
+
+const arcY = Math.sin(t * Math.PI) * ballState.maxHeight;
+soccerBallMesh.position.y = ballState.startY + arcY;
+
+soccerBallMesh.rotation.x += delta * 12.0;
+soccerBallMesh.rotation.y += delta * 8.0;
+
+if (currentTargetIndex < targets.length) {
+const currentTarget = targets[currentTargetIndex];
+const distBallToTarget = Math.hypot(soccerBallMesh.position.x - currentTarget.x, soccerBallMesh.position.z - currentTarget.z);
+if (distBallToTarget < 2.2) {
+ballState.active = false;
+soccerBallMesh.visible = false;
+setCharacterTranslucent(player, false);
+triggerTargetInteraction(currentTarget);
+}
+}
+}
+}
+
+if (chaserEnemy) {
+chaserEnemy.marker.rotation.y = -characterAngle;
+const dx = player.group.position.x - chaserEnemy.mesh.group.position.x;
+const dz = player.group.position.z - chaserEnemy.mesh.group.position.z;
+const dist = Math.hypot(dx, dz);
+if (dist > 0.1) {
+const angleToPlayer = Math.atan2(dx, dz);
+chaserEnemy.mesh.group.rotation.y = angleToPlayer;
+chaserEnemy.mesh.group.position.x += Math.sin(angleToPlayer) * chaserEnemy.speed;
+chaserEnemy.mesh.group.position.z += Math.cos(angleToPlayer) * chaserEnemy.speed;
+
+chaserWalkCycle += delta * 18;
+const chaserSwing = Math.sin(chaserWalkCycle) * 0.65;
+chaserEnemy.mesh.legLGroup.rotation.x = chaserSwing;
+chaserEnemy.mesh.legRGroup.rotation.x = -chaserSwing;
+chaserEnemy.mesh.armLGroup.rotation.x = -chaserSwing * 0.85;
+chaserEnemy.mesh.armRGroup.rotation.x = chaserSwing * 0.85;
+} else {
+chaserEnemy.mesh.legLGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.legRGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.armLGroup.rotation.x *= 0.8;
+chaserEnemy.mesh.armRGroup.rotation.x *= 0.8;
+}
+
+if (dist < 1.8) {
+player.group.position.set(0, 0, 0);
+chaserEnemy.mesh.group.position.set(chaserEnemy.startX, 0, chaserEnemy.startZ);
+showTemporaryMessage("Pego pelo perseguidor! Você e ele voltaram ao início.");
+}
+}
+
+const camOffsetX = Math.sin(characterAngle) * -9.6;
+const camOffsetZ = Math.cos(characterAngle) * -9.6;
+camera.position.x += (player.group.position.x + camOffsetX - camera.position.x) * 0.15;
+camera.position.y += (player.group.position.y + 5.2 - camera.position.y) * 0.15;
+camera.position.z += (player.group.position.z + camOffsetZ - camera.position.z) * 0.15;
+camera.lookAt(player.group.position.x, player.group.position.y + 1.6, player.group.position.z);
+
+renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+camera.aspect = window.innerWidth / window.innerHeight;
+camera.updateProjectionMatrix();
+renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+window.onload = () => { buildQ5(); animate(); };
+</script>
+</body>
+</html>
