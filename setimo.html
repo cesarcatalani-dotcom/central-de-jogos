@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <title>Filósofo Grego 3D - Cidade Diurna</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #60a5fa;
+            touch-action: none;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        /* Estilização do Controle D-Pad Reduzido */
+        .dpad-btn {
+            background: rgba(30, 41, 59, 0.85);
+            border: 1.5px solid rgba(245, 158, 11, 0.6);
+            backdrop-filter: blur(8px);
+            color: #f59e0b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.1s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .dpad-btn:active, .dpad-btn.active {
+            background: #f59e0b;
+            color: #0f172a;
+            transform: scale(0.92);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+        }
+
+        .jump-btn {
+            background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+            border: 1.5px solid #fef08a;
+            color: #0f172a;
+            border-radius: 50%;
+            font-weight: 800;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+        }
+
+        .jump-btn:active {
+            transform: scale(0.9);
+            box-shadow: 0 0 18px rgba(254, 240, 138, 0.9);
+        }
+
+        /* Estilo do Balão de Diálogo estilo HQ */
+        .dialog-bubble {
+            position: relative;
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 20px;
+            border: 3px solid #0f172a;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .dialog-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: #ffffff transparent;
+            display: block;
+            width: 0;
+        }
+        .dialog-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -19px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 17px 17px 0;
+            border-style: solid;
+            border-color: #0f172a transparent;
+            display: block;
+            width: 0;
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- Canvas principal 3D -->
+    <div id="canvas-container"></div>
+
+    <!-- Balão de Fala (Caixa de Diálogo) -->
+    <div id="dialog-box" class="absolute top-16 left-1/2 -translate-x-1/2 z-30 max-w-sm w-11/12 dialog-bubble p-5 transition-all duration-300 transform -translate-y-8 opacity-0 pointer-events-none scale-95">
+        <div class="flex items-center gap-3 mb-2 pb-2 border-b border-slate-200">
+            <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+            <span id="dialog-title" class="font-bold text-slate-800 text-sm tracking-wide uppercase">Desafio Filosófico</span>
+        </div>
+        <p id="dialog-text" class="text-slate-700 text-sm font-semibold leading-relaxed min-h-[48px] mb-4">
+            ...
+        </p>
+        <div class="flex justify-end pt-2 border-t border-slate-100">
+            <button id="btn-answered" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 pointer-events-auto cursor-pointer">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Já respondi ao professor.</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mensagem de Conclusão ("Acabou!") -->
+    <div id="completion-box" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 max-w-xs w-11/12 bg-slate-900/90 backdrop-blur-md p-6 rounded-3xl border-2 border-amber-400/80 shadow-2xl text-center transition-all duration-500 transform scale-90 opacity-0 pointer-events-none">
+        <div class="w-14 h-14 bg-amber-400/20 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-amber-400/40">
+            <i class="fa-solid fa-trophy"></i>
+        </div>
+        <h2 class="text-3xl font-extrabold text-amber-400 mb-1 tracking-wider uppercase">Acabou!</h2>
+        <p class="text-slate-200 text-xs font-medium leading-relaxed">
+            Você explorou a cidade e respondeu a todas as questões sobre cyberbullying com o professor!
+        </p>
+    </div>
+
+    <!-- Interface HUD do Jogo -->
+    <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-end p-4">
+       
+        <!-- Rodapé e Controle Virtual Compacto -->
+        <div class="space-y-3 max-w-sm mx-auto w-full pointer-events-auto">
+           
+            <!-- Controle Físico D-Pad Compacto (Reduzido) -->
+            <div class="grid grid-cols-3 gap-1.5 w-36 h-24 mx-auto p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700/80 shadow-2xl">
+                <!-- Linha 1 -->
+                <div></div>
+                <button id="btn-up" class="dpad-btn text-xs">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </button>
+                <div></div>
+
+                <!-- Linha 2 -->
+                <button id="btn-left" class="dpad-btn text-xs">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button id="btn-jump" class="dpad-btn jump-btn text-[9px] flex-col gap-0">
+                    <i class="fa-solid fa-angles-up text-xs"></i>
+                    <span>PULAR</span>
+                </button>
+                <button id="btn-right" class="dpad-btn text-xs">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <!-- Status Barra Inferior -->
+            <div class="bg-slate-900/85 backdrop-blur-md px-3 py-2 rounded-xl border border-slate-700/50 text-[11px] text-slate-300 flex items-center justify-between shadow-xl">
+                <div class="flex items-center gap-2">
+                    <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="status-label">Parado (Costas da Câmera)</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÕES INICIAIS THREE.JS ---
+        const container = document.getElementById('canvas-container');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x60a5fa); // Céu azul diurno
+        scene.fog = new THREE.FogExp2(0x60a5fa, 0.008); // Névoa suave diurna
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- ILUMINAÇÃO DIURNA DE SOL ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+        scene.add(ambientLight);
+
+        // Luz solar principal brilhante
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.4);
+        sunLight.position.set(40, 60, -20);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 150;
+        sunLight.shadow.camera.left = -60;
+        sunLight.shadow.camera.right = 60;
+        sunLight.shadow.camera.top = 60;
+        sunLight.shadow.camera.bottom = -60;
+        scene.add(sunLight);
+
+        // Luz azulada do céu para suavizar sombras
+        const skyLight = new THREE.DirectionalLight(0x93c5fd, 0.5);
+        skyLight.position.set(-30, 40, 30);
+        scene.add(skyLight);
+
+        // --- MATERIAIS REUTILIZÁVEIS ---
+        const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8, metalness: 0.1 });
+        const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.6 });
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8, transparent: true, opacity: 0.7 });
+        const foliageMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.7, roughness: 0.3 });
+
+        // Cores variadas para prédios estilizados (Tons mais vivos para o dia)
+        const bldgColors = [0x1e293b, 0x334155, 0x2563eb, 0x0284c7, 0x4f46e5, 0x0d9488];
+
+        // --- MALHA BASE DO CHÃO (ASFALTO COMPLETO) ---
+        const cityGroundGeo = new THREE.PlaneGeometry(160, 160);
+        const cityGround = new THREE.Mesh(cityGroundGeo, asphaltMat);
+        cityGround.rotation.x = -Math.PI / 2;
+        cityGround.receiveShadow = true;
+        scene.add(cityGround);
+
+        // --- SISTEMA DE ESTRADAS E RODOVIAS ---
+        const roadGroup = new THREE.Group();
+
+        // Demarcações de faixas nas avenidas principais
+        function createRoadStripes() {
+            // Faixa central amarela nas avenidas (Cruzamento X e Z)
+            for (let i = -70; i <= 70; i += 4) {
+                if (Math.abs(i) < 8) continue; // Abre espaço para o cruzamento central
+
+                // Faixas eixo Z
+                const stripeZ = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 2), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+                stripeZ.rotation.x = -Math.PI / 2;
+                stripeZ.position.set(0, 0.02, i);
+                stripeZ.receiveShadow = true;
+                roadGroup.add(stripeZ);
+
+                // Faixas eixo X
+                const stripeX = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.3), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+                stripeX.rotation.x = -Math.PI / 2;
+                stripeX.position.set(i, 0.02, 0);
+                stripeX.receiveShadow = true;
+                roadGroup.add(stripeX);
+            }
+
+            // Faixas de Pedestres no cruzamento principal
+            const crosswalkPositions = [
+                { x: 0, z: -7, rotY: 0 },
+                { x: 0, z: 7, rotY: 0 },
+                { x: -7, z: 0, rotY: Math.PI / 2 },
+                { x: 7, z: 0, rotY: Math.PI / 2 }
+            ];
+
+            crosswalkPositions.forEach(cw => {
+                const cwGroup = new THREE.Group();
+                cwGroup.position.set(cw.x, 0.02, cw.z);
+                cwGroup.rotation.y = cw.rotY;
+
+                for (let k = -4; k <= 4; k += 1.2) {
+                    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 2.5), stripeMat);
+                    stripe.rotation.x = -Math.PI / 2;
+                    stripe.position.x = k;
+                    cwGroup.add(stripe);
+                }
+                roadGroup.add(cwGroup);
+            });
+        }
+
+        createRoadStripes();
+        scene.add(roadGroup);
+
+        // Estrutura para armazenar prédios elevados e obstáculos colidíveis
+        const elevatedPlats = [];
+        const colliders = [];
+
+        // --- QUARTEIRÕES E EDIFÍCIOS ---
+        function createBlock(blockX, blockZ, sizeX, sizeZ) {
+            const blockGroup = new THREE.Group();
+            blockGroup.position.set(blockX, 0, blockZ);
+
+            // Calçada do Quarteirão
+            const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(sizeX, 0.2, sizeZ), sidewalkMat);
+            sidewalk.position.y = 0.1;
+            sidewalk.receiveShadow = true;
+            sidewalk.castShadow = true;
+            blockGroup.add(sidewalk);
+
+            // Gerar Prédios dentro do Quarteirão
+            const margin = 2;
+            const innerSizeX = sizeX - margin * 2;
+            const innerSizeZ = sizeZ - margin * 2;
+
+            const cols = 2;
+            const rows = 2;
+            const bWidth = innerSizeX / cols;
+            const bDepth = innerSizeZ / rows;
+
+            for (let c = 0; c < cols; c++) {
+                for (let r = 0; r < rows; r++) {
+                    const posX = -innerSizeX / 2 + bWidth / 2 + c * bWidth;
+                    const posZ = -innerSizeZ / 2 + bDepth / 2 + r * bDepth;
+                    
+                    // Definindo alturas baixas específicas para os 3 prédios que recebem os cubos no telhado
+                    let bHeight = 4 + Math.floor(c * 2 + r * 3) % 4;
+
+                    // Prédio do quarteirão Superior-Esquerdo (cubo no telhado)
+                    if (blockX === -25 && blockZ === -25 && c === 0 && r === 0) {
+                        bHeight = 1.8;
+                    }
+                    // Prédio do quarteirão Superior-Direito (cubo no telhado)
+                    if (blockX === 25 && blockZ === -25 && c === 1 && r === 0) {
+                        bHeight = 2.2;
+                    }
+                    // Prédio do quarteirão Inferior-Esquerdo (cubo no telhado)
+                    if (blockX === -25 && blockZ === 25 && c === 0 && r === 1) {
+                        bHeight = 2.0;
+                    }
+
+                    const color = bldgColors[Math.floor((c + r) % bldgColors.length)];
+                    const bldgMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.2 });
+
+                    const building = new THREE.Mesh(new THREE.BoxGeometry(bWidth - 1, bHeight, bDepth - 1), bldgMat);
+                    building.position.set(posX, bHeight / 2 + 0.2, posZ);
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    blockGroup.add(building);
+
+                    // Registrar caixa de colisão do prédio
+                    colliders.push({
+                        minX: blockX + posX - (bWidth - 1) / 2 - 0.4,
+                        maxX: blockX + posX + (bWidth - 1) / 2 + 0.4,
+                        minZ: blockZ + posZ - (bDepth - 1) / 2 - 0.4,
+                        maxZ: blockZ + posZ + (bDepth - 1) / 2 + 0.4,
+                        height: bHeight + 0.2
+                    });
+
+                    // Registrar topo do prédio para física de caminhada superior
+                    elevatedPlats.push({
+                        minX: blockX + posX - (bWidth - 1) / 2,
+                        maxX: blockX + posX + (bWidth - 1) / 2,
+                        minZ: blockZ + posZ - (bDepth - 1) / 2,
+                        maxZ: blockZ + posZ + (bDepth - 1) / 2,
+                        height: bHeight + 0.2
+                    });
+
+                    // Janelas refletivas para o dia
+                    const windowGroup = new THREE.Group();
+                    const winMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.1, metalness: 0.9 });
+                    const numWindows = Math.floor(bHeight / 2);
+
+                    for (let w = 1; w < numWindows; w++) {
+                        const winFront = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.2), winMat);
+                        winFront.position.set(posX, w * 2.2, posZ + (bDepth - 1) / 2 + 0.01);
+                        windowGroup.add(winFront);
+                    }
+                    blockGroup.add(windowGroup);
+                }
+            }
+
+            // Árvores nas calçadas do quarteirão
+            const treeLocations = [
+                { x: -sizeX / 2 + 1, z: -sizeZ / 2 + 1 },
+                { x: sizeX / 2 - 1, z: -sizeZ / 2 + 1 },
+                { x: -sizeX / 2 + 1, z: sizeZ / 2 - 1 },
+                { x: sizeX / 2 - 1, z: sizeZ / 2 - 1 }
+            ];
+
+            treeLocations.forEach(loc => {
+                const tree = new THREE.Group();
+                tree.position.set(loc.x, 0.2, loc.z);
+
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 1.8, 8), trunkMat);
+                trunk.position.y = 0.9;
+                trunk.castShadow = true;
+                tree.add(trunk);
+
+                const foliage = new THREE.Mesh(new THREE.DodecahedronGeometry(1.1, 1), foliageMat);
+                foliage.position.y = 2.4;
+                foliage.castShadow = true;
+                tree.add(foliage);
+
+                blockGroup.add(tree);
+
+                // Colisão do tronco de árvore
+                colliders.push({
+                    minX: blockX + loc.x - 0.5,
+                    maxX: blockX + loc.x + 0.5,
+                    minZ: blockZ + loc.z - 0.5,
+                    maxZ: blockZ + loc.z + 0.5,
+                    height: 3
+                });
+            });
+
+            scene.add(blockGroup);
+        }
+
+        // Criar os 4 grandes quarteirões ao redor da avenida principal
+        createBlock(-25, -25, 30, 30);
+        createBlock(25, -25, 30, 30);
+        createBlock(-25, 25, 30, 30);
+        createBlock(25, 25, 30, 30);
+
+        // --- ELEMENTOS URBANOS (POSTES DE LUZ) ---
+        function createStreetLight(x, z, rotY) {
+            const lightGroup = new THREE.Group();
+            lightGroup.position.set(x, 0, z);
+            lightGroup.rotation.y = rotY;
+
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 5, 8), metalMat);
+            pole.position.y = 2.5;
+            pole.castShadow = true;
+            lightGroup.add(pole);
+
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.08, 0.08), metalMat);
+            arm.position.set(0.3, 4.9, 0);
+            lightGroup.add(arm);
+
+            const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.1, 0.2), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.3 }));
+            lamp.position.set(0.6, 4.85, 0);
+            lightGroup.add(lamp);
+
+            scene.add(lightGroup);
+        }
+
+        // Adicionar postes ao longo das vias públicas
+        createStreetLight(-8, -10, 0);
+        createStreetLight(-8, 10, 0);
+        createStreetLight(8, -10, Math.PI);
+        createStreetLight(8, 10, Math.PI);
+        createStreetLight(-10, -8, Math.PI / 2);
+        createStreetLight(10, -8, -Math.PI / 2);
+
+        // --- EXACTAMENTE 10 PERGUNTAS SOBRE CYBERBULLYING ---
+        const cyberbullyingQuestions = [
+            "O que você faria se visse uma foto embaraçosa de um colega da turma sendo compartilhada em um grupo de mensagens?",
+            "O que você faria se criassem um perfil falso na internet usando o seu nome ou a sua foto para fazer piadas?",
+            "O que você faria se recebesse mensagens anônimas com ofensas e ameaças na sua rede social?",
+            "O que você faria se percebesse que um amigo próximo está sendo excluído e ridicularizado em jogos virtuais por outros jogadores?",
+            "O que você faria se um grupo da sua sala começasse a expor segredos de outros alunos em uma página de fofocas online?",
+            "O que você faria se fosse pressionado por colegas a curtir ou comentar em uma postagem que humilha alguém?",
+            "O que você faria se descobrisse que vídeos gravados sem autorização estão sendo usados para fazer meme de um estudante?",
+            "O que você faria se alguém estivesse postando mentiras sobre você na internet e todos estivessem acreditando?",
+            "O que você faria se visse um colega triste e isolado na escola por causa de ataques violentos que sofreu na internet?",
+            "O que você faria para ajudar a tornar os grupos de conversa e as redes sociais da sua escola lugares mais respeitosos e seguros?"
+        ];
+
+        // --- TEXTURA DO CUBO VERMELHO SORRIDENTE ---
+        function createSmileyCubeTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Fundo Vermelho
+            ctx.fillStyle = '#dc2626';
+            ctx.fillRect(0, 0, 256, 256);
+
+            // Olho Esquerdo
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(80, 90, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(85, 90, 9, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Olho Direito
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(176, 90, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(171, 90, 9, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Boca Sorridente
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(128, 140, 55, 0.15 * Math.PI, 0.85 * Math.PI, false);
+            ctx.stroke();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- CRIAÇÃO DOS 10 CUBOS VERMELHOS (7 EM CALÇADAS LIVRES E 3 NOS TELHADOS BAIXOS) ---
+        const smileyCubes = [];
+        const smileyTexture = createSmileyCubeTexture();
+
+        const cubePositions = [
+            // 7 Cubos no chão (posicionados em áreas de calçada abertas e visíveis)
+            { x: -5, z: 12, y: 0.6 },
+            { x: 12, z: 5, y: 0.6 },
+            { x: -12, z: -15, y: 0.6 },
+            { x: 15, z: -12, y: 0.6 },
+            { x: -8, z: 28, y: 0.6 },
+            { x: 28, z: 8, y: 0.6 },
+            { x: -28, z: -8, y: 0.6 },
+            
+            // 3 Cubos nos telhados baixos (acessíveis com pulo)
+            { x: -31, z: -31, y: 2.6 },
+            { x: 31, z: -31, y: 3.0 },
+            { x: -31, z: 31, y: 2.8 }
+        ];
+
+        cubePositions.forEach((pos, idx) => {
+            const cubeGroup = new THREE.Group();
+            cubeGroup.position.set(pos.x, pos.y, pos.z);
+
+            // Material individual para permitir transparência / animação ao subir
+            const redMatInstance = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4, transparent: true, opacity: 1 });
+            const faceMatInstance = new THREE.MeshStandardMaterial({ map: smileyTexture, roughness: 0.4, transparent: true, opacity: 1 });
+            const cubeMaterials = [redMatInstance, redMatInstance, faceMatInstance, redMatInstance, redMatInstance, redMatInstance];
+
+            const cubeGeo = new THREE.BoxGeometry(1.2, 1.2, 1.2);
+            const cubeMesh = new THREE.Mesh(cubeGeo, cubeMaterials);
+            cubeMesh.castShadow = true;
+            cubeMesh.receiveShadow = true;
+            cubeGroup.add(cubeMesh);
+
+            scene.add(cubeGroup);
+
+            smileyCubes.push({
+                group: cubeGroup,
+                mesh: cubeMesh,
+                materials: cubeMaterials,
+                id: idx + 1,
+                question: cyberbullyingQuestions[idx],
+                position: new THREE.Vector3(pos.x, pos.y, pos.z),
+                active: true,
+                isAscending: false
+            });
+        });
+
+        // --- CONSTRUÇÃO DO PERSONAGEM FILÓSOFO ---
+        const characterGroup = new THREE.Group();
+        scene.add(characterGroup);
+
+        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+        const darkGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.6 });
+
+        // Textura do Símbolo PHI (Φ) com fundo verde escuro
+        function createPhiMaterials() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#064e3b';
+            ctx.fillRect(0, 0, 512, 512);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 320px "Times New Roman", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Φ', 256, 256);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const frontBackMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+
+            return [
+                darkGreenMat,  // Direita
+                darkGreenMat,  // Esquerda
+                darkGreenMat,  // Topo
+                darkGreenMat,  // Baixo
+                frontBackMat,  // Frente (Φ)
+                frontBackMat   // Costas (Φ)
+            ];
+        }
+
+        // 1. Torso Retangular (Verde Escuro com Φ)
+        const torsoHeight = 1.1;
+        const torsoGeo = new THREE.BoxGeometry(0.7, torsoHeight, 0.4);
+        const torso = new THREE.Mesh(torsoGeo, createPhiMaterials());
+        torso.position.y = 1.35;
+        torso.castShadow = true;
+        torso.receiveShadow = true;
+        characterGroup.add(torso);
+
+        // 2. Cabeça Esférica (Branca e Careca)
+        const headRadius = 0.28;
+        const headGeo = new THREE.SphereGeometry(headRadius, 24, 24);
+        const head = new THREE.Mesh(headGeo, whiteMat);
+        head.position.y = torsoHeight / 2 + headRadius + 0.05;
+        head.castShadow = true;
+        torso.add(head);
+
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+        const eyeGeo = new THREE.SphereGeometry(0.035, 8, 8);
+       
+        const eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeLeft.position.set(-0.1, 0.05, 0.24);
+        head.add(eyeLeft);
+
+        const eyeRight = new THREE.Mesh(eyeGeo, eyeMat);
+        eyeRight.position.set(0.1, 0.05, 0.24);
+        head.add(eyeRight);
+
+        // Sorriso
+        const smileGeo = new THREE.TorusGeometry(0.08, 0.015, 8, 16, Math.PI);
+        const smileMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+        const smile = new THREE.Mesh(smileGeo, smileMat);
+        smile.position.set(0, -0.06, 0.24);
+        smile.rotation.x = Math.PI;
+        head.add(smile);
+
+        // 3. Braços (Brancos)
+        const armWidth = 0.18, armHeight = 0.75, armDepth = 0.18;
+        const armGeo = new THREE.BoxGeometry(armWidth, armHeight, armDepth);
+        armGeo.translate(0, -armHeight / 2, 0);
+
+        const armLeftGroup = new THREE.Group();
+        armLeftGroup.position.set(0.48, torsoHeight / 2 + 0.1, 0);
+        const armLeft = new THREE.Mesh(armGeo, whiteMat);
+        armLeft.castShadow = true;
+        armLeftGroup.add(armLeft);
+        torso.add(armLeftGroup);
+
+        const armRightGroup = new THREE.Group();
+        armRightGroup.position.set(-0.48, torsoHeight / 2 + 0.1, 0);
+        const armRight = new THREE.Mesh(armGeo, whiteMat);
+        armRight.castShadow = true;
+        armRightGroup.add(armRight);
+        torso.add(armRightGroup);
+
+        // 4. Pernas (Pretas - Maiores)
+        const legWidth = 0.22, legHeight = 0.95, legDepth = 0.22;
+        const legGeo = new THREE.BoxGeometry(legWidth, legHeight, legDepth);
+        legGeo.translate(0, -legHeight / 2, 0);
+
+        const legLeftGroup = new THREE.Group();
+        legLeftGroup.position.set(0.18, -torsoHeight / 2, 0);
+        const legLeft = new THREE.Mesh(legGeo, blackMat);
+        legLeft.castShadow = true;
+        legLeftGroup.add(legLeft);
+        torso.add(legLeftGroup);
+
+        const legRightGroup = new THREE.Group();
+        legRightGroup.position.set(-0.18, -torsoHeight / 2, 0);
+        const legRight = new THREE.Mesh(legGeo, blackMat);
+        legRight.castShadow = true;
+        legRightGroup.add(legRight);
+        torso.add(legRightGroup);
+
+        // --- VARIÁVEIS DE CONTROLE E FÍSICA ---
+        characterGroup.position.set(0, 0, 0);
+
+        let isMoving = false;
+        let walkCycle = 0;
+        const moveSpeed = 0.275;
+
+        // Física do Pulo e Altimetria
+        let isJumping = false;
+        let jumpVelocity = 0;
+        const gravity = -0.016;
+        const jumpStrength = 0.38;
+        let groundY = 0;
+
+        // Câmera 3ª Pessoa (Ajustada: 3x mais longe = 14.4, mais alta = 7.5)
+        let characterAngle = 0;
+        const turnSpeed = 0.045;
+        const cameraDistance = 14.4;
+        const cameraHeight = 7.5;
+        const cameraTargetHeight = 1.6;
+
+        // Estado das Direções do Controle
+        const dpadState = { up: false, left: false, right: false };
+
+        function triggerJumpAndInteract() {
+            if (!isJumping) {
+                isJumping = true;
+                jumpVelocity = jumpStrength;
+            }
+        }
+
+        // --- VINCULAÇÃO DOS BOTÕES DO D-PAD (TOUCH E CLIQUE) ---
+        function setupDpadButton(elementId, directionKey) {
+            const btn = document.getElementById(elementId);
+
+            const startPress = (e) => {
+                e.preventDefault();
+                dpadState[directionKey] = true;
+                btn.classList.add('active');
+            };
+
+            const endPress = (e) => {
+                e.preventDefault();
+                dpadState[directionKey] = false;
+                btn.classList.remove('active');
+            };
+
+            btn.addEventListener('pointerdown', startPress);
+            btn.addEventListener('pointerup', endPress);
+            btn.addEventListener('pointerleave', endPress);
+            btn.addEventListener('pointercancel', endPress);
+        }
+
+        setupDpadButton('btn-up', 'up');
+        setupDpadButton('btn-left', 'left');
+        setupDpadButton('btn-right', 'right');
+
+        // Botão do Pulo no Centro
+        const jumpBtn = document.getElementById('btn-jump');
+        jumpBtn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            triggerJumpAndInteract();
+        });
+
+        // Suporte Teclado (Atalhos no PC: Setas / WASD / Espaço)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.code === 'Space') {
+                triggerJumpAndInteract();
+            }
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') dpadState.up = true;
+            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = true;
+            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') dpadState.up = false;
+            if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = false;
+            if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = false;
+        });
+
+        const dialogBox = document.getElementById('dialog-box');
+        const dialogTitle = document.getElementById('dialog-title');
+        const dialogText = document.getElementById('dialog-text');
+        const btnAnswered = document.getElementById('btn-answered');
+        const completionBox = document.getElementById('completion-box');
+
+        let currentCubeTouching = null;
+        let answeredCubesCount = 0;
+
+        // --- AÇÃO DO BOTÃO "JÁ RESPONDEI AO PROFESSOR" ---
+        btnAnswered.addEventListener('click', () => {
+            if (currentCubeTouching) {
+                // Inicia a subida suave do cubo
+                currentCubeTouching.isAscending = true;
+                currentCubeTouching.active = false;
+                currentCubeTouching = null;
+                answeredCubesCount++;
+
+                // Esconde o balão de diálogo
+                dialogBox.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+                dialogBox.classList.add('-translate-y-8', 'opacity-0', 'scale-95');
+
+                // Verifica se respondeu a todas as 10 perguntas
+                if (answeredCubesCount >= 10) {
+                    setTimeout(() => {
+                        completionBox.classList.remove('scale-90', 'opacity-0', 'pointer-events-none');
+                        completionBox.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
+                    }, 800);
+                }
+            }
+        });
+
+        // --- LÓGICA DE INTERAÇÃO COM CUBOS VERMELHOS E BALÃO DE FALA ---
+        function checkCubeInteractions() {
+            let touchingCube = null;
+
+            smileyCubes.forEach(cube => {
+                if (!cube.active) return;
+
+                const dist = characterGroup.position.distanceTo(cube.group.position);
+                if (dist < 2.2) {
+                    touchingCube = cube;
+                }
+            });
+
+            if (touchingCube) {
+                currentCubeTouching = touchingCube;
+                // Título sem numeração
+                dialogTitle.textContent = "Desafio Filosófico";
+                dialogText.textContent = touchingCube.question;
+
+                dialogBox.classList.remove('-translate-y-8', 'opacity-0', 'scale-95');
+                dialogBox.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+            } else if (!currentCubeTouching) {
+                dialogBox.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+                dialogBox.classList.add('-translate-y-8', 'opacity-0', 'scale-95');
+            }
+        }
+
+        // --- TESTE DE COLISÃO COM ESTRUTURAS DO CENÁRIO ---
+        function checkCollisions(nextX, nextZ, currentY) {
+            for (let col of colliders) {
+                // Se o personagem estiver abaixo do teto da estrutura, ele colide lateralmente
+                if (currentY < col.height - 0.2) {
+                    if (nextX >= col.minX && nextX <= col.maxX && nextZ >= col.minZ && nextZ <= col.maxZ) {
+                        return true; // Colidiu
+                    }
+                }
+            }
+            return false;
+        }
+
+        // --- LÓGICA DE DETECÇÃO DE ALTURA DE PISO / TELHADOS ELEVADOS ---
+        function handleFloors() {
+            const charPos = characterGroup.position;
+            let currentGroundY = 0;
+
+            // Checa se o personagem está sobre a área de algum telhado
+            elevatedPlats.forEach(plat => {
+                if (charPos.x >= plat.minX - 0.2 && charPos.x <= plat.maxX + 0.2 && charPos.z >= plat.minZ - 0.2 && charPos.z <= plat.maxZ + 0.2) {
+                    if (charPos.y >= plat.height - 0.3) {
+                        currentGroundY = plat.height;
+                    }
+                }
+            });
+
+            groundY = currentGroundY;
+
+            // Queda livre suave caso ande para fora do teto elevado
+            if (!isJumping && charPos.y > groundY) {
+                charPos.y += gravity * 2.5;
+                if (charPos.y < groundY) charPos.y = groundY;
+            }
+        }
+
+        // --- LOOP PRINCIPAL DE ANIMAÇÃO ---
+        const clock = new THREE.Clock();
+        const statusLabel = document.getElementById('status-label');
+        const statusDot = document.getElementById('status-dot');
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Animação dos cubos (Pulsação normal OU Subida suave ao ser respondido)
+            smileyCubes.forEach(cube => {
+                if (cube.isAscending) {
+                    // Sobe devagar para o céu
+                    cube.group.position.y += delta * 4.0;
+                    cube.group.rotation.y += delta * 3.0;
+
+                    // Reduz opacidade até sumir completamente
+                    cube.materials.forEach(mat => {
+                        if (mat.opacity > 0) mat.opacity -= delta * 0.5;
+                    });
+
+                    // Remove completamente da cena após subir alto suficiente
+                    if (cube.group.position.y > 35) {
+                        cube.isAscending = false;
+                        scene.remove(cube.group);
+                    }
+                } else if (cube.active) {
+                    cube.mesh.rotation.y = Math.sin(time * 1.5 + cube.id) * 0.2;
+                }
+            });
+
+            // Lógica de Giro
+            if (dpadState.left) {
+                characterAngle += turnSpeed;
+            }
+            if (dpadState.right) {
+                characterAngle -= turnSpeed;
+            }
+            characterGroup.rotation.y = characterAngle;
+
+            // Lógica de Caminhada com Verificação de Colisão
+            if (dpadState.up) {
+                isMoving = true;
+                const nextX = characterGroup.position.x + Math.sin(characterAngle) * moveSpeed;
+                const nextZ = characterGroup.position.z + Math.cos(characterAngle) * moveSpeed;
+
+                // Tenta mover se não houver colisão
+                if (!checkCollisions(nextX, nextZ, characterGroup.position.y)) {
+                    characterGroup.position.x = nextX;
+                    characterGroup.position.z = nextZ;
+                }
+
+                statusLabel.textContent = "Status: Andando para Frente";
+                statusDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+            } else if (!isJumping) {
+                isMoving = false;
+                if (dpadState.left || dpadState.right) {
+                    statusLabel.textContent = "Status: Girando";
+                    statusDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
+                } else {
+                    statusLabel.textContent = "Status: Parado";
+                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                }
+            }
+
+            // Atualiza altura do solo/telhados
+            handleFloors();
+
+            // Física do Pulo
+            if (isJumping) {
+                characterGroup.position.y += jumpVelocity;
+                jumpVelocity += gravity;
+
+                statusLabel.textContent = "Status: Pulando!";
+                statusDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-ping";
+
+                if (characterGroup.position.y <= groundY) {
+                    characterGroup.position.y = groundY;
+                    isJumping = false;
+                    jumpVelocity = 0;
+                }
+            }
+
+            // Verificar toque no cubo para exibir o Balão de Fala
+            checkCubeInteractions();
+
+            // Animação dos Membros (Braços e Pernas)
+            if (isJumping) {
+                legLeftGroup.rotation.x = -0.4;
+                legRightGroup.rotation.x = -0.4;
+                armLeftGroup.rotation.x = -1.2;
+                armRightGroup.rotation.x = -1.2;
+            } else if (isMoving) {
+                walkCycle += delta * 14;
+                const swingAngle = Math.sin(walkCycle) * 0.65;
+
+                legLeftGroup.rotation.x = swingAngle;
+                legRightGroup.rotation.x = -swingAngle;
+
+                armLeftGroup.rotation.x = -swingAngle * 0.85;
+                armRightGroup.rotation.x = swingAngle * 0.85;
+
+                torso.position.y = 1.35 + Math.abs(Math.sin(walkCycle * 2)) * 0.06;
+                head.rotation.z = Math.sin(walkCycle) * 0.04;
+            } else {
+                legLeftGroup.rotation.x *= 0.8;
+                legRightGroup.rotation.x *= 0.8;
+                armLeftGroup.rotation.x *= 0.8;
+                armRightGroup.rotation.x *= 0.8;
+
+                const breathe = Math.sin(time * 2) * 0.02;
+                torso.position.y = 1.35 + breathe;
+                head.rotation.x = Math.sin(time * 1.5) * 0.02;
+            }
+
+            // Câmera de Terceira Pessoa (Sempre nas costas)
+            const camOffsetX = Math.sin(characterAngle) * -cameraDistance;
+            const camOffsetZ = Math.cos(characterAngle) * -cameraDistance;
+
+            const targetCamX = characterGroup.position.x + camOffsetX;
+            const targetCamY = characterGroup.position.y + cameraHeight;
+            const targetCamZ = characterGroup.position.z + camOffsetZ;
+
+            camera.position.x += (targetCamX - camera.position.x) * 0.15;
+            camera.position.y += (targetCamY - camera.position.y) * 0.15;
+            camera.position.z += (targetCamZ - camera.position.z) * 0.15;
+
+            camera.lookAt(
+                characterGroup.position.x,
+                characterGroup.position.y + cameraTargetHeight,
+                characterGroup.position.z
+            );
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = () => {
+            animate();
+        };
+    </script>
+</body>
+</html>
+
