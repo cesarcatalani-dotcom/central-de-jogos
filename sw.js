@@ -1,87 +1,326 @@
-const CACHE_NAME = 'hub-jogos-educativos-v13';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <title>Portal de Jogos Educativos</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+      font-family: Arial, Helvetica, sans-serif;
+    }
 
-// Lista exata de arquivos para armazenar em cache
-const ASSETS_TO_CACHE = [
-  'index.html',
-  '6º-Aula-3.html',
-  'sexto-pv-aula-quatro.html',
-  '7º-TI-Aulas-3-4.html',
-  'setimo-pv-aula-quatro.html',
-  'setimo.html',
-  'ti-oitavo-aulas-tres-quatro.html',
-  'pv-oitavo-aula-tres.html',
-  'oitavo-pv-aula-quatro.html',
-  '9º-Aulas-4.html',
-  'nono-pv-aula-cinco.html',
-  'nono-acessibilizado-aula-cinco.html',
-  'terceira-aula-nove.html',
-  'filo-race-alienacao.html',
-  'mario-empatia.html',
-  'revisao-provao-3.html',
-  'revisao-provao-quatro.html',
-  'revisao-final.html',
-  'tarefa-sp-3.html',
-  'tarefa-sp-dois.html',
-  'tarefa-sp-quatro.html',
-  'tarefa-sp-cinco.html',
-  'tsp-cinco-acessibilizada.html',
-  'tarefa-sp-seis.html'
-];
+    body, html {
+      width: 100%;
+      min-height: 100vh;
+      background-color: #0f172a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+    }
 
-// Instalação do Service Worker com cache tolerante a falhas
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Armazenando jogos no cache...');
-      return Promise.allSettled(
-        ASSETS_TO_CACHE.map((url) =>
-          cache.add(url).catch((err) => console.warn(`Aviso: Falha ao colocar ${url} no cache:`, err))
-        )
-      );
-    }).then(() => self.skipWaiting())
-  );
-});
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      max-width: 600px;
+      width: 100%;
+    }
 
-// Ativação e remoção de versões antigas do cache
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('[Service Worker] Removendo cache antigo:', cache);
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
+    header h1 {
+      color: #facc15;
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px #000;
+      text-transform: uppercase;
+    }
 
-// Interceptação de requisições: tenta a rede primeiro; cai para o cache se offline
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+    header p {
+      color: #cbd5e1;
+      font-size: 0.95rem;
+      font-weight: bold;
+    }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (event.request.mode === 'navigate') {
-            return caches.match('index.html');
-          }
-        });
-      })
-  );
-});
+    .container {
+      width: 100%;
+      max-width: 580px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .game-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .game-card:active, .game-card:hover {
+      transform: scale(0.98);
+      border-color: #facc15;
+    }
+
+    .game-info {
+      flex: 1;
+      padding-right: 12px;
+    }
+
+    .game-info h2 {
+      font-size: 1.15rem;
+      color: #facc15;
+      margin-bottom: 4px;
+    }
+
+    .btn-play {
+      background: #facc15;
+      color: #000000;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      white-space: nowrap;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 24px;
+      color: #64748b;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Portal de Jogos Educativos 🎮</h1>
+    <p>Escolha um jogo para iniciar a atividade:</p>
+  </header>
+
+  <div class="container">
+    
+    <!-- 6º - Aula 3 -->
+    <a href="6º-Aula-3.html" class="game-card">
+      <div class="game-info">
+        <h2>6º - Aula 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 6º PV Aula 4 -->
+    <a href="sexto-pv-aula-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>6º PV Aula 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 7º - TI - Aulas 3 e 4 -->
+    <a href="7º-TI-Aulas-3-4.html" class="game-card">
+      <div class="game-info">
+        <h2>7º - TI - Aulas 3 e 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 7º PV Aula 4 -->
+    <a href="setimo-pv-aula-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>7º PV Aula 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 7º Filosofia -->
+    <a href="setimo.html" class="game-card">
+      <div class="game-info">
+        <h2>7º Filosofia</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Existencialismo -->
+    <a href="existencialismo.html" class="game-card">
+      <div class="game-info">
+        <h2>Existencialismo</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 8º - TI - Aulas 3 e 4 -->
+    <a href="ti-oitavo-aulas-tres-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>8º - TI - Aulas 3 e 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 8º PV Aula 3 -->
+    <a href="pv-oitavo-aula-tres.html" class="game-card">
+      <div class="game-info">
+        <h2>8º PV Aula 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 8º PV Aula 4 -->
+    <a href="oitavo-pv-aula-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>8º PV Aula 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 9º Aula 4 -->
+    <a href="9º-Aulas-4.html" class="game-card">
+      <div class="game-info">
+        <h2>9º Aula 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 9º PV Aula 5 -->
+    <a href="nono-pv-aula-cinco.html" class="game-card">
+      <div class="game-info">
+        <h2>9º PV Aula 5</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 9º Acessibilizado -->
+    <a href="nono-acessibilizado-aula-cinco.html" class="game-card">
+      <div class="game-info">
+        <h2>9º Acessibilizado</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- 3ª Filosofia Aula 9 -->
+    <a href="terceira-aula-nove.html" class="game-card">
+      <div class="game-info">
+        <h2>3ª Filosofia Aula 9</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Filo Race Alienação -->
+    <a href="filo-race-alienacao.html" class="game-card">
+      <div class="game-info">
+        <h2>Filo Race Alienação</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Mário Empatia -->
+    <a href="mario-empatia.html" class="game-card">
+      <div class="game-info">
+        <h2>Mário Empatia</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Revisão Provão 3 -->
+    <a href="revisao-provao-3.html" class="game-card">
+      <div class="game-info">
+        <h2>Revisão Provão 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Revisão Provão Paulista IV -->
+    <a href="revisao-provao-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>Revisão Provão Paulista IV</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Revisão Final 3ª Série -->
+    <a href="revisao-final.html" class="game-card">
+      <div class="game-info">
+        <h2>Revisão Final 3ª Série</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 3 -->
+    <a href="tarefa-sp-3.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 3</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 2 -->
+    <a href="tarefa-sp-dois.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 2</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 4 -->
+    <a href="tarefa-sp-quatro.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 4</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 5 -->
+    <a href="tarefa-sp-cinco.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 5</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- TSP 5 Acessibilizada -->
+    <a href="tsp-cinco-acessibilizada.html" class="game-card">
+      <div class="game-info">
+        <h2>TSP 5 Acessibilizada</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+    <!-- Tarefa SP 6 -->
+    <a href="tarefa-sp-seis.html" class="game-card">
+      <div class="game-info">
+        <h2>Tarefa SP 6</h2>
+      </div>
+      <span class="btn-play">JOGAR ➔</span>
+    </a>
+
+  </div>
+
+  <footer>
+    Plataforma Educativa Offline & PWA
+  </footer>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .then(reg => console.log('Service Worker registrado:', reg.scope))
+          .catch(err => console.error('Erro no Service Worker:', err));
+      });
+    }
+  </script>
+</body>
+</html>
