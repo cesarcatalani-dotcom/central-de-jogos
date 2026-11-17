@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Filo Fire 3D - Versão Adaptada (Apoio Visual e Mediação)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #7dd3fc;
+      touch-action: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .dpad-btn {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2.5px solid rgba(245, 158, 11, 0.85);
+      backdrop-filter: blur(8px);
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      font-weight: bold;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: all 0.1s ease;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: #f59e0b;
+      color: #0f172a;
+      transform: scale(0.94);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.9);
+    }
+    .jump-btn {
+      background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+      border: 2.5px solid #fef08a;
+      color: #0f172a;
+      border-radius: 50%;
+      font-weight: 800;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.7);
+    }
+    .jump-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 0 22px rgba(254, 240, 138, 1);
+    }
+    .avatar-choice.selected {
+      background: #f59e0b;
+      color: #0f172a;
+      border-color: #fef08a;
+      transform: scale(1.06);
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- Tela Inicial Adaptada (Apoio visual + Comanda para a professora) -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-fire"></i>
+      </div>
+
+      <!-- Comanda para a professora -->
+      <div class="bg-sky-950/90 border border-sky-400/70 rounded-2xl p-3 text-left text-xs sm:text-sm text-sky-100 leading-relaxed">
+        <span class="font-extrabold text-sky-300 uppercase block mb-0.5">Comanda para a professora:</span>
+        Peça ao estudante que toque em uma das figuras abaixo para escolher seu símbolo no jogo e, em seguida, aperte o botão verde <strong>COMEÇAR</strong>.
+      </div>
+
+      <!-- Seleção Visual de Avatar -->
+      <div id="avatar-grid" class="grid grid-cols-3 gap-3">
+        <button type="button" data-label="Coruja" class="avatar-choice selected p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-amber-300 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-feather-pointed text-3xl"></i>
+          <span class="text-xs font-bold">Coruja</span>
+        </button>
+        <button type="button" data-label="Foguete" class="avatar-choice p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-sky-300 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-rocket text-3xl"></i>
+          <span class="text-xs font-bold">Foguete</span>
+        </button>
+        <button type="button" data-label="Estrela" class="avatar-choice p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-yellow-300 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-star text-3xl"></i>
+          <span class="text-xs font-bold">Estrela</span>
+        </button>
+        <button type="button" data-label="Raio" class="avatar-choice p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-amber-400 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-bolt text-3xl"></i>
+          <span class="text-xs font-bold">Raio</span>
+        </button>
+        <button type="button" data-label="Sol" class="avatar-choice p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-orange-300 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-sun text-3xl"></i>
+          <span class="text-xs font-bold">Sol</span>
+        </button>
+        <button type="button" data-label="Troféu" class="avatar-choice p-3 rounded-2xl bg-slate-800 border-2 border-slate-600 text-emerald-300 flex flex-col items-center gap-1 transition">
+          <i class="fa-solid fa-trophy text-3xl"></i>
+          <span class="text-xs font-bold">Troféu</span>
+        </button>
+      </div>
+
+      <button id="btn-start-game" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-4 rounded-2xl text-xl shadow-lg transition flex items-center justify-center gap-3">
+        <i class="fa-solid fa-play"></i>
+        <span>COMEÇAR</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas principal 3D -->
+  <div id="canvas-container"></div>
+
+  <!-- Interface HUD do Jogo -->
+  <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+
+    <!-- Topo: Status da Fase + Comanda visual/textual para a professora -->
+    <div class="flex flex-col items-center justify-center w-full gap-2">
+      <div id="phase-badge" class="bg-slate-900/90 border-2 border-amber-400/80 text-amber-300 px-4 py-2 rounded-2xl text-sm sm:text-base font-extrabold shadow-lg text-center flex items-center gap-2.5 max-w-lg">
+        <i id="phase-badge-icon" class="fa-solid fa-lightbulb text-yellow-300 text-xl"></i>
+        <span id="phase-badge-text">Comanda para a professora: Oriente o estudante a guiar o boneco verde até a Dica 1 usando as setas, desviando dos bonecos vermelhos.</span>
+      </div>
+    </div>
+
+    <!-- Rodapé e Controle Virtual Ampliado -->
+    <div class="max-w-md mx-auto w-full pointer-events-auto pb-2">
+      <div id="dpad-container" class="grid grid-cols-3 gap-3 w-72 sm:w-80 h-24 mx-auto p-2.5 bg-slate-900/90 backdrop-blur-md rounded-3xl border-2 border-slate-700/90 shadow-2xl">
+        <button id="btn-left" class="dpad-btn text-2xl" title="Girar Esquerda (A / Seta Esq)">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <div id="center-slot" class="flex items-center justify-center">
+          <button id="btn-throw" class="hidden dpad-btn jump-btn w-20 h-20 text-xs flex-col gap-0.5" title="Lançar Esfera (Espaço)">
+            <i class="fa-solid fa-bolt text-xl"></i>
+            <span class="font-extrabold">JOGUE</span>
+          </button>
+        </div>
+        <button id="btn-right" class="dpad-btn text-2xl" title="Girar Direita (D / Seta Dir)">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner rápido de feedback / transição -->
+  <div id="toast-banner" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-5 py-3 rounded-2xl shadow-2xl text-sm sm:text-base font-bold text-center max-w-md pointer-events-none"></div>
+
+  <!-- Modal de Transição para a Fase 2 -->
+  <div id="modal-phase2-intro" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="flex items-center justify-center gap-4 text-4xl">
+        <span class="w-16 h-16 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-300">
+          <i class="fa-solid fa-bolt"></i>
+        </span>
+        <i class="fa-solid fa-arrow-right text-amber-300 text-2xl"></i>
+        <span class="w-16 h-16 rounded-2xl bg-red-500/20 border-2 border-red-400 flex items-center justify-center text-red-400">
+          <i class="fa-solid fa-person-running"></i>
+        </span>
+      </div>
+
+      <div class="bg-sky-950/90 border border-sky-400/70 rounded-2xl p-3.5 text-left text-xs sm:text-sm text-sky-100 leading-relaxed">
+        <span class="font-extrabold text-sky-300 uppercase block mb-1">Comanda para a professora:</span>
+        Explique ao estudante que agora o jogo virou: ele deve perseguir os 5 bonecos vermelhos e apertar o botão redondo <strong>JOGUE</strong> (raio) no meio do controle para acertá-los. Toque em <strong>CONTINUAR</strong>.
+      </div>
+
+      <button id="btn-proceed-phase2" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-4 rounded-2xl text-xl shadow-lg transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-play"></i>
+        <span>CONTINUAR</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Apoio Visual + Comandas para a Professora (Fase 1 e Fase 2) -->
+  <div id="modal-question" class="hidden fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div id="modal-q-header" class="px-4 py-3 bg-slate-800 border-b border-slate-700 flex items-center justify-between gap-2">
+        <span id="modal-q-badge" class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">
+          Dica 1 de 5
+        </span>
+        <span id="modal-q-subtitle" class="text-xs text-slate-300 font-semibold truncate">A Sociedade Hipermoderna</span>
+        <span id="modal-q-timer" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap">
+          <i class="fa-regular fa-clock mr-1"></i>80s
+        </span>
+      </div>
+
+      <div class="p-4 sm:p-5 overflow-y-auto space-y-4">
+        <!-- Comanda para a professora -->
+        <div id="modal-q-teacher-guide" class="bg-sky-950/90 border border-sky-400/70 rounded-2xl p-3 text-xs sm:text-sm text-sky-100 leading-relaxed"></div>
+
+        <!-- Dica correspondente (exibida na Fase 2) com apoio visual -->
+        <div id="modal-q-tips-box" class="hidden bg-slate-950/90 border-2 border-amber-400/60 rounded-2xl p-3.5 space-y-2">
+          <div id="modal-q-tips-visual" class="flex items-center justify-center gap-3 py-1"></div>
+          <div id="modal-q-tips-list" class="text-xs sm:text-sm text-slate-200 leading-relaxed text-center"></div>
+        </div>
+
+        <!-- Painel Visual Principal para o Estudante + Texto para a Professora ler -->
+        <div class="bg-slate-800/95 border border-slate-700 rounded-2xl p-3.5 space-y-3">
+          <div id="modal-q-visual-scene" class="flex items-center justify-center gap-3 bg-slate-950/80 border border-slate-700 rounded-xl py-3 px-2"></div>
+          <div id="modal-q-text" class="text-xs sm:text-sm leading-relaxed text-slate-200"></div>
+        </div>
+
+        <!-- Pergunta -->
+        <div class="bg-amber-400/10 border border-amber-400/40 rounded-2xl p-3">
+          <p id="modal-q-prompt" class="font-bold text-amber-300 text-sm sm:text-base"></p>
+        </div>
+
+        <!-- Alternativas (com figuras grandes para o estudante apontar/tocar + texto para a professora) -->
+        <div id="modal-q-options" class="space-y-3"></div>
+
+        <!-- Feedback -->
+        <div id="modal-q-feedback-wrap" class="hidden rounded-2xl p-3.5 flex items-center gap-3">
+          <i id="modal-q-feedback-icon" class="fa-solid fa-circle-check text-3xl flex-shrink-0"></i>
+          <div id="modal-q-feedback" class="text-xs sm:text-sm font-bold flex-1"></div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3.5 bg-slate-800 border-t border-slate-700 flex justify-end">
+        <button id="btn-continue-game" class="hidden w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-6 py-3.5 rounded-2xl text-base shadow-lg transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-play"></i>
+          <span>CONTINUAR JOGO</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Vitória Final -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-3xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="flex items-center justify-center gap-3">
+        <div class="w-20 h-20 rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-4xl">
+          <i class="fa-solid fa-trophy"></i>
+        </div>
+      </div>
+      <div id="victory-teacher-guide" class="bg-sky-950/90 border border-sky-400/70 rounded-2xl p-3.5 text-left text-xs sm:text-sm text-sky-100 leading-relaxed">
+        <span class="font-extrabold text-sky-300 uppercase block mb-1">Comanda para a professora:</span>
+        Parabenize o estudante pela conclusão das 5 etapas do jogo e registre a pontuação dele na atividade!
+      </div>
+      <h2 id="victory-message" class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Parabéns! Tarefa concluída!
+      </h2>
+      <button onclick="location.reload()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-4 rounded-2xl text-base shadow-lg transition">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONFIGURAÇÕES INICIAIS (CENÁRIO DIURNO)
+    // ==========================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+
+    const skyColor = new THREE.Color(0x87ceeb);
+    scene.background = skyColor;
+    scene.fog = new THREE.Fog(0xbae6fd, 85, 320);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 450);
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", stencil: false, depth: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    container.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 2. ILUMINAÇÃO SOLAR (DIA)
+    // ==========================================
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x64748b, 0.8);
+    hemiLight.position.set(0, 100, 0);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+    sunLight.position.set(80, 140, 65);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 512;
+    sunLight.shadow.mapSize.height = 512;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 360;
+    const d = 145;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    // ==========================================
+    // 3. ESTRUTURAS DE COLISÃO E TRANSPARÊNCIA
+    // ==========================================
+    const colliders = [];
+    const occludableMeshes = [];
+    const CITY_LIMIT = 136;
+
+    const wallTextureCache = new Map();
+    const sharedRoofMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    function getCachedWallTexture(hexStr, wallW, wallH, hasDoor) {
+      const key = `${hexStr}_${wallW}_${wallH}_${hasDoor}`;
+      if (wallTextureCache.has(key)) return wallTextureCache.get(key);
+
+      const canvas = document.createElement('canvas');
+      const pxPerUnit = 12;
+      canvas.width = Math.max(64, Math.round(wallW * pxPerUnit));
+      canvas.height = Math.max(64, Math.round(wallH * pxPerUnit));
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = hexStr;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+      ctx.fillRect(0, canvas.height - 14, canvas.width, 14);
+      ctx.fillRect(0, 0, canvas.width, 8);
+
+      const cols = Math.max(2, Math.floor(wallW / 2.4));
+      const isLowHouse = wallH <= 4.0;
+      const rows = isLowHouse ? 1 : Math.max(2, Math.floor((wallH - 3.5) / 3.0));
+      const padX = canvas.width / cols;
+      const topAreaH = isLowHouse ? canvas.height * 0.65 : canvas.height - 3.6 * pxPerUnit;
+      const padY = topAreaH / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (isLowHouse && hasDoor && c === Math.floor(cols / 2)) continue;
+
+          const wx = c * padX + padX * 0.24;
+          const wy = (isLowHouse ? canvas.height * 0.28 : 12) + r * padY + padY * 0.16;
+          const ww = padX * 0.52;
+          const wh = Math.min(padY * 0.62, canvas.height * 0.38);
+
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(wx - 1.5, wy - 1.5, ww + 3, wh + 3);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(wx, wy, ww, wh);
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillRect(wx + 1.5, wy + 1.5, ww * 0.35, wh - 3);
+        }
+      }
+
+      if (hasDoor) {
+        const doorW = Math.min(canvas.width * 0.24, 1.6 * pxPerUnit);
+        const doorH = Math.min(canvas.height * 0.68, 2.5 * pxPerUnit);
+        const doorX = (canvas.width - doorW) / 2;
+        const doorY = canvas.height - doorH;
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(doorX - 3, doorY - 3, doorW + 6, doorH + 3);
+
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(doorX, doorY, doorW, doorH);
+
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(doorX + doorW * 0.18, doorY + doorH * 0.12, doorW * 0.64, doorH * 0.42);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(doorX + doorW * 0.78, doorY + doorH * 0.58, 3, 7);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      wallTextureCache.set(key, tex);
+      return tex;
+    }
+
+    function createBuildingMaterials(baseColorHex, width, height, depth) {
+      const hexStr = '#' + new THREE.Color(baseColorHex).getHexString();
+
+      const sideTex = getCachedWallTexture(hexStr, depth, height, false);
+      const frontTex = getCachedWallTexture(hexStr, width, height, true);
+
+      const sideMat = new THREE.MeshStandardMaterial({
+        map: sideTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+      const frontMat = new THREE.MeshStandardMaterial({
+        map: frontTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      return [sideMat, sideMat, sharedRoofMat, sharedRoofMat, frontMat, frontMat];
+    }
+
+    function createSolidBox(x, y, z, w, h, d, colorHex, options = {}) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mat = options.isBuilding
+        ? createBuildingMaterials(colorHex, w, h, d)
+        : new THREE.MeshStandardMaterial({
+            color: colorHex,
+            roughness: options.roughness ?? 0.7,
+            metalness: options.metalness ?? 0.1,
+            transparent: options.occludable !== false,
+            opacity: 1.0
+          });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y + h / 2, z);
+      mesh.castShadow = options.castShadow !== false;
+      mesh.receiveShadow = options.receiveShadow !== false;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      scene.add(mesh);
+
+      if (options.occludable !== false) {
+        occludableMeshes.push(mesh);
+      }
+
+      const collider = {
+        mesh: mesh,
+        minX: x - w / 2,
+        maxX: x + w / 2,
+        minY: y,
+        maxY: y + h,
+        minZ: z - d / 2,
+        maxZ: z + d / 2
+      };
+
+      colliders.push(collider);
+      return collider;
+    }
+
+    // ==========================================
+    // 4. CONSTRUÇÃO DA CIDADE E HORIZONTE
+    // ==========================================
+    const groundGeo = new THREE.PlaneGeometry(300, 300);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    ground.matrixAutoUpdate = false;
+    ground.updateMatrix();
+    scene.add(ground);
+
+    const roadPositions = [-90, -45, 0, 45, 90];
+
+    function createCityRoads() {
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+      const geoNS = new THREE.PlaneGeometry(11, 272);
+      const geoLO = new THREE.PlaneGeometry(272, 11);
+
+      roadPositions.forEach(pos => {
+        const rNS = new THREE.Mesh(geoNS, roadMat);
+        rNS.rotation.x = -Math.PI / 2;
+        rNS.position.set(pos, 0.01, 0);
+        rNS.receiveShadow = true;
+        rNS.matrixAutoUpdate = false;
+        rNS.updateMatrix();
+        scene.add(rNS);
+
+        const rLO = new THREE.Mesh(geoLO, roadMat);
+        rLO.rotation.x = -Math.PI / 2;
+        rLO.position.set(0, 0.012, pos);
+        rLO.receiveShadow = true;
+        rLO.matrixAutoUpdate = false;
+        rLO.updateMatrix();
+        scene.add(rLO);
+      });
+    }
+    createCityRoads();
+
+    function createCityBoundaries() {
+      const wallHeight = 5.0;
+      const wallThickness = 2.5;
+      const span = CITY_LIMIT * 2 + wallThickness;
+      const wallColor = 0x94a3b8;
+
+      createSolidBox(0, 0, -CITY_LIMIT - 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(0, 0, CITY_LIMIT + 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(-CITY_LIMIT - 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(CITY_LIMIT + 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+    }
+    createCityBoundaries();
+
+    function createCityHorizon() {
+      const palette = [
+        new THREE.Color(0x94a3b8),
+        new THREE.Color(0x64748b),
+        new THREE.Color(0xcbd5e1),
+        new THREE.Color(0x7dd3fc),
+        new THREE.Color(0xe2e8f0)
+      ];
+      const farColor = new THREE.Color(0xb0c4de);
+
+      const positions = [];
+      const normals = [];
+      const colors = [];
+      const indices = [];
+      let vertexOffset = 0;
+
+      function appendBox(bx, by, bz, bw, bh, bd, colorObj) {
+        const boxGeo = new THREE.BoxGeometry(bw, bh, bd);
+        boxGeo.translate(bx, by, bz);
+        const nonIndexed = boxGeo.index ? boxGeo.toNonIndexed() : boxGeo;
+        const posAttr = nonIndexed.attributes.position;
+        const normAttr = nonIndexed.attributes.normal;
+
+        for (let i = 0; i < posAttr.count; i++) {
+          positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+          normals.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i));
+          colors.push(colorObj.r, colorObj.g, colorObj.b);
+          indices.push(vertexOffset++);
+        }
+        boxGeo.dispose();
+        if (nonIndexed !== boxGeo) nonIndexed.dispose();
+      }
+
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+        const dist = 165 + (Math.sin(angle * 7) * 20 + 20);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bw = 12 + Math.abs(Math.cos(angle * 5)) * 14;
+        const bd = 12 + Math.abs(Math.sin(angle * 3)) * 14;
+        const bh = 30 + Math.abs(Math.sin(angle * 11)) * 60;
+        const col = palette[Math.floor(Math.abs(Math.sin(angle * 13)) * palette.length)];
+        appendBox(bx, bh / 2 - 1, bz, bw, bh, bd, col);
+      }
+
+      for (let angle = 0.04; angle < Math.PI * 2; angle += 0.11) {
+        const dist = 225 + (Math.cos(angle * 5) * 25 + 25);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bh = 60 + Math.abs(Math.cos(angle * 9)) * 75;
+        appendBox(bx, bh / 2 - 1, bz, 22, bh, 22, farColor);
+      }
+
+      const mergedGeo = new THREE.BufferGeometry();
+      mergedGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      mergedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      mergedGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      mergedGeo.setIndex(indices);
+
+      const mergedMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.7
+      });
+
+      const horizonMesh = new THREE.Mesh(mergedGeo, mergedMat);
+      horizonMesh.matrixAutoUpdate = false;
+      horizonMesh.updateMatrix();
+      scene.add(horizonMesh);
+    }
+    createCityHorizon();
+
+    // ==========================================
+    // 5. PRÉDIOS DA CIDADE
+    // ==========================================
+    function populateCity() {
+      const buildingCoords = [
+        { x: -24, z: -24, w: 12, h: 18, d: 12, c: 0xe2e8f0 },
+        { x: 24,  z: -24, w: 12, h: 22, d: 12, c: 0xcbd5e1 },
+        { x: -24, z: 24,  w: 12, h: 16, d: 12, c: 0xf1f5f9 },
+        { x: 24,  z: 24,  w: 12, h: 20, d: 12, c: 0x94a3b8 },
+
+        { x: -68, z: -24, w: 14, h: 24, d: 12, c: 0xe2e8f0 },
+        { x: 68,  z: -24, w: 14, h: 20, d: 12, c: 0xcbd5e1 },
+        { x: -68, z: 24,  w: 14, h: 19, d: 12, c: 0xf8fafc },
+        { x: 68,  z: 24,  w: 14, h: 26, d: 12, c: 0x94a3b8 },
+        { x: -24, z: -68, w: 12, h: 21, d: 14, c: 0xcbd5e1 },
+        { x: 24,  z: -68, w: 12, h: 25, d: 14, c: 0xe2e8f0 },
+        { x: -24, z: 68,  w: 12, h: 18, d: 14, c: 0xf1f5f9 },
+        { x: 24,  z: 68,  w: 12, h: 23, d: 14, c: 0xcbd5e1 },
+        { x: -68, z: -68, w: 14, h: 28, d: 14, c: 0x94a3b8 },
+        { x: 68,  z: -68, w: 14, h: 24, d: 14, c: 0xe2e8f0 },
+        { x: -68, z: 68,  w: 14, h: 22, d: 14, c: 0xcbd5e1 },
+        { x: 68,  z: 68,  w: 14, h: 27, d: 14, c: 0xf1f5f9 },
+
+        { x: -112, z: -112, w: 16, h: 30, d: 16, c: 0xe2e8f0 },
+        { x: -68,  z: -112, w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+        { x: -24,  z: -112, w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 24,   z: -112, w: 15, h: 28, d: 15, c: 0xf1f5f9 },
+        { x: 68,   z: -112, w: 15, h: 22, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: -112, w: 16, h: 32, d: 16, c: 0xcbd5e1 },
+
+        { x: -112, z: -68,  w: 15, h: 25, d: 15, c: 0xf8fafc },
+        { x: 112,  z: -68,  w: 15, h: 27, d: 15, c: 0x94a3b8 },
+        { x: -112, z: -24,  w: 15, h: 21, d: 15, c: 0xcbd5e1 },
+        { x: 112,  z: -24,  w: 15, h: 23, d: 15, c: 0xe2e8f0 },
+        { x: -112, z: 24,   w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 24,   w: 15, h: 20, d: 15, c: 0xf1f5f9 },
+        { x: -112, z: 68,   w: 15, h: 29, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: 68,   w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+
+        { x: -112, z: 112,  w: 16, h: 31, d: 16, c: 0x94a3b8 },
+        { x: -68,  z: 112,  w: 15, h: 23, d: 15, c: 0xf1f5f9 },
+        { x: -24,  z: 112,  w: 15, h: 27, d: 15, c: 0xe2e8f0 },
+        { x: 24,   z: 112,  w: 15, h: 25, d: 15, c: 0xcbd5e1 },
+        { x: 68,   z: 112,  w: 15, h: 28, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 112,  w: 16, h: 30, d: 16, c: 0xe2e8f0 }
+      ];
+
+      buildingCoords.forEach(b => {
+        createSolidBox(b.x, 0, b.z, b.w, b.h, b.d, b.c, { isBuilding: true, receiveShadow: false });
+      });
+
+      renderer.shadowMap.needsUpdate = true;
+    }
+    populateCity();
+
+    // ==========================================
+    // 6. PERSONAGEM FILÓSOFO GREGO E INIMIGOS
+    // ==========================================
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+    const darkGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.6 });
+    const redBodyMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.6 });
+
+    const sharedTorsoGeo = new THREE.BoxGeometry(0.7, 1.1, 0.4);
+    const sharedHeadGeo = new THREE.SphereGeometry(0.28, 12, 12);
+    const sharedEyeMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+    const sharedEyeGeo = new THREE.SphereGeometry(0.035, 6, 6);
+    const sharedSmileGeo = new THREE.TorusGeometry(0.08, 0.015, 5, 10, Math.PI);
+    const sharedArmGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18);
+    sharedArmGeo.translate(0, -0.375, 0);
+    const sharedLegGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22);
+    sharedLegGeo.translate(0, -0.475, 0);
+
+    function createPhiMaterials(hexColor, baseMat) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = hexColor;
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 80px "Times New Roman", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Φ', 64, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const frontBackMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+      return [baseMat, baseMat, baseMat, baseMat, frontBackMat, frontBackMat];
+    }
+
+    const playerTorsoMats = createPhiMaterials('#064e3b', darkGreenMat);
+    const enemyTorsoMats = createPhiMaterials('#b91c1c', redBodyMat);
+
+    function buildCharacterRig(torsoMaterials) {
+      const group = new THREE.Group();
+      const torsoHeight = 1.1;
+      const torso = new THREE.Mesh(sharedTorsoGeo, torsoMaterials);
+      torso.position.y = 1.35;
+      group.add(torso);
+
+      const headRadius = 0.28;
+      const head = new THREE.Mesh(sharedHeadGeo, whiteMat);
+      head.position.y = torsoHeight / 2 + headRadius + 0.05;
+      torso.add(head);
+
+      const eyeLeft = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeLeft.position.set(-0.1, 0.05, 0.24);
+      head.add(eyeLeft);
+
+      const eyeRight = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeRight.position.set(0.1, 0.05, 0.24);
+      head.add(eyeRight);
+
+      const smile = new THREE.Mesh(sharedSmileGeo, sharedEyeMat);
+      smile.position.set(0, -0.06, 0.24);
+      smile.rotation.x = Math.PI;
+      head.add(smile);
+
+      const armLeftGroup = new THREE.Group();
+      armLeftGroup.position.set(0.48, torsoHeight / 2 + 0.1, 0);
+      const armLeft = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armLeftGroup.add(armLeft);
+      torso.add(armLeftGroup);
+
+      const armRightGroup = new THREE.Group();
+      armRightGroup.position.set(-0.48, torsoHeight / 2 + 0.1, 0);
+      const armRight = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armRightGroup.add(armRight);
+      torso.add(armRightGroup);
+
+      const legLeftGroup = new THREE.Group();
+      legLeftGroup.position.set(0.18, -torsoHeight / 2, 0);
+      const legLeft = new THREE.Mesh(sharedLegGeo, blackMat);
+      legLeftGroup.add(legLeft);
+      torso.add(legLeftGroup);
+
+      const legRightGroup = new THREE.Group();
+      legRightGroup.position.set(-0.18, -torsoHeight / 2, 0);
+      const legRight = new THREE.Mesh(sharedLegGeo, blackMat);
+      legRightGroup.add(legRight);
+      torso.add(legRightGroup);
+
+      return { group, torso, head, armLeftGroup, armRightGroup, legLeftGroup, legRightGroup };
+    }
+
+    const playerRig = buildCharacterRig(playerTorsoMats);
+    const characterGroup = playerRig.group;
+    const torso = playerRig.torso;
+    const head = playerRig.head;
+    const armLeftGroup = playerRig.armLeftGroup;
+    const armRightGroup = playerRig.armRightGroup;
+    const legLeftGroup = playerRig.legLeftGroup;
+    const legRightGroup = playerRig.legRightGroup;
+    scene.add(characterGroup);
+
+    // Helper para montar ilustrações visuais com ícones grandes para o estudante
+    function renderVisualScene(containerEl, iconsList) {
+      containerEl.innerHTML = iconsList.map((item, idx) => {
+        if (item.arrow) {
+          return `<i class="fa-solid fa-arrow-right text-slate-400 text-xl sm:text-2xl"></i>`;
+        }
+        return `
+          <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl border-2 ${item.boxClass} flex items-center justify-center shadow-md">
+            <i class="${item.icon} text-2xl sm:text-3xl ${item.iconClass}"></i>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // 6B. CONTEÚDO PEDAGÓGICO ADAPTADO (5 DICAS E 5 QUESTÕES COM APOIO VISUAL)
+    // ==========================================
+    const CARTESIAN_ITEMS = [
+      {
+        id: 1,
+        title: "1. O Lixo das Roupas e Eletrônicos",
+        visualScene: [
+          { icon: "fa-solid fa-shirt", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" },
+          { icon: "fa-solid fa-mobile-screen", boxClass: "bg-indigo-900/70 border-indigo-400", iconClass: "text-indigo-300" },
+          { arrow: true },
+          { icon: "fa-solid fa-trash-can", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" }
+        ],
+        readingText: "As fábricas fazem muitas roupas e celulares todo ano. Muitas roupas vão para o lixo em poucos meses, formando montanhas no deserto. No Brasil, já existem mais celulares e computadores do que moradores.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que acontece com muitas roupas e celulares hoje em dia?",
+            options: [
+              { text: "Duram para sempre sem nunca ir para o lixo.", icon: "fa-solid fa-infinity", color: "text-emerald-300" },
+              { text: "Viram lixo muito rápido e se acumulam na natureza.", icon: "fa-solid fa-trash-can", color: "text-red-300" },
+              { text: "Deixaram de ser fabricados nas lojas.", icon: "fa-solid fa-ban", color: "text-slate-300" }
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "No Brasil, como está a quantidade de celulares e computadores?",
+            options: [
+              { text: "Existem mais aparelhos do que moradores no país.", icon: "fa-solid fa-mobile-screen-button", color: "text-amber-300" },
+              { text: "Quase ninguém usa celular ou computador hoje.", icon: "fa-solid fa-user-slash", color: "text-slate-300" },
+              { text: "O lixo eletrônico acabou completamente.", icon: "fa-solid fa-leaf", color: "text-emerald-300" }
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 1: Roupas e celulares são trocados depressa e viram montanhas de lixo."
+      },
+      {
+        id: 2,
+        title: "2. Feito para Durar Pouco",
+        visualScene: [
+          { icon: "fa-solid fa-screwdriver-wrench", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+          { icon: "fa-solid fa-heart-crack", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" },
+          { arrow: true },
+          { icon: "fa-solid fa-cart-shopping", boxClass: "bg-emerald-900/70 border-emerald-400", iconClass: "text-emerald-300" }
+        ],
+        readingText: "Muitos produtos são feitos de propósito para quebrar logo ou serem difíceis de consertar. Assim, as pessoas são obrigadas a comprar um novo antes da hora, fazendo as fábricas lucrarem sempre.",
+        verificationVersions: [
+          {
+            checkQuestion: "Por que muitos produtos são feitos para quebrar logo?",
+            options: [
+              { text: "Para obrigar a pessoa a comprar um produto novo.", icon: "fa-solid fa-cart-plus", color: "text-amber-300" },
+              { text: "Para facilitar o conserto barato em casa.", icon: "fa-solid fa-house-chimney", color: "text-sky-300" },
+              { text: "Para diminuir as vendas das fábricas.", icon: "fa-solid fa-arrow-trend-down", color: "text-slate-300" }
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "O que acontece quando consertar um aparelho fica muito caro?",
+            options: [
+              { text: "A pessoa guarda o aparelho estragado por anos.", icon: "fa-solid fa-box-archive", color: "text-slate-300" },
+              { text: "As lojas dão um aparelho novo de graça.", icon: "fa-solid fa-gift", color: "text-sky-300" },
+              { text: "A pessoa joga fora e compra outro novo.", icon: "fa-solid fa-trash-arrow-up", color: "text-amber-300" }
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 2: Muitos produtos são feitos para estragar cedo e forçar novas compras."
+      },
+      {
+        id: 3,
+        title: "3. O Poder da Marca e da Moda",
+        visualScene: [
+          { icon: "fa-solid fa-tag", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+          { icon: "fa-solid fa-crown", boxClass: "bg-purple-900/70 border-purple-400", iconClass: "text-purple-300" },
+          { arrow: true },
+          { icon: "fa-solid fa-bag-shopping", boxClass: "bg-pink-900/70 border-pink-400", iconClass: "text-pink-300" }
+        ],
+        readingText: "Hoje, muitas pessoas escolhem roupas e tênis pelo desenho da marca, e não pela qualidade. Pequenas mudanças de moda deixam o modelo antigo com cara de velho, fazendo todo mundo querer a novidade.",
+        verificationVersions: [
+          {
+            checkQuestion: "Como muitas pessoas escolhem o que vão comprar hoje?",
+            options: [
+              { text: "Pela fama da marca e pela novidade da moda.", icon: "fa-solid fa-tag", color: "text-amber-300" },
+              { text: "Apenas pelo cheiro e pelo toque do tecido.", icon: "fa-solid fa-hand", color: "text-sky-300" },
+              { text: "Evitando qualquer produto com propaganda.", icon: "fa-solid fa-eye-slash", color: "text-slate-300" }
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "O que pequenas mudanças da moda fazem com o modelo antigo?",
+            options: [
+              { text: "Fazem o modelo antigo durar muitos anos.", icon: "fa-solid fa-shield", color: "text-emerald-300" },
+              { text: "Fazem o modelo antigo parecer velho e ultrapassado.", icon: "fa-solid fa-clock-rotate-left", color: "text-amber-300" },
+              { text: "Deixam todas as pessoas com roupas iguais.", icon: "fa-solid fa-people-group", color: "text-sky-300" }
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 3: A marca e a novidade da moda valem mais do que o próprio objeto."
+      },
+      {
+        id: 4,
+        title: "4. Comprar para Ser Feliz?",
+        visualScene: [
+          { icon: "fa-solid fa-face-laugh-beam", boxClass: "bg-yellow-900/70 border-yellow-400", iconClass: "text-yellow-300" },
+          { icon: "fa-solid fa-stopwatch", boxClass: "bg-orange-900/70 border-orange-400", iconClass: "text-orange-300" },
+          { arrow: true },
+          { icon: "fa-solid fa-rotate", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" }
+        ],
+        readingText: "As propagandas prometem que comprar traz alegria para sempre. Mas a alegria de comprar passa rápido e logo volta a vontade de comprar outra coisa. Muita gente usa marcas para mostrar quem é.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que acontece com a alegria prometida pelas propagandas?",
+            options: [
+              { text: "Dura para sempre e acaba com toda tristeza.", icon: "fa-solid fa-sun", color: "text-yellow-300" },
+              { text: "Passa rápido e logo cria vontade de comprar mais.", icon: "fa-solid fa-stopwatch", color: "text-amber-300" },
+              { text: "Faz as pessoas pararem de olhar lojas.", icon: "fa-solid fa-store-slash", color: "text-slate-300" }
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Como muitas pessoas mostram quem são hoje em dia?",
+            options: [
+              { text: "Pelas marcas, roupas e celulares que compram.", icon: "fa-solid fa-shirt", color: "text-amber-300" },
+              { text: "Recusando qualquer coisa nova das lojas.", icon: "fa-solid fa-ban", color: "text-red-300" },
+              { text: "Guardando objetos antigos da família.", icon: "fa-solid fa-box", color: "text-sky-300" }
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 4: A alegria de comprar dura pouco e logo dá vontade de comprar de novo."
+      },
+      {
+        id: 5,
+        title: "5. Aparência e Descarte",
+        visualScene: [
+          { icon: "fa-solid fa-eye", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" },
+          { icon: "fa-solid fa-star", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+          { arrow: true },
+          { icon: "fa-solid fa-dumpster", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" }
+        ],
+        readingText: "Hoje, parecer moderno vale mais do que a utilidade do objeto: usar um celular antigo parece atraso. O comprador acha que escolhe sozinho, mas o mercado guia seus gostos e o lixo faz parte desse sistema.",
+        verificationVersions: [
+          {
+            checkQuestion: "Por que muita gente troca um celular que ainda funciona?",
+            options: [
+              { text: "Porque usar um modelo antigo parece sinal de atraso.", icon: "fa-solid fa-eye", color: "text-amber-300" },
+              { text: "Porque a lei proíbe usar celulares antigos.", icon: "fa-solid fa-gavel", color: "text-slate-300" },
+              { text: "Porque o aparelho parou de funcionar totalmente.", icon: "fa-solid fa-battery-empty", color: "text-red-300" }
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Qual é o papel de jogar coisas fora nesse sistema?",
+            options: [
+              { text: "É um acidente raro que quase nunca acontece.", icon: "fa-solid fa-circle-question", color: "text-slate-300" },
+              { text: "Faz parte do próprio sistema para manter as vendas.", icon: "fa-solid fa-arrows-spin", color: "text-amber-300" },
+              { text: "Só acontece onde não existem lojas.", icon: "fa-solid fa-map-pin", color: "text-sky-300" }
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 5: A aparência vale mais que a utilidade, e jogar fora faz parte das vendas."
+      }
+    ];
+
+    // 5 Questões Finais Adaptadas (com imagens e texto claro para a professora ler)
+    const EXAM_QUESTIONS = [
+      {
+        relatedTipIds: [1],
+        attemptIndex: 0,
+        versions: [
+          {
+            visualScene: [
+              { icon: "fa-solid fa-shirt", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" },
+              { icon: "fa-solid fa-mobile-screen", boxClass: "bg-indigo-900/70 border-indigo-400", iconClass: "text-indigo-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-trash-can", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" }
+            ],
+            statement: "Montanhas de roupas descartadas em poucos meses se acumulam no deserto, e o Brasil já tem mais celulares do que moradores.",
+            question: "O que isso mostra sobre o consumo de hoje?",
+            options: [
+              { text: "Os produtos duram muito e não geram lixo.", icon: "fa-solid fa-shield-heart", color: "text-emerald-300" },
+              { text: "As trocas rápidas geram muito lixo antes da hora.", icon: "fa-solid fa-trash-can", color: "text-red-300" },
+              { text: "As fábricas pararam de produzir celulares.", icon: "fa-solid fa-ban", color: "text-slate-300" }
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "O lixo está aumentando muito por causa das trocas rápidas.",
+              "",
+              "As fábricas continuam produzindo cada vez mais."
+            ]
+          },
+          {
+            visualScene: [
+              { icon: "fa-solid fa-industry", boxClass: "bg-slate-800 border-slate-500", iconClass: "text-slate-200" },
+              { icon: "fa-solid fa-bolt", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-dumpster", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" }
+            ],
+            statement: "Roupas e eletrônicos novos são lançados o tempo todo, fazendo as pessoas jogarem fora itens que ainda funcionam.",
+            question: "Qual é o resultado desse ritmo acelerado?",
+            options: [
+              { text: "Mais lixo acumulado na natureza.", icon: "fa-solid fa-dumpster", color: "text-red-300" },
+              { text: "Menos compras nas lojas da cidade.", icon: "fa-solid fa-store-slash", color: "text-slate-300" },
+              { text: "Roupas usadas por dezenas de anos.", icon: "fa-solid fa-shirt", color: "text-sky-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "As compras aumentam com os novos lançamentos.",
+              "Muitas roupas vão para o lixo em poucos meses."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [2],
+        attemptIndex: 0,
+        versions: [
+          {
+            visualScene: [
+              { icon: "fa-solid fa-mobile-screen", boxClass: "bg-indigo-900/70 border-indigo-400", iconClass: "text-indigo-300" },
+              { icon: "fa-solid fa-heart-crack", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-cart-shopping", boxClass: "bg-emerald-900/70 border-emerald-400", iconClass: "text-emerald-300" }
+            ],
+            statement: "Um celular estraga em dois anos e na loja dizem que o conserto custa quase o preço de um aparelho novo.",
+            question: "Por que as fábricas fazem produtos difíceis de consertar?",
+            options: [
+              { text: "Para obrigar a pessoa a comprar outro aparelho.", icon: "fa-solid fa-cart-shopping", color: "text-amber-300" },
+              { text: "Para o cliente usar o mesmo celular por 20 anos.", icon: "fa-solid fa-calendar-check", color: "text-sky-300" },
+              { text: "Para diminuir o lucro das próprias fábricas.", icon: "fa-solid fa-arrow-trend-down", color: "text-slate-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "A ideia é fazer o aparelho durar pouco, não 20 anos.",
+              "As fábricas fazem isso justamente para vender mais e lucrar."
+            ]
+          },
+          {
+            visualScene: [
+              { icon: "fa-solid fa-screwdriver-wrench", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-coins", boxClass: "bg-yellow-900/70 border-yellow-400", iconClass: "text-yellow-300" }
+            ],
+            statement: "Muitas peças são feitas frágeis de propósito para encurtar a vida do produto.",
+            question: "O que as empresas ganham quando o produto estraga cedo?",
+            options: [
+              { text: "Vendem menos produtos nas lojas.", icon: "fa-solid fa-store-slash", color: "text-slate-300" },
+              { text: "Vendem um produto novo mais cedo e lucram mais.", icon: "fa-solid fa-coins", color: "text-amber-300" },
+              { text: "Acabam com o lixo eletrônico no mundo.", icon: "fa-solid fa-leaf", color: "text-emerald-300" }
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Elas vendem mais, pois o cliente precisa trocar o item.",
+              "",
+              "Trocar cedo aumenta o lixo eletrônico."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [3],
+        attemptIndex: 0,
+        versions: [
+          {
+            visualScene: [
+              { icon: "fa-solid fa-tag", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+              { icon: "fa-solid fa-crown", boxClass: "bg-purple-900/70 border-purple-400", iconClass: "text-purple-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-bag-shopping", boxClass: "bg-pink-900/70 border-pink-400", iconClass: "text-pink-300" }
+            ],
+            statement: "Hoje, muitas pessoas escolhem tênis e roupas apenas pelo desenho da marca, e não pela qualidade do material.",
+            question: "O que vale mais na hora da compra hoje em dia?",
+            options: [
+              { text: "A fama da marca e a novidade da moda.", icon: "fa-solid fa-tag", color: "text-amber-300" },
+              { text: "O cheiro e o toque natural do produto.", icon: "fa-solid fa-hand", color: "text-sky-300" },
+              { text: "Guardar roupas antigas por toda a vida.", icon: "fa-solid fa-box-archive", color: "text-slate-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "A etiqueta da marca substituiu a avaliação pelo toque e cheiro.",
+              "A moda incentiva trocar sempre pela novidade."
+            ]
+          },
+          {
+            visualScene: [
+              { icon: "fa-solid fa-sparkles", boxClass: "bg-yellow-900/70 border-yellow-400", iconClass: "text-yellow-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-clock-rotate-left", boxClass: "bg-slate-800 border-slate-500", iconClass: "text-slate-300" }
+            ],
+            statement: "Basta mudar um pequeno detalhe no visual de um celular para o modelo anterior parecer velho.",
+            question: "Como a moda mantém as pessoas comprando sempre?",
+            options: [
+              { text: "Fazendo o modelo antigo parecer ultrapassado.", icon: "fa-solid fa-clock-rotate-left", color: "text-amber-300" },
+              { text: "Proibindo o lançamento de novos aparelhos.", icon: "fa-solid fa-ban", color: "text-red-300" },
+              { text: "Deixando todo mundo com roupas iguais.", icon: "fa-solid fa-people-group", color: "text-sky-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Os lançamentos acontecem o tempo todo.",
+              "A moda cria novidades para diferenciar quem usa."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [4],
+        attemptIndex: 0,
+        versions: [
+          {
+            visualScene: [
+              { icon: "fa-solid fa-face-laugh-beam", boxClass: "bg-yellow-900/70 border-yellow-400", iconClass: "text-yellow-300" },
+              { icon: "fa-solid fa-stopwatch", boxClass: "bg-orange-900/70 border-orange-400", iconClass: "text-orange-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-rotate", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" }
+            ],
+            statement: "A propaganda diz que comprar traz felicidade, mas logo depois de comprar volta a vontade de ter outra coisa.",
+            question: "Como é a felicidade prometida pelas compras?",
+            options: [
+              { text: "Dura para sempre e resolve todos os problemas.", icon: "fa-solid fa-sun", color: "text-yellow-300" },
+              { text: "Passa rápido e gera vontade de comprar de novo.", icon: "fa-solid fa-rotate", color: "text-amber-300" },
+              { text: "Impede as pessoas de ligarem para marcas.", icon: "fa-solid fa-ban", color: "text-slate-300" }
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "A alegria da compra é passageira e não dura para sempre.",
+              "",
+              "Muitas pessoas se definem pelas marcas que compram."
+            ]
+          },
+          {
+            visualScene: [
+              { icon: "fa-solid fa-heart", boxClass: "bg-pink-900/70 border-pink-400", iconClass: "text-pink-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-cart-plus", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" }
+            ],
+            statement: "Quando algo quebra ou quando alguém fica triste, o mercado oferece sempre um produto novo como solução.",
+            question: "O que o consumo faz com as emoções das pessoas?",
+            options: [
+              { text: "Transforma emoções em vontade de comprar mais.", icon: "fa-solid fa-cart-plus", color: "text-amber-300" },
+              { text: "Ensina a consertar objetos antigos com calma.", icon: "fa-solid fa-screwdriver-wrench", color: "text-sky-300" },
+              { text: "Diminui a quantidade de produtos nas lojas.", icon: "fa-solid fa-arrow-down", color: "text-slate-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "O excesso de oferta incentiva jogar fora e comprar outro.",
+              "Há excesso de produtos nas prateleiras."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [5],
+        attemptIndex: 0,
+        versions: [
+          {
+            visualScene: [
+              { icon: "fa-solid fa-eye", boxClass: "bg-sky-900/70 border-sky-400", iconClass: "text-sky-300" },
+              { icon: "fa-solid fa-star", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-mobile-screen", boxClass: "bg-indigo-900/70 border-indigo-400", iconClass: "text-indigo-300" }
+            ],
+            statement: "Muita gente troca um aparelho que ainda funciona bem só para não parecer atrasada diante dos outros.",
+            question: "O que manda mais nas escolhas de consumo hoje?",
+            options: [
+              { text: "A utilidade prática do aparelho.", icon: "fa-solid fa-gears", color: "text-sky-300" },
+              { text: "A aparência e a imagem diante dos outros.", icon: "fa-solid fa-eye", color: "text-amber-300" },
+              { text: "O cuidado para não gerar nenhum lixo.", icon: "fa-solid fa-leaf", color: "text-emerald-300" }
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "O aparelho ainda funciona, então não é pela utilidade.",
+              "",
+              "Trocar aparelhos bons aumenta o lixo."
+            ]
+          },
+          {
+            visualScene: [
+              { icon: "fa-solid fa-trash-arrow-up", boxClass: "bg-red-900/70 border-red-400", iconClass: "text-red-300" },
+              { arrow: true },
+              { icon: "fa-solid fa-arrows-spin", boxClass: "bg-amber-900/70 border-amber-400", iconClass: "text-amber-300" }
+            ],
+            statement: "Na sociedade atual, jogar produtos fora faz parte do próprio funcionamento das vendas.",
+            question: "Por que o descarte faz parte do sistema?",
+            options: [
+              { text: "Porque jogar fora abre espaço para novas compras.", icon: "fa-solid fa-arrows-spin", color: "text-amber-300" },
+              { text: "Porque ninguém gosta de comprar novidades.", icon: "fa-solid fa-ban", color: "text-slate-300" },
+              { text: "Porque não existem fábricas no mundo.", icon: "fa-solid fa-industry", color: "text-sky-300" }
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "As pessoas são incentivadas o tempo todo a buscar novidades.",
+              "As fábricas dependem desse giro rápido para vender."
+            ]
+          }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 6C. CRIAÇÃO DOS 5 ITENS ("Dica 1"..."Dica 5") E 5 INIMIGOS
+    // ==========================================
+    let gamePhase = 1;
+    let isPaused = true;
+    let playerName = "Coruja";
+    let collectedCount = 0;
+    let defeatedEnemiesCount = 0;
+    const TOTAL_SECOND_PHASE_QUESTIONS = EXAM_QUESTIONS.length;
+    let availableExamQuestions = [...EXAM_QUESTIONS];
+
+    let questionTimerInterval = null;
+    let questionTimeRemaining = 0;
+    let activePenaltyCallback = null;
+
+    function clearQuestionTimer() {
+      if (questionTimerInterval) {
+        clearInterval(questionTimerInterval);
+        questionTimerInterval = null;
+      }
+      activePenaltyCallback = null;
+    }
+
+    function startQuestionTimer(seconds, onTimeoutOrCheat) {
+      clearQuestionTimer();
+      questionTimeRemaining = seconds;
+      activePenaltyCallback = onTimeoutOrCheat;
+
+      const timerEl = document.getElementById('modal-q-timer');
+      timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap";
+      timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${questionTimeRemaining}s`;
+
+      questionTimerInterval = setInterval(() => {
+        if (modalQuestion.classList.contains('hidden')) {
+          clearQuestionTimer();
+          return;
+        }
+        questionTimeRemaining--;
+        if (questionTimeRemaining <= 15) {
+          timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-red-950 border border-red-400 text-red-200 whitespace-nowrap";
+        }
+        timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${Math.max(0, questionTimeRemaining)}s`;
+
+        if (questionTimeRemaining <= 0) {
+          const cb = activePenaltyCallback;
+          clearQuestionTimer();
+          if (cb) cb("O tempo acabou!");
+        }
+      }, 1000);
+    }
+
+    function triggerAntiCheatPenalty(reasonLabel) {
+      if (modalQuestion.classList.contains('hidden')) return;
+      if (!activePenaltyCallback) return;
+      const cb = activePenaltyCallback;
+      clearQuestionTimer();
+      cb(reasonLabel);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        triggerAntiCheatPenalty("Saída da tela detectada!");
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      triggerAntiCheatPenalty("Perda de foco detectada!");
+    });
+
+    // Animação de entrada aérea de 5 segundos
+    let isIntroDescent = false;
+    let introElapsed = 0;
+    const INTRO_DURATION = 5.0;
+    const INTRO_START_Y = 75.0;
+
+    // Tela inicial: seleção visual por avatar
+    const modalStart = document.getElementById('modal-start');
+    const btnStartGame = document.getElementById('btn-start-game');
+    const avatarButtons = document.querySelectorAll('.avatar-choice');
+
+    avatarButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        avatarButtons.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        playerName = btn.dataset.label || "Jogador";
+      });
+    });
+
+    function startGameWithPlayerName() {
+      modalStart.classList.add('hidden');
+      characterGroup.position.set(0, INTRO_START_Y, 5);
+      isIntroDescent = true;
+      introElapsed = 0;
+      isPaused = true;
+      clock.getDelta();
+      updatePhaseOneBadge();
+    }
+
+    btnStartGame.addEventListener('click', startGameWithPlayerName);
+
+    function updatePhaseOneBadge() {
+      const currentTipNumber = Math.min(collectedCount + 1, CARTESIAN_ITEMS.length);
+      document.getElementById('phase-badge-icon').className = "fa-solid fa-lightbulb text-yellow-300 text-xl";
+      document.getElementById('phase-badge-text').textContent =
+        `Comanda para a professora: Oriente o estudante a guiar o boneco verde até a Dica ${currentTipNumber} de ${CARTESIAN_ITEMS.length}, desviando dos bonecos vermelhos.`;
+    }
+
+    function updatePhaseTwoBadge() {
+      const remainingQuestions = TOTAL_SECOND_PHASE_QUESTIONS - defeatedEnemiesCount;
+      document.getElementById('phase-badge-icon').className = "fa-solid fa-bolt text-amber-400 text-xl";
+      document.getElementById('phase-badge-text').textContent =
+        `Comanda para a professora: Oriente o estudante a mirar nos bonecos vermelhos e apertar o botão JOGUE (Faltam ${remainingQuestions}).`;
+    }
+
+    const sharedTipRingGeo = new THREE.RingGeometry(0.65, 0.9, 16);
+    const sharedTipRingMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+
+    function createTipItemMesh(tipNumber) {
+      const qGroup = new THREE.Group();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(6, 8, 244, 80, 16);
+      ctx.fill();
+
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 46px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Dica ${tipNumber}`, 128, 49);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(2.8, 1.05, 1);
+      sprite.position.set(0, 1.35, 0);
+      qGroup.add(sprite);
+
+      const ringMesh = new THREE.Mesh(sharedTipRingGeo, sharedTipRingMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.05;
+      qGroup.add(ringMesh);
+
+      return qGroup;
+    }
+
+    const safeRoadSpots = [
+      { x: -90, z: -90 }, { x: -45, z: -90 }, { x: 0, z: -90 }, { x: 45, z: -90 }, { x: 90, z: -90 },
+      { x: -90, z: -45 }, { x: -45, z: -45 }, { x: 0, z: -45 }, { x: 45, z: -45 }, { x: 90, z: -45 },
+      { x: -90, z: 0 },   { x: -45, z: 0 },                     { x: 45, z: 0 },   { x: 90, z: 0 },
+      { x: -90, z: 45 },  { x: -45, z: 45 },  { x: 0, z: 45 },  { x: 45, z: 45 },  { x: 90, z: 45 },
+      { x: -90, z: 90 },  { x: -45, z: 90 },  { x: 0, z: 90 },  { x: 45, z: 90 },  { x: 90, z: 90 }
+    ];
+
+    function getRandomFreeSpot(minDistFromPlayer = 18) {
+      const candidates = safeRoadSpots.filter(s => {
+        const dx = s.x - characterGroup.position.x;
+        const dz = s.z - characterGroup.position.z;
+        return Math.hypot(dx, dz) >= minDistFromPlayer;
+      });
+      const pool = candidates.length > 0 ? candidates : safeRoadSpots;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const collectibleEntities = [];
+    const initialItemSpots = [
+      { x: 0, z: -45 },
+      { x: 45, z: 0 },
+      { x: -45, z: 0 },
+      { x: 45, z: 45 },
+      { x: -45, z: -45 }
+    ];
+
+    CARTESIAN_ITEMS.forEach((data, idx) => {
+      const mesh = createTipItemMesh(data.id);
+      const pos = initialItemSpots[idx % initialItemSpots.length];
+      mesh.position.set(pos.x, 0, pos.z);
+      mesh.visible = idx === 0;
+      scene.add(mesh);
+      collectibleEntities.push({
+        data,
+        mesh,
+        collected: false,
+        cooldown: 0,
+        attemptIndex: 0
+      });
+    });
+
+    // 5 Inimigos Vermelhos (correspondentes às 5 dicas e 5 questões)
+    const enemyEntities = [];
+    const initialEnemySpots = [
+      { x: -90, z: -90 },
+      { x: 90, z: -90 },
+      { x: -90, z: 90 },
+      { x: 90, z: 90 },
+      { x: 0, z: -90 }
+    ];
+
+    const enemyPatrolRoutes = [
+      [ { x: -90, z: -90 }, { x: 0, z: -90 }, { x: 0, z: -45 }, { x: -90, z: -45 } ],
+      [ { x: 90, z: -90 }, { x: 90, z: 0 }, { x: 45, z: 0 }, { x: 45, z: -90 } ],
+      [ { x: -90, z: 90 }, { x: -90, z: 0 }, { x: -45, z: 0 }, { x: -45, z: 90 } ],
+      [ { x: 90, z: 90 }, { x: 0, z: 90 }, { x: 0, z: 45 }, { x: 90, z: 45 } ],
+      [ { x: 0, z: -90 }, { x: 45, z: -45 }, { x: -45, z: -45 }, { x: -45, z: 45 } ]
+    ];
+
+    function spawnEnemiesForCount(count) {
+      for (let i = 0; i < enemyEntities.length; i++) {
+        scene.remove(enemyEntities[i].rig.group);
+      }
+      enemyEntities.length = 0;
+
+      for (let idx = 0; idx < count; idx++) {
+        const spot = initialEnemySpots[idx % initialEnemySpots.length];
+        const rig = buildCharacterRig(enemyTorsoMats);
+        rig.group.position.set(spot.x, 0, spot.z);
+        scene.add(rig.group);
+        enemyEntities.push({
+          id: idx,
+          rig,
+          angle: (idx * Math.PI) / 2.5,
+          walkCycle: Math.random() * 10,
+          defeated: false,
+          explodingPending: false,
+          wanderTimer: 0.5 + idx * 0.4,
+          route: enemyPatrolRoutes[idx % enemyPatrolRoutes.length],
+          waypointIdx: 1,
+          turnBias: (idx % 2 === 0 ? 1 : -1) * (0.45 + idx * 0.08)
+        });
+      }
+    }
+
+    spawnEnemiesForCount(CARTESIAN_ITEMS.length);
+
+    // Projétil 3D e partículas
+    const projectiles = [];
+    const explosionParticles = [];
+    const playerHeadRadius = 0.28;
+    const redBallGeometry = new THREE.SphereGeometry((playerHeadRadius / 3) * 2, 12, 12);
+    const redBallMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0x7f1d1d,
+      emissiveIntensity: 0.35,
+      roughness: 0.35
+    });
+    const sharedExplosionGeo = new THREE.SphereGeometry(0.18, 6, 6);
+
+    function createPhilosophyProjectileMesh() {
+      return new THREE.Mesh(redBallGeometry, redBallMaterial);
+    }
+
+    function spawnNonViolentExplosion(pos) {
+      const colors = [0xfacc15, 0x38bdf8, 0xffffff, 0x34d399];
+      for (let i = 0; i < 16; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: colors[i % colors.length],
+          transparent: true,
+          opacity: 1.0
+        });
+        const p = new THREE.Mesh(sharedExplosionGeo, mat);
+        p.position.set(pos.x, pos.y + 1.3, pos.z);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.08 + Math.random() * 0.18;
+        const vy = 0.12 + Math.random() * 0.22;
+        scene.add(p);
+        explosionParticles.push({
+          mesh: p,
+          vx: Math.cos(angle) * speed,
+          vy,
+          vz: Math.sin(angle) * speed,
+          life: 1.0
+        });
+      }
+    }
+
+    // ==========================================
+    // 7. FÍSICA, COLISÃO E VELOCIDADES REDUZIDAS
+    // ==========================================
+    characterGroup.position.set(0, INTRO_START_Y, 5);
+    let characterAngle = Math.PI;
+
+    const playerRadius = 0.45;
+    const playerHeight = 2.3;
+    const moveSpeed = 0.28;
+    const turnSpeed = 0.036;
+
+    let verticalVelocity = 0;
+    let isGrounded = true;
+    const gravity = -0.022;
+
+    const dpadState = { left: false, right: false };
+    const handWorldPosVec = new THREE.Vector3();
+
+    function throwPhilosophyWord() {
+      if (isPaused || gamePhase !== 2) return;
+
+      armRightGroup.getWorldPosition(handWorldPosVec);
+      handWorldPosVec.y -= 0.35;
+
+      const dirX = Math.sin(characterAngle);
+      const dirZ = Math.cos(characterAngle);
+
+      const projectileMesh = createPhilosophyProjectileMesh();
+      projectileMesh.position.set(handWorldPosVec.x + dirX * 0.6, handWorldPosVec.y, handWorldPosVec.z + dirZ * 0.6);
+      scene.add(projectileMesh);
+
+      projectiles.push({
+        mesh: projectileMesh,
+        dirX,
+        dirZ,
+        traveled: 0,
+        maxDistance: 75
+      });
+    }
+
+    function resolveHorizontalCollisions(nextX, nextZ, currentY) {
+      const maxBound = CITY_LIMIT - playerRadius;
+      nextX = Math.max(-maxBound, Math.min(maxBound, nextX));
+      nextZ = Math.max(-maxBound, Math.min(maxBound, nextZ));
+
+      const pBottom = currentY + 0.08;
+      const pTop = currentY + playerHeight;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+
+        if (pTop > box.minY && pBottom < box.maxY) {
+          const closestX = Math.max(box.minX, Math.min(nextX, box.maxX));
+          const closestZ = Math.max(box.minZ, Math.min(nextZ, box.maxZ));
+
+          const distX = nextX - closestX;
+          const distZ = nextZ - closestZ;
+          const distSq = distX * distX + distZ * distZ;
+
+          if (distSq < playerRadius * playerRadius) {
+            const dist = Math.sqrt(distSq);
+            if (dist > 0.0001) {
+              const overlap = playerRadius - dist;
+              nextX += (distX / dist) * overlap;
+              nextZ += (distZ / dist) * overlap;
+            } else {
+              const penLeft = Math.abs(nextX - box.minX);
+              const penRight = Math.abs(box.maxX - nextX);
+              const penFront = Math.abs(nextZ - box.minZ);
+              const penBack = Math.abs(box.maxZ - nextZ);
+              const minPen = Math.min(penLeft, penRight, penFront, penBack);
+
+              if (minPen === penLeft) nextX = box.minX - playerRadius;
+              else if (minPen === penRight) nextX = box.maxX + playerRadius;
+              else if (minPen === penFront) nextZ = box.minZ - playerRadius;
+              else nextZ = box.maxZ + playerRadius;
+            }
+          }
+        }
+      }
+
+      return { x: nextX, z: nextZ };
+    }
+
+    function getSupportFloorHeight(x, z, currentY) {
+      let highestFloor = 0;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+        const withinX = (x + playerRadius * 0.75) > box.minX && (x - playerRadius * 0.75) < box.maxX;
+        const withinZ = (z + playerRadius * 0.75) > box.minZ && (z - playerRadius * 0.75) < box.maxZ;
+
+        if (withinX && withinZ) {
+          if (currentY >= box.maxY - 0.35 && box.maxY > highestFloor) {
+            highestFloor = box.maxY;
+          }
+        }
+      }
+      return highestFloor;
+    }
+
+    // ==========================================
+    // 7B. INTERFACE PEDAGÓGICA (IMAGENS + COMANDAS PARA A PROFESSORA)
+    // ==========================================
+    const modalQuestion = document.getElementById('modal-question');
+    const modalQHeader = document.getElementById('modal-q-header');
+    const modalQBadge = document.getElementById('modal-q-badge');
+    const modalQSubtitle = document.getElementById('modal-q-subtitle');
+    const modalQTeacherGuide = document.getElementById('modal-q-teacher-guide');
+    const modalQTipsBox = document.getElementById('modal-q-tips-box');
+    const modalQTipsVisual = document.getElementById('modal-q-tips-visual');
+    const modalQTipsList = document.getElementById('modal-q-tips-list');
+    const modalQVisualScene = document.getElementById('modal-q-visual-scene');
+    const modalQText = document.getElementById('modal-q-text');
+    const modalQPrompt = document.getElementById('modal-q-prompt');
+    const modalQOptions = document.getElementById('modal-q-options');
+    const modalQFeedbackWrap = document.getElementById('modal-q-feedback-wrap');
+    const modalQFeedbackIcon = document.getElementById('modal-q-feedback-icon');
+    const modalQFeedback = document.getElementById('modal-q-feedback');
+    const btnContinueGame = document.getElementById('btn-continue-game');
+
+    const modalPhase2Intro = document.getElementById('modal-phase2-intro');
+    const btnProceedPhase2 = document.getElementById('btn-proceed-phase2');
+
+    const toastBanner = document.getElementById('toast-banner');
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 4500) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBanner.classList.add('hidden');
+      }, duration);
+    }
+
+    function resetMovementKeys() {
+      dpadState.left = false;
+      dpadState.right = false;
+      document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function renderMatchingTipsInQuestionModal(relatedTipIds) {
+      const matchingItems = CARTESIAN_ITEMS.filter(item => relatedTipIds.includes(item.id));
+      if (matchingItems.length > 0) {
+        renderVisualScene(modalQTipsVisual, matchingItems[0].visualScene);
+      }
+      modalQTipsList.innerHTML = matchingItems.map(item => `
+        <div class="text-slate-100 leading-relaxed">
+          <span class="font-bold text-amber-300">${item.tip}</span>
+        </div>
+      `).join('<div class="my-2 border-t border-amber-400/20"></div>');
+    }
+
+    function openPhaseTwoIntroModal() {
+      isPaused = true;
+      resetMovementKeys();
+      toastBanner.classList.add('hidden');
+      modalPhase2Intro.classList.remove('hidden');
+    }
+
+    btnProceedPhase2.addEventListener('click', () => {
+      modalPhase2Intro.classList.add('hidden');
+      gamePhase = 2;
+      spawnEnemiesForCount(TOTAL_SECOND_PHASE_QUESTIONS);
+      document.getElementById('btn-throw').classList.remove('hidden');
+      updatePhaseTwoBadge();
+      isPaused = false;
+      clock.getDelta();
+    });
+
+    const optionColors = [
+      "bg-sky-600 border-sky-300 text-white",
+      "bg-amber-500 border-amber-200 text-slate-950",
+      "bg-purple-600 border-purple-300 text-white"
+    ];
+
+    function buildAccessibleOptionRow(optObj, idx, onSelectCallback) {
+      const letter = String.fromCharCode(65 + idx);
+      const selectBtn = document.createElement('button');
+      selectBtn.type = "button";
+      selectBtn.className = "w-full text-left p-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 text-sm sm:text-base text-slate-100 transition font-semibold flex items-center gap-3.5";
+      selectBtn.innerHTML = `
+        <span class="w-10 h-10 rounded-xl border font-extrabold flex items-center justify-center flex-shrink-0 text-base ${optionColors[idx % optionColors.length]}">${letter}</span>
+        <span class="w-12 h-12 rounded-xl bg-slate-950 border border-slate-600 flex items-center justify-center flex-shrink-0">
+          <i class="${optObj.icon} text-2xl ${optObj.color}"></i>
+        </span>
+        <span class="flex-1 leading-snug">${optObj.text}</span>
+      `;
+      selectBtn.addEventListener('click', () => onSelectCallback(selectBtn));
+      return selectBtn;
+    }
+
+    function openItemQuestionModal(itemEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      const versions = itemEntity.data.verificationVersions;
+      const currentVersion = versions[itemEntity.attemptIndex % versions.length];
+
+      modalQHeader.classList.remove('hidden');
+      modalQTipsBox.classList.add('hidden');
+      modalQBadge.textContent = `Dica ${itemEntity.data.id} de ${CARTESIAN_ITEMS.length}`;
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = itemEntity.data.title;
+
+      modalQTeacherGuide.innerHTML = `
+        <span class="font-extrabold text-sky-300 uppercase block mb-0.5">Comanda para a professora:</span>
+        Mostre as figuras abaixo ao estudante, leia o texto curto e a pergunta em voz alta, leia as 3 opções apontando para cada figura e peça ao estudante que toque na resposta escolhida.
+      `;
+
+      renderVisualScene(modalQVisualScene, itemEntity.data.visualScene);
+      modalQText.textContent = itemEntity.data.readingText;
+      modalQPrompt.textContent = currentVersion.checkQuestion;
+      modalQFeedbackWrap.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+
+      function applyItemWrongOutcome(customPrefix) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        itemEntity.attemptIndex = (itemEntity.attemptIndex + 1) % versions.length;
+
+        const newSpot = getRandomFreeSpot(25);
+        itemEntity.mesh.position.set(newSpot.x, 0, newSpot.z);
+        itemEntity.cooldown = 2.0;
+
+        const prefix = customPrefix || "Resposta incorreta.";
+        modalQFeedbackWrap.className = "rounded-2xl p-3.5 flex items-center gap-3 bg-red-950/90 border-2 border-red-400 text-red-200";
+        modalQFeedbackIcon.className = "fa-solid fa-circle-xmark text-3xl text-red-400 flex-shrink-0";
+        modalQFeedback.textContent = `Comanda para a professora: ${prefix} Explique ao estudante que a Dica ${itemEntity.data.id} mudou de lugar na cidade. Aperte CONTINUAR JOGO para procurá-la novamente.`;
+        modalQFeedbackWrap.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      startQuestionTimer(80, (reason) => applyItemWrongOutcome(reason));
+
+      currentVersion.options.forEach((optObj, idx) => {
+        const row = buildAccessibleOptionRow(optObj, idx, (btn) => {
+          if (answered) return;
+
+          const isCorrect = idx === currentVersion.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/90', 'border-emerald-400', 'text-emerald-100');
+            itemEntity.collected = true;
+            itemEntity.mesh.visible = false;
+            collectedCount++;
+
+            if (collectedCount < collectibleEntities.length) {
+              collectibleEntities[collectedCount].mesh.visible = true;
+            }
+            updatePhaseOneBadge();
+
+            modalQFeedbackWrap.className = "rounded-2xl p-3.5 flex items-center gap-3 bg-emerald-950/90 border-2 border-emerald-400 text-emerald-200";
+            modalQFeedbackIcon.className = "fa-solid fa-circle-check text-3xl text-emerald-400 flex-shrink-0";
+            modalQFeedback.textContent = "Comanda para a professora: Resposta correta! Parabenize o estudante e peça que ele toque no botão verde CONTINUAR JOGO.";
+            modalQFeedbackWrap.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/90', 'border-red-400', 'text-red-100');
+            applyItemWrongOutcome("Resposta incorreta.");
+          }
+        });
+
+        modalQOptions.appendChild(row);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (collectedCount === CARTESIAN_ITEMS.length && gamePhase === 1) {
+          openPhaseTwoIntroModal();
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    function openEnemyExamModal(enemyEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      if (availableExamQuestions.length === 0) {
+        availableExamQuestions = [...EXAM_QUESTIONS];
+      }
+      const qIndex = Math.floor(Math.random() * availableExamQuestions.length);
+      const examTopic = availableExamQuestions[qIndex];
+      const examQ = examTopic.versions[examTopic.attemptIndex % examTopic.versions.length];
+
+      modalQHeader.classList.remove('hidden');
+      modalQBadge.textContent = `Questão ${defeatedEnemiesCount + 1} de ${TOTAL_SECOND_PHASE_QUESTIONS}`;
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = "Observe as figuras e responda";
+
+      modalQTeacherGuide.innerHTML = `
+        <span class="font-extrabold text-sky-300 uppercase block mb-0.5">Comanda para a professora:</span>
+        Relembre a dica pelas figuras acima, leia a situação e a pergunta ao estudante, leia as 3 alternativas apontando para os ícones e peça que ele toque na opção correta.
+      `;
+
+      renderMatchingTipsInQuestionModal(examTopic.relatedTipIds);
+      modalQTipsBox.classList.remove('hidden');
+
+      renderVisualScene(modalQVisualScene, examQ.visualScene);
+      modalQText.textContent = examQ.statement;
+      modalQPrompt.textContent = examQ.question;
+      modalQFeedbackWrap.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+      let answeredCorrectly = false;
+
+      function applyExamWrongOutcome(customMessage) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        examTopic.attemptIndex = (examTopic.attemptIndex + 1) % examTopic.versions.length;
+
+        modalQFeedbackWrap.className = "rounded-2xl p-3.5 flex items-center gap-3 bg-red-950/90 border-2 border-red-400 text-red-200";
+        modalQFeedbackIcon.className = "fa-solid fa-circle-xmark text-3xl text-red-400 flex-shrink-0";
+        modalQFeedback.textContent = customMessage;
+        modalQFeedbackWrap.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      startQuestionTimer(120, (reason) => {
+        applyExamWrongOutcome(`Comanda para a professora: ${reason} Avise ao estudante que o boneco vermelho fugiu e aperte CONTINUAR JOGO para persegui-lo novamente.`);
+      });
+
+      examQ.options.forEach((optObj, idx) => {
+        const row = buildAccessibleOptionRow(optObj, idx, (btn) => {
+          if (answered) return;
+
+          const isCorrect = idx === examQ.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            answeredCorrectly = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/90', 'border-emerald-400', 'text-emerald-100');
+
+            availableExamQuestions.splice(qIndex, 1);
+            defeatedEnemiesCount++;
+            updatePhaseTwoBadge();
+
+            modalQFeedbackWrap.className = "rounded-2xl p-3.5 flex items-center gap-3 bg-emerald-950/90 border-2 border-emerald-400 text-emerald-200";
+            modalQFeedbackIcon.className = "fa-solid fa-circle-check text-3xl text-emerald-400 flex-shrink-0";
+            modalQFeedback.textContent = "Comanda para a professora: Resposta correta! Parabenize o estudante e peça que ele aperte CONTINUAR JOGO para ver o boneco desaparecer.";
+            modalQFeedbackWrap.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/90', 'border-red-400', 'text-red-100');
+
+            const reason = (examQ.errorReasons && examQ.errorReasons[idx])
+              ? examQ.errorReasons[idx]
+              : "Essa resposta não combina com a dica.";
+
+            applyExamWrongOutcome(`Comanda para a professora: Resposta errada (${reason}). Explique com base nas figuras e aperte CONTINUAR JOGO para tentar acertar esse boneco novamente.`);
+          }
+        });
+
+        modalQOptions.appendChild(row);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (answeredCorrectly) {
+          enemyEntity.explodingPending = true;
+          setTimeout(() => {
+            enemyEntity.defeated = true;
+            enemyEntity.rig.group.visible = false;
+            spawnNonViolentExplosion(enemyEntity.rig.group.position);
+
+            if (defeatedEnemiesCount >= TOTAL_SECOND_PHASE_QUESTIONS) {
+              setTimeout(() => {
+                isPaused = true;
+                document.getElementById('victory-message').textContent =
+                  `Parabéns, ${playerName}! Você venceu o jogo!`;
+                document.getElementById('modal-victory').classList.remove('hidden');
+              }, 600);
+            }
+          }, 500);
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 8. TRANSPARÊNCIA DE OBJETOS ENTRE CÂMERA E PERSONAGEM
+    // ==========================================
+    const raycaster = new THREE.Raycaster();
+    const currentlyFaded = new Set();
+    const targetPosVec = new THREE.Vector3();
+    const dirVec = new THREE.Vector3();
+    let occlusionFrameCounter = 0;
+
+    function setMeshOpacity(mesh, value) {
+      if (Array.isArray(mesh.material)) {
+        for (let i = 0; i < mesh.material.length; i++) {
+          mesh.material[i].opacity = value;
+        }
+      } else {
+        mesh.material.opacity = value;
+      }
+    }
+
+    function updateCameraOcclusion() {
+      occlusionFrameCounter++;
+      if (occlusionFrameCounter % 3 !== 0) return;
+
+      currentlyFaded.forEach(mesh => {
+        setMeshOpacity(mesh, 1.0);
+      });
+      currentlyFaded.clear();
+
+      targetPosVec.set(
+        characterGroup.position.x,
+        characterGroup.position.y + 1.4,
+        characterGroup.position.z
+      );
+
+      dirVec.subVectors(targetPosVec, camera.position);
+      const distToPlayer = dirVec.length();
+      dirVec.divideScalar(distToPlayer);
+
+      raycaster.set(camera.position, dirVec);
+      raycaster.far = distToPlayer - 0.4;
+
+      const hits = raycaster.intersectObjects(occludableMeshes, false);
+      for (let i = 0; i < hits.length; i++) {
+        const hitMesh = hits[i].object;
+        setMeshOpacity(hitMesh, 0.25);
+        currentlyFaded.add(hitMesh);
+      }
+    }
+
+    // ==========================================
+    // 9. CONTROLES (DIREÇÃO E DISPARO)
+    // ==========================================
+    function setupDpadButton(elementId, directionKey) {
+      const btn = document.getElementById(elementId);
+      const startPress = (e) => {
+        e.preventDefault();
+        if (isPaused) return;
+        dpadState[directionKey] = true;
+        btn.classList.add('active');
+      };
+      const endPress = (e) => {
+        e.preventDefault();
+        dpadState[directionKey] = false;
+        btn.classList.remove('active');
+      };
+      btn.addEventListener('pointerdown', startPress);
+      btn.addEventListener('pointerup', endPress);
+      btn.addEventListener('pointerleave', endPress);
+      btn.addEventListener('pointercancel', endPress);
+    }
+
+    setupDpadButton('btn-left', 'left');
+    setupDpadButton('btn-right', 'right');
+
+    document.getElementById('btn-throw').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      throwPhilosophyWord();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (isPaused) return;
+      if (e.key === ' ' || e.code === 'Space') throwPhilosophyWord();
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = true;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = false;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = false;
+    });
+
+    // ==========================================
+    // 10. LOOP PRINCIPAL DE ANIMAÇÃO
+    // ==========================================
+    const clock = new THREE.Clock();
+    let walkCycle = 0;
+
+    const cameraDistance = 13.5;
+    const cameraHeight = 6.8;
+    const cameraTargetHeight = 1.6;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.05);
+      const time = clock.getElapsedTime();
+
+      if (isIntroDescent) {
+        introElapsed += delta;
+        const progress = Math.min(introElapsed / INTRO_DURATION, 1.0);
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        characterGroup.position.set(0, INTRO_START_Y * (1 - ease), 5);
+        characterGroup.rotation.y = characterAngle;
+
+        const normalCamX = characterGroup.position.x + Math.sin(characterAngle) * -cameraDistance;
+        const normalCamY = cameraHeight;
+        const normalCamZ = characterGroup.position.z + Math.cos(characterAngle) * -cameraDistance;
+
+        const topCamX = 0;
+        const topCamY = 128;
+        const topCamZ = -22;
+
+        camera.position.set(
+          topCamX + (normalCamX - topCamX) * ease,
+          topCamY + (normalCamY - topCamY) * ease,
+          topCamZ + (normalCamZ - topCamZ) * ease
+        );
+        camera.lookAt(
+          characterGroup.position.x,
+          characterGroup.position.y + cameraTargetHeight,
+          characterGroup.position.z
+        );
+
+        if (progress >= 1.0) {
+          characterGroup.position.set(0, 0, 5);
+          isIntroDescent = false;
+          isPaused = false;
+        }
+
+        renderer.render(scene, camera);
+        return;
+      }
+
+      if (!isPaused) {
+        // 1. Rotação do personagem
+        if (dpadState.left) characterAngle += turnSpeed;
+        if (dpadState.right) characterAngle -= turnSpeed;
+        characterGroup.rotation.y = characterAngle;
+
+        // 2. Movimento horizontal contínuo mais lento + Colisão
+        const isMoving = true;
+        const currentMoveSpeed = gamePhase === 2 ? moveSpeed * 0.65 : moveSpeed;
+        const desiredX = characterGroup.position.x + Math.sin(characterAngle) * currentMoveSpeed;
+        const desiredZ = characterGroup.position.z + Math.cos(characterAngle) * currentMoveSpeed;
+
+        const resolvedPos = resolveHorizontalCollisions(desiredX, desiredZ, characterGroup.position.y);
+        characterGroup.position.x = resolvedPos.x;
+        characterGroup.position.z = resolvedPos.z;
+
+        // 3. Física Vertical
+        const supportY = getSupportFloorHeight(
+          characterGroup.position.x,
+          characterGroup.position.z,
+          characterGroup.position.y
+        );
+
+        if (isGrounded && characterGroup.position.y > supportY + 0.01) {
+          isGrounded = false;
+          verticalVelocity = -0.05;
+        }
+
+        if (!isGrounded) {
+          characterGroup.position.y += verticalVelocity;
+          verticalVelocity += gravity;
+
+          if (characterGroup.position.y <= supportY) {
+            characterGroup.position.y = supportY;
+            isGrounded = true;
+            verticalVelocity = 0;
+          }
+        } else {
+          characterGroup.position.y = supportY;
+        }
+
+        // 4. Animação dos Membros do Jogador
+        if (isMoving) {
+          walkCycle += delta * (gamePhase === 2 ? 9 : 12);
+          const swingAngle = Math.sin(walkCycle) * 0.6;
+          legLeftGroup.rotation.x = swingAngle;
+          legRightGroup.rotation.x = -swingAngle;
+          armLeftGroup.rotation.x = -swingAngle * 0.85;
+          armRightGroup.rotation.x = swingAngle * 0.85;
+          torso.position.y = 1.35 + Math.abs(Math.sin(walkCycle * 2)) * 0.05;
+          head.rotation.z = Math.sin(walkCycle) * 0.03;
+        }
+
+        // 5. Animação e Coleta dos 5 Itens ("Dica 1" ... "Dica 5")
+        for (let i = 0; i < collectibleEntities.length; i++) {
+          const item = collectibleEntities[i];
+          if (item.collected || !item.mesh.visible) continue;
+          if (item.cooldown > 0) item.cooldown -= delta;
+
+          item.mesh.rotation.y += delta * 2.0;
+          item.mesh.position.y = Math.sin(time * 3 + i) * 0.18;
+
+          if (item.cooldown <= 0) {
+            const dist = Math.hypot(
+              characterGroup.position.x - item.mesh.position.x,
+              characterGroup.position.z - item.mesh.position.z
+            );
+            if (dist < 1.55) {
+              openItemQuestionModal(item);
+              break;
+            }
+          }
+        }
+
+        // 6. IA e Movimento dos Inimigos Vermelhos (mais lentos)
+        const enemySpeed = gamePhase === 1 ? 0.095 : 0.065;
+        const safeMargin = 3.0;
+        const innerLimit = CITY_LIMIT - safeMargin;
+
+        for (let i = 0; i < enemyEntities.length; i++) {
+          const enemy = enemyEntities[i];
+          if (enemy.defeated || enemy.explodingPending) continue;
+
+          const ePos = enemy.rig.group.position;
+          const toPlayerX = characterGroup.position.x - ePos.x;
+          const toPlayerZ = characterGroup.position.z - ePos.z;
+          const distToPlayer = Math.hypot(toPlayerX, toPlayerZ);
+
+          if (gamePhase === 1) {
+            if (distToPlayer < 22 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(toPlayerX, toPlayerZ);
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 3.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          } else {
+            if (distToPlayer < 32 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(-toPlayerX, -toPlayerZ) + enemy.turnBias * 0.35;
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 4.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          }
+
+          let dirEX = Math.sin(enemy.angle);
+          let dirEZ = Math.cos(enemy.angle);
+          let nextEX = ePos.x + dirEX * enemySpeed;
+          let nextEZ = ePos.z + dirEZ * enemySpeed;
+
+          let hitWallBorder = false;
+          if (nextEX >= innerLimit) {
+            nextEX = innerLimit - 0.3;
+            dirEX = -Math.abs(dirEX);
+            hitWallBorder = true;
+          } else if (nextEX <= -innerLimit) {
+            nextEX = -innerLimit + 0.3;
+            dirEX = Math.abs(dirEX);
+            hitWallBorder = true;
+          }
+
+          if (nextEZ >= innerLimit) {
+            nextEZ = innerLimit - 0.3;
+            dirEZ = -Math.abs(dirEZ);
+            hitWallBorder = true;
+          } else if (nextEZ <= -innerLimit) {
+            nextEZ = -innerLimit + 0.3;
+            dirEZ = Math.abs(dirEZ);
+            hitWallBorder = true;
+          }
+
+          if (hitWallBorder) {
+            const toCenterX = -ePos.x;
+            const toCenterZ = -ePos.z;
+            const centerLen = Math.hypot(toCenterX, toCenterZ) || 1;
+            dirEX = dirEX * 0.6 + (toCenterX / centerLen) * 0.4;
+            dirEZ = dirEZ * 0.6 + (toCenterZ / centerLen) * 0.4;
+            enemy.angle = Math.atan2(dirEX, dirEZ);
+            enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+            nextEX = ePos.x + Math.sin(enemy.angle) * enemySpeed;
+            nextEZ = ePos.z + Math.cos(enemy.angle) * enemySpeed;
+          }
+
+          const resolvedE = resolveHorizontalCollisions(nextEX, nextEZ, 0);
+
+          if (Math.hypot(resolvedE.x - nextEX, resolvedE.z - nextEZ) > 0.05) {
+            enemy.angle += enemy.turnBias * Math.PI * 0.9;
+          }
+
+          ePos.x = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.x));
+          ePos.z = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.z));
+          enemy.rig.group.rotation.y = enemy.angle;
+
+          enemy.walkCycle += delta * 10;
+          const eSwing = Math.sin(enemy.walkCycle) * 0.55;
+          enemy.rig.legLeftGroup.rotation.x = eSwing;
+          enemy.rig.legRightGroup.rotation.x = -eSwing;
+          enemy.rig.armLeftGroup.rotation.x = -eSwing * 0.85;
+          enemy.rig.armRightGroup.rotation.x = eSwing * 0.85;
+
+          if (gamePhase === 1 && distToPlayer < 1.05) {
+            const teleportSpot = getRandomFreeSpot(35);
+            characterGroup.position.set(teleportSpot.x, 0, teleportSpot.z);
+            showToast("Comanda para a professora: Um boneco vermelho encostou no personagem! Avise o estudante que ele mudou de lugar na cidade.");
+            break;
+          }
+        }
+
+        // 7. Movimento e Colisão da esfera vermelha (Fase 2)
+        const projSpeed = 1.05;
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const proj = projectiles[i];
+          proj.mesh.position.x += proj.dirX * projSpeed;
+          proj.mesh.position.z += proj.dirZ * projSpeed;
+          proj.traveled += projSpeed;
+
+          let hitEnemy = null;
+          for (let j = 0; j < enemyEntities.length; j++) {
+            const enemy = enemyEntities[j];
+            if (enemy.defeated || enemy.explodingPending) continue;
+            const d = Math.hypot(
+              proj.mesh.position.x - enemy.rig.group.position.x,
+              proj.mesh.position.z - enemy.rig.group.position.z
+            );
+            if (d < 1.65) {
+              hitEnemy = enemy;
+              break;
+            }
+          }
+
+          if (hitEnemy) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+            openEnemyExamModal(hitEnemy);
+            break;
+          }
+
+          if (proj.traveled >= proj.maxDistance) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+          }
+        }
+      }
+
+      // 8. Partículas da explosão
+      for (let i = explosionParticles.length - 1; i >= 0; i--) {
+        const pt = explosionParticles[i];
+        pt.mesh.position.x += pt.vx;
+        pt.mesh.position.y += pt.vy;
+        pt.mesh.position.z += pt.vz;
+        pt.vy -= 0.008;
+        pt.life -= delta * 1.4;
+        pt.mesh.material.opacity = Math.max(0, pt.life);
+
+        if (pt.life <= 0) {
+          scene.remove(pt.mesh);
+          pt.mesh.material.dispose();
+          explosionParticles.splice(i, 1);
+        }
+      }
+
+      // 9. Câmera de Terceira Pessoa
+      const camOffsetX = Math.sin(characterAngle) * -cameraDistance;
+      const camOffsetZ = Math.cos(characterAngle) * -cameraDistance;
+      const targetCamX = characterGroup.position.x + camOffsetX;
+      const targetCamY = characterGroup.position.y + cameraHeight;
+      const targetCamZ = characterGroup.position.z + camOffsetZ;
+
+      camera.position.x += (targetCamX - camera.position.x) * 0.16;
+      camera.position.y += (targetCamY - camera.position.y) * 0.16;
+      camera.position.z += (targetCamZ - camera.position.z) * 0.16;
+      camera.lookAt(
+        characterGroup.position.x,
+        characterGroup.position.y + cameraTargetHeight,
+        characterGroup.position.z
+      );
+
+      // 10. Transparência de objetos entre câmera e personagem
+      updateCameraOcclusion();
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.onload = () => {
+      animate();
+    };
+  </script>
+</body>
+</html>
