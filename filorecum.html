@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Filósofo Grego 3D - A Sociedade Hipermoderna</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #7dd3fc;
+      touch-action: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .dpad-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(245, 158, 11, 0.7);
+      backdrop-filter: blur(8px);
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.1s ease;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: #f59e0b;
+      color: #0f172a;
+      transform: scale(0.92);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+    }
+    .jump-btn {
+      background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+      border: 1.5px solid #fef08a;
+      color: #0f172a;
+      border-radius: 50%;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    }
+    .jump-btn:active {
+      transform: scale(0.9);
+      box-shadow: 0 0 18px rgba(254, 240, 138, 0.9);
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- Tela Inicial -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-fire"></i>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Coloque seu nome abaixo para jogar o Filo Fire!
+      </h2>
+      <div>
+        <input
+          id="player-name-input"
+          type="text"
+          placeholder="Digite seu nome aqui..."
+          class="w-full px-4 py-3 rounded-xl bg-slate-800 border-2 border-slate-600 focus:border-amber-400 focus:outline-none text-white text-center font-semibold text-base"
+        />
+      </div>
+      <button id="btn-start-game" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Começar
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas principal 3D -->
+  <div id="canvas-container"></div>
+
+  <!-- Interface HUD do Jogo -->
+  <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+
+    <!-- Topo: Status da Fase centralizado -->
+    <div class="flex items-start justify-center w-full">
+      <div id="phase-badge" class="bg-slate-900/85 border border-amber-400/60 text-amber-300 px-4 py-2 rounded-xl text-sm sm:text-base font-bold shadow-lg text-center">
+        Colete a dica 1. Cuidado com os inimigos!
+      </div>
+    </div>
+
+    <!-- Rodapé e Controle Virtual (apenas direção e botão Jogue no meio na Fase 2) -->
+    <div class="max-w-sm mx-auto w-full pointer-events-auto">
+      
+      <!-- Controle Físico Compacto -->
+      <div id="dpad-container" class="grid grid-cols-3 gap-1.5 w-36 h-14 mx-auto p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700/80 shadow-2xl">
+        <button id="btn-left" class="dpad-btn text-xs" title="Girar Esquerda (A / Seta Esq)">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <div id="center-slot" class="flex items-center justify-center">
+          <button id="btn-throw" class="hidden dpad-btn jump-btn w-full h-full text-[9px] flex-col gap-0" title="Lançar Esfera (Espaço)">
+            <i class="fa-solid fa-bolt text-xs"></i>
+            <span>Jogue</span>
+          </button>
+        </div>
+        <button id="btn-right" class="dpad-btn text-xs" title="Girar Direita (D / Seta Dir)">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Banner rápido de feedback / transição -->
+  <div id="toast-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-4 py-2 rounded-xl shadow-2xl text-xs sm:text-sm font-bold text-center max-w-md pointer-events-none"></div>
+
+  <!-- Modal de Transição para a Fase 2 -->
+  <div id="modal-phase2-intro" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-bolt"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-amber-300 leading-snug">
+        O jogo virou! Persiga os inimigos!
+      </h2>
+      <button id="btn-proceed-phase2" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Prosseguir
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Leitura e Pergunta (Fase 1 e Fase 2) -->
+  <div id="modal-question" class="hidden fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div id="modal-q-header" class="px-5 py-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between gap-2">
+        <span id="modal-q-badge" class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">
+          Leitura Filosófica
+        </span>
+        <span id="modal-q-subtitle" class="text-xs text-slate-300 font-semibold truncate">A Reflexão Ética</span>
+        <span id="modal-q-timer" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap">
+          <i class="fa-regular fa-clock mr-1"></i>20s
+        </span>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Dica correspondente (exibida no mesmo bloco de rolagem da questão na Fase 2) -->
+        <div id="modal-q-tips-box" class="hidden bg-slate-950/80 border border-amber-400/50 rounded-xl p-3.5">
+          <div id="modal-q-tips-list" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <!-- Texto base / enunciado -->
+        <div id="modal-q-text" class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 text-sm sm:text-base leading-relaxed text-slate-100"></div>
+
+        <!-- Pergunta -->
+        <p id="modal-q-prompt" class="font-bold text-amber-300 text-sm sm:text-base"></p>
+
+        <!-- Alternativas -->
+        <div id="modal-q-options" class="space-y-2.5"></div>
+
+        <!-- Feedback -->
+        <div id="modal-q-feedback" class="hidden rounded-xl p-3.5 text-sm font-semibold"></div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-800 border-t border-slate-700 flex justify-end">
+        <button id="btn-continue-game" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-sm shadow-lg transition">
+          CONTINUAR JOGO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Vitória Final -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 id="victory-message" class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Parabéns, Jogador! Mostre esta tela para o professor e receba o seu ponto!
+      </h2>
+      <button onclick="location.reload()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-sm shadow-lg transition">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONFIGURAÇÕES INICIAIS (CENÁRIO DIURNO)
+    // ==========================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    
+    // Céu de dia vibrante e neblina atmosférica clara
+    const skyColor = new THREE.Color(0x87ceeb);
+    scene.background = skyColor;
+    scene.fog = new THREE.Fog(0xbae6fd, 85, 320);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 450);
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", stencil: false, depth: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    container.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 2. ILUMINAÇÃO SOLAR (DIA)
+    // ==========================================
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x64748b, 0.8);
+    hemiLight.position.set(0, 100, 0);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+    sunLight.position.set(80, 140, 65);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 512;
+    sunLight.shadow.mapSize.height = 512;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 360;
+    const d = 145;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    // ==========================================
+    // 3. ESTRUTURAS DE COLISÃO E TRANSPARÊNCIA
+    // ==========================================
+    const colliders = [];          // Objetos sólidos com física (caixas AABB)
+    const occludableMeshes = [];   // Malhas que podem ficar transparentes
+
+    // Cenário 2x maior
+    const CITY_LIMIT = 136;
+
+    // Cache de texturas de fachada para evitar recriar canvas idênticos na GPU
+    const wallTextureCache = new Map();
+    const sharedRoofMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    function getCachedWallTexture(hexStr, wallW, wallH, hasDoor) {
+      const key = `${hexStr}_${wallW}_${wallH}_${hasDoor}`;
+      if (wallTextureCache.has(key)) return wallTextureCache.get(key);
+
+      const canvas = document.createElement('canvas');
+      const pxPerUnit = 12; // Resolução otimizada para memória de vídeo e fluidez
+      canvas.width = Math.max(64, Math.round(wallW * pxPerUnit));
+      canvas.height = Math.max(64, Math.round(wallH * pxPerUnit));
+      const ctx = canvas.getContext('2d');
+
+      // Cor base da parede
+      ctx.fillStyle = hexStr;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Friso / Rodapé arquitetônico
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+      ctx.fillRect(0, canvas.height - 14, canvas.width, 14);
+      ctx.fillRect(0, 0, canvas.width, 8);
+
+      // Janelas
+      const cols = Math.max(2, Math.floor(wallW / 2.4));
+      const isLowHouse = wallH <= 4.0;
+      const rows = isLowHouse ? 1 : Math.max(2, Math.floor((wallH - 3.5) / 3.0));
+      const padX = canvas.width / cols;
+      const topAreaH = isLowHouse ? canvas.height * 0.65 : canvas.height - 3.6 * pxPerUnit;
+      const padY = topAreaH / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (isLowHouse && hasDoor && c === Math.floor(cols / 2)) continue;
+
+          const wx = c * padX + padX * 0.24;
+          const wy = (isLowHouse ? canvas.height * 0.28 : 12) + r * padY + padY * 0.16;
+          const ww = padX * 0.52;
+          const wh = Math.min(padY * 0.62, canvas.height * 0.38);
+
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(wx - 1.5, wy - 1.5, ww + 3, wh + 3);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(wx, wy, ww, wh);
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillRect(wx + 1.5, wy + 1.5, ww * 0.35, wh - 3);
+        }
+      }
+
+      // Porta no térreo
+      if (hasDoor) {
+        const doorW = Math.min(canvas.width * 0.24, 1.6 * pxPerUnit);
+        const doorH = Math.min(canvas.height * 0.68, 2.5 * pxPerUnit);
+        const doorX = (canvas.width - doorW) / 2;
+        const doorY = canvas.height - doorH;
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(doorX - 3, doorY - 3, doorW + 6, doorH + 3);
+
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(doorX, doorY, doorW, doorH);
+
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(doorX + doorW * 0.18, doorY + doorH * 0.12, doorW * 0.64, doorH * 0.42);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(doorX + doorW * 0.78, doorY + doorH * 0.58, 3, 7);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      wallTextureCache.set(key, tex);
+      return tex;
+    }
+
+    // Gera materiais de fachada individuais por prédio (para transparência individual sem duplicar texturas)
+    function createBuildingMaterials(baseColorHex, width, height, depth) {
+      const hexStr = '#' + new THREE.Color(baseColorHex).getHexString();
+
+      const sideTex = getCachedWallTexture(hexStr, depth, height, false);
+      const frontTex = getCachedWallTexture(hexStr, width, height, true);
+
+      const sideMat = new THREE.MeshStandardMaterial({
+        map: sideTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+      const frontMat = new THREE.MeshStandardMaterial({
+        map: frontTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      return [sideMat, sideMat, sharedRoofMat, sharedRoofMat, frontMat, frontMat];
+    }
+
+    // Função auxiliar para criar qualquer bloco sólido da cidade
+    function createSolidBox(x, y, z, w, h, d, colorHex, options = {}) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mat = options.isBuilding
+        ? createBuildingMaterials(colorHex, w, h, d)
+        : new THREE.MeshStandardMaterial({
+            color: colorHex,
+            roughness: options.roughness ?? 0.7,
+            metalness: options.metalness ?? 0.1,
+            transparent: options.occludable !== false,
+            opacity: 1.0
+          });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y + h / 2, z);
+      mesh.castShadow = options.castShadow !== false;
+      mesh.receiveShadow = options.receiveShadow !== false;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      scene.add(mesh);
+
+      if (options.occludable !== false) {
+        occludableMeshes.push(mesh);
+      }
+
+      const collider = {
+        mesh: mesh,
+        minX: x - w / 2,
+        maxX: x + w / 2,
+        minY: y,
+        maxY: y + h,
+        minZ: z - d / 2,
+        maxZ: z + d / 2
+      };
+
+      colliders.push(collider);
+      return collider;
+    }
+
+    // ==========================================
+    // 4. CONSTRUÇÃO DA CIDADE E HORIZONTE
+    // ==========================================
+    
+    // Chão principal (300x300)
+    const groundGeo = new THREE.PlaneGeometry(300, 300);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    ground.matrixAutoUpdate = false;
+    ground.updateMatrix();
+    scene.add(ground);
+
+    const roadPositions = [-90, -45, 0, 45, 90];
+
+    // Malha de Ruas sem linhas amarelas
+    function createCityRoads() {
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+
+      const geoNS = new THREE.PlaneGeometry(11, 272);
+      const geoLO = new THREE.PlaneGeometry(272, 11);
+
+      roadPositions.forEach(pos => {
+        const rNS = new THREE.Mesh(geoNS, roadMat);
+        rNS.rotation.x = -Math.PI / 2;
+        rNS.position.set(pos, 0.01, 0);
+        rNS.receiveShadow = true;
+        rNS.matrixAutoUpdate = false;
+        rNS.updateMatrix();
+        scene.add(rNS);
+
+        const rLO = new THREE.Mesh(geoLO, roadMat);
+        rLO.rotation.x = -Math.PI / 2;
+        rLO.position.set(0, 0.012, pos);
+        rLO.receiveShadow = true;
+        rLO.matrixAutoUpdate = false;
+        rLO.updateMatrix();
+        scene.add(rLO);
+      });
+    }
+    createCityRoads();
+
+    // Muros de Limite da Cidade
+    function createCityBoundaries() {
+      const wallHeight = 5.0;
+      const wallThickness = 2.5;
+      const span = CITY_LIMIT * 2 + wallThickness;
+      const wallColor = 0x94a3b8;
+
+      createSolidBox(0, 0, -CITY_LIMIT - 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(0, 0, CITY_LIMIT + 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(-CITY_LIMIT - 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(CITY_LIMIT + 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+    }
+    createCityBoundaries();
+
+    // Horizonte da Cidade mesclado em 1 única malha
+    function createCityHorizon() {
+      const palette = [
+        new THREE.Color(0x94a3b8),
+        new THREE.Color(0x64748b),
+        new THREE.Color(0xcbd5e1),
+        new THREE.Color(0x7dd3fc),
+        new THREE.Color(0xe2e8f0)
+      ];
+      const farColor = new THREE.Color(0xb0c4de);
+
+      const positions = [];
+      const normals = [];
+      const colors = [];
+      const indices = [];
+      let vertexOffset = 0;
+
+      function appendBox(bx, by, bz, bw, bh, bd, colorObj) {
+        const boxGeo = new THREE.BoxGeometry(bw, bh, bd);
+        boxGeo.translate(bx, by, bz);
+        const nonIndexed = boxGeo.index ? boxGeo.toNonIndexed() : boxGeo;
+        const posAttr = nonIndexed.attributes.position;
+        const normAttr = nonIndexed.attributes.normal;
+
+        for (let i = 0; i < posAttr.count; i++) {
+          positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+          normals.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i));
+          colors.push(colorObj.r, colorObj.g, colorObj.b);
+          indices.push(vertexOffset++);
+        }
+        boxGeo.dispose();
+        if (nonIndexed !== boxGeo) nonIndexed.dispose();
+      }
+
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+        const dist = 165 + (Math.sin(angle * 7) * 20 + 20);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bw = 12 + Math.abs(Math.cos(angle * 5)) * 14;
+        const bd = 12 + Math.abs(Math.sin(angle * 3)) * 14;
+        const bh = 30 + Math.abs(Math.sin(angle * 11)) * 60;
+        const col = palette[Math.floor(Math.abs(Math.sin(angle * 13)) * palette.length)];
+        appendBox(bx, bh / 2 - 1, bz, bw, bh, bd, col);
+      }
+
+      for (let angle = 0.04; angle < Math.PI * 2; angle += 0.11) {
+        const dist = 225 + (Math.cos(angle * 5) * 25 + 25);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bh = 60 + Math.abs(Math.cos(angle * 9)) * 75;
+        appendBox(bx, bh / 2 - 1, bz, 22, bh, 22, farColor);
+      }
+
+      const mergedGeo = new THREE.BufferGeometry();
+      mergedGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      mergedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      mergedGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      mergedGeo.setIndex(indices);
+
+      const mergedMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.7
+      });
+
+      const horizonMesh = new THREE.Mesh(mergedGeo, mergedMat);
+      horizonMesh.matrixAutoUpdate = false;
+      horizonMesh.updateMatrix();
+      scene.add(horizonMesh);
+    }
+    createCityHorizon();
+
+    // ==========================================
+    // 5. PRÉDIOS DA CIDADE
+    // ==========================================
+    function populateCity() {
+      const buildingCoords = [
+        // Anel Interno
+        { x: -24, z: -24, w: 12, h: 18, d: 12, c: 0xe2e8f0 },
+        { x: 24,  z: -24, w: 12, h: 22, d: 12, c: 0xcbd5e1 },
+        { x: -24, z: 24,  w: 12, h: 16, d: 12, c: 0xf1f5f9 },
+        { x: 24,  z: 24,  w: 12, h: 20, d: 12, c: 0x94a3b8 },
+
+        // Anel Médio
+        { x: -68, z: -24, w: 14, h: 24, d: 12, c: 0xe2e8f0 },
+        { x: 68,  z: -24, w: 14, h: 20, d: 12, c: 0xcbd5e1 },
+        { x: -68, z: 24,  w: 14, h: 19, d: 12, c: 0xf8fafc },
+        { x: 68,  z: 24,  w: 14, h: 26, d: 12, c: 0x94a3b8 },
+        { x: -24, z: -68, w: 12, h: 21, d: 14, c: 0xcbd5e1 },
+        { x: 24,  z: -68, w: 12, h: 25, d: 14, c: 0xe2e8f0 },
+        { x: -24, z: 68,  w: 12, h: 18, d: 14, c: 0xf1f5f9 },
+        { x: 24,  z: 68,  w: 12, h: 23, d: 14, c: 0xcbd5e1 },
+        { x: -68, z: -68, w: 14, h: 28, d: 14, c: 0x94a3b8 },
+        { x: 68,  z: -68, w: 14, h: 24, d: 14, c: 0xe2e8f0 },
+        { x: -68, z: 68,  w: 14, h: 22, d: 14, c: 0xcbd5e1 },
+        { x: 68,  z: 68,  w: 14, h: 27, d: 14, c: 0xf1f5f9 },
+
+        // Anel Externo
+        { x: -112, z: -112, w: 16, h: 30, d: 16, c: 0xe2e8f0 },
+        { x: -68,  z: -112, w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+        { x: -24,  z: -112, w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 24,   z: -112, w: 15, h: 28, d: 15, c: 0xf1f5f9 },
+        { x: 68,   z: -112, w: 15, h: 22, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: -112, w: 16, h: 32, d: 16, c: 0xcbd5e1 },
+
+        { x: -112, z: -68,  w: 15, h: 25, d: 15, c: 0xf8fafc },
+        { x: 112,  z: -68,  w: 15, h: 27, d: 15, c: 0x94a3b8 },
+        { x: -112, z: -24,  w: 15, h: 21, d: 15, c: 0xcbd5e1 },
+        { x: 112,  z: -24,  w: 15, h: 23, d: 15, c: 0xe2e8f0 },
+        { x: -112, z: 24,   w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 24,   w: 15, h: 20, d: 15, c: 0xf1f5f9 },
+        { x: -112, z: 68,   w: 15, h: 29, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: 68,   w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+
+        { x: -112, z: 112,  w: 16, h: 31, d: 16, c: 0x94a3b8 },
+        { x: -68,  z: 112,  w: 15, h: 23, d: 15, c: 0xf1f5f9 },
+        { x: -24,  z: 112,  w: 15, h: 27, d: 15, c: 0xe2e8f0 },
+        { x: 24,   z: 112,  w: 15, h: 25, d: 15, c: 0xcbd5e1 },
+        { x: 68,   z: 112,  w: 15, h: 28, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 112,  w: 16, h: 30, d: 16, c: 0xe2e8f0 }
+      ];
+
+      buildingCoords.forEach(b => {
+        createSolidBox(b.x, 0, b.z, b.w, b.h, b.d, b.c, { isBuilding: true, receiveShadow: false });
+      });
+
+      // Atualiza o mapa de sombras estático dos prédios uma única vez
+      renderer.shadowMap.needsUpdate = true;
+    }
+    populateCity();
+
+    // ==========================================
+    // 6. PERSONAGEM FILÓSOFO GREGO E INIMIGOS
+    // ==========================================
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+    const darkGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.6 });
+    const redBodyMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.6 });
+
+    // Geometrias compartilhadas entre jogador e todos os inimigos para máxima performance
+    const sharedTorsoGeo = new THREE.BoxGeometry(0.7, 1.1, 0.4);
+    const sharedHeadGeo = new THREE.SphereGeometry(0.28, 12, 12);
+    const sharedEyeMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+    const sharedEyeGeo = new THREE.SphereGeometry(0.035, 6, 6);
+    const sharedSmileGeo = new THREE.TorusGeometry(0.08, 0.015, 5, 10, Math.PI);
+    const sharedArmGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18);
+    sharedArmGeo.translate(0, -0.375, 0);
+    const sharedLegGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22);
+    sharedLegGeo.translate(0, -0.475, 0);
+
+    function createPhiMaterials(hexColor, baseMat) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = hexColor;
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 80px "Times New Roman", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Φ', 64, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const frontBackMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+      return [baseMat, baseMat, baseMat, baseMat, frontBackMat, frontBackMat];
+    }
+
+    const playerTorsoMats = createPhiMaterials('#064e3b', darkGreenMat);
+    const enemyTorsoMats = createPhiMaterials('#b91c1c', redBodyMat);
+
+    function buildCharacterRig(torsoMaterials) {
+      const group = new THREE.Group();
+      const torsoHeight = 1.1;
+      const torso = new THREE.Mesh(sharedTorsoGeo, torsoMaterials);
+      torso.position.y = 1.35;
+      group.add(torso);
+
+      const headRadius = 0.28;
+      const head = new THREE.Mesh(sharedHeadGeo, whiteMat);
+      head.position.y = torsoHeight / 2 + headRadius + 0.05;
+      torso.add(head);
+
+      const eyeLeft = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeLeft.position.set(-0.1, 0.05, 0.24);
+      head.add(eyeLeft);
+
+      const eyeRight = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeRight.position.set(0.1, 0.05, 0.24);
+      head.add(eyeRight);
+
+      const smile = new THREE.Mesh(sharedSmileGeo, sharedEyeMat);
+      smile.position.set(0, -0.06, 0.24);
+      smile.rotation.x = Math.PI;
+      head.add(smile);
+
+      const armLeftGroup = new THREE.Group();
+      armLeftGroup.position.set(0.48, torsoHeight / 2 + 0.1, 0);
+      const armLeft = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armLeftGroup.add(armLeft);
+      torso.add(armLeftGroup);
+
+      const armRightGroup = new THREE.Group();
+      armRightGroup.position.set(-0.48, torsoHeight / 2 + 0.1, 0);
+      const armRight = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armRightGroup.add(armRight);
+      torso.add(armRightGroup);
+
+      const legLeftGroup = new THREE.Group();
+      legLeftGroup.position.set(0.18, -torsoHeight / 2, 0);
+      const legLeft = new THREE.Mesh(sharedLegGeo, blackMat);
+      legLeftGroup.add(legLeft);
+      torso.add(legLeftGroup);
+
+      const legRightGroup = new THREE.Group();
+      legRightGroup.position.set(-0.18, -torsoHeight / 2, 0);
+      const legRight = new THREE.Mesh(sharedLegGeo, blackMat);
+      legRightGroup.add(legRight);
+      torso.add(legRightGroup);
+
+      return { group, torso, head, armLeftGroup, armRightGroup, legLeftGroup, legRightGroup };
+    }
+
+    const playerRig = buildCharacterRig(playerTorsoMats);
+    const characterGroup = playerRig.group;
+    const torso = playerRig.torso;
+    const head = playerRig.head;
+    const armLeftGroup = playerRig.armLeftGroup;
+    const armRightGroup = playerRig.armRightGroup;
+    const legLeftGroup = playerRig.legLeftGroup;
+    const legRightGroup = playerRig.legRightGroup;
+    scene.add(characterGroup);
+
+    // ==========================================
+    // 6B. CONTEÚDO PEDAGÓGICO (5 DICAS E 5 QUESTÕES - NÍVEL FÁCIL)
+    // ==========================================
+    const CARTESIAN_ITEMS = [
+      {
+        id: 1,
+        title: "1. O que é Reflexão Ética?",
+        readingText: "No dia a dia, muitas vezes agimos por hábito, costume ou medo de punição, sem pensar no motivo. A reflexão ética serve para parar, pensar com a razão e avaliar se uma atitude é realmente certa ou errada.",
+        verificationVersions: [
+          {
+            checkQuestion: "Para que serve a reflexão ética nas nossas atitudes?",
+            options: [
+              "Para seguir qualquer regra sem nunca questionar.",
+              "Para pensar com a razão e avaliar o que é certo ou errado.",
+              "Para agir sempre por medo de receber uma punição."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "O que acontece quando agimos sem fazer uma reflexão ética?",
+            options: [
+              "Tomamos sempre as decisões mais justas e pensadas.",
+              "Usamos apenas a razão para avaliar todas as escolhas.",
+              "Agimos por hábito, costume ou medo de sermos punidos."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Como a reflexão ética ajuda a explicar nossas ações?",
+            options: [
+              "Ela ajuda a entender nossos motivos e justificar nossas escolhas.",
+              "Ela faz com que a gente nunca precise pensar antes de agir.",
+              "Ela obriga todos a copiarem os hábitos antigos da turma."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 1 — Reflexão ética: É parar para pensar com a razão, entender nossos motivos e avaliar se uma ação é certa ou errada, em vez de agir só por hábito ou medo."
+      },
+      {
+        id: 2,
+        title: "2. Autonomia e Igualdade",
+        readingText: "Segundo o filósofo Renato Janine Ribeiro, ser ético exige autonomia, que significa 'dar a si próprio a própria lei' e decidir de forma consciente. Porém, autonomia não é egoísmo: a ética exige igualdade e respeito a todos os envolvidos.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que significa ter autonomia na ética?",
+            options: [
+              "Decidir por si mesmo com consciência e respeitando os outros.",
+              "Fazer apenas o que traz vantagem pessoal sem ligar para ninguém.",
+              "Obedecer às ordens sem pensar nas consequências dos atos."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Por que criar uma regra só para benefício próprio não é ético?",
+            options: [
+              "Porque a ética exige que ninguém tome suas próprias decisões.",
+              "Porque toda pessoa ética deve agir sempre por egoísmo.",
+              "Porque a ética se baseia na igualdade e no respeito aos outros."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Como a reflexão ética se relaciona com a autonomia?",
+            options: [
+              "Ela diminui nossa liberdade de escolher com consciência.",
+              "Ela nos torna mais autônomos, guiando a conduta pela razão.",
+              "Ela impede que cada pessoa pense por conta própria."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 2 — Autonomia e igualdade: Autonomia é governar-se com consciência pela razão, sem egoísmo, considerando todos os envolvidos com igualdade."
+      },
+      {
+        id: 3,
+        title: "3. Ética das Virtudes (Aristóteles)",
+        readingText: "Na Ética a Nicômaco, Aristóteles ensina que a felicidade (eudaimonia) vem de agir com virtude. Para ele, a virtude é o 'justo meio', ou seja, o equilíbrio entre dois extremos: a falta e o excesso.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que é a virtude segundo o filósofo Aristóteles?",
+            options: [
+              "Agir sempre pelo extremo da raiva ou do medo.",
+              "Buscar apenas o resultado final sem cuidar dos meios.",
+              "Encontrar o justo meio, o equilíbrio entre falta e excesso."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Para Aristóteles, como alcançamos a verdadeira felicidade (eudaimonia)?",
+            options: [
+              "Agindo com virtude, equilíbrio e excelência de caráter.",
+              "Fazendo tudo sem pensar no momento certo ou no motivo.",
+              "Exagerando em todas as atitudes para chamar atenção."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "O que significa agir no 'justo meio'?",
+            options: [
+              "Nunca tomar nenhuma atitude diante de um problema.",
+              "Agir na medida certa, evitando tanto a falta quanto o excesso.",
+              "Fazer exatamente o oposto do que diz a sabedoria prática."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 3 — Ética das virtudes (Aristóteles): A virtude é o 'justo meio' (equilíbrio entre falta e excesso), agindo da maneira certa para alcançar a felicidade."
+      },
+      {
+        id: 4,
+        title: "4. Ética Utilitarista",
+        readingText: "Pensadores como Jeremy Bentham e John Stuart Mill defendem o utilitarismo. Nesse modelo, uma ação é boa quando traz o maior bem e a maior felicidade para o maior número de pessoas, avaliando as consequências dos atos.",
+        verificationVersions: [
+          {
+            checkQuestion: "Como a ética utilitarista avalia se uma ação é correta?",
+            options: [
+              "Olhando apenas para o interesse de uma única pessoa.",
+              "Pelas consequências, buscando o bem para o maior número.",
+              "Ignorando totalmente os efeitos que a ação vai causar."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Qual é o objetivo principal do utilitarismo?",
+            options: [
+              "Aumentar a felicidade e reduzir o sofrimento da maioria.",
+              "Seguir regras fixas mesmo que causem dor a todos.",
+              "Garantir prazer apenas para quem pratica a ação."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "No utilitarismo de Stuart Mill, a felicidade que importa é:",
+            options: [
+              "Apenas a satisfação pessoal de quem tomou a decisão.",
+              "Somente o lucro financeiro obtido com uma escolha.",
+              "O bem-estar coletivo de todos os envolvidos na situação."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 4 — Ética utilitarista: Avalia as ações pelas suas consequências, buscando gerar a maior felicidade e reduzir o sofrimento para o maior número de pessoas."
+      },
+      {
+        id: 5,
+        title: "5. Ética Deontológica (Kant)",
+        readingText: "Na ética deontológica, o mais importante é o dever e a intenção correta, não as consequências. O filósofo Kant criou o imperativo categórico: só aja de um modo que você possa querer que vire uma lei universal para todos.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que a ética deontológica prioriza ao julgar uma ação?",
+            options: [
+              "As vantagens materiais que a ação traz no final.",
+              "O desejo pessoal de cada um acima de qualquer regra.",
+              "O dever, a boa intenção e princípios morais universais."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "O que diz o princípio universal de Kant (imperativo categórico)?",
+            options: [
+              "Aja apenas de um jeito que possa valer como lei para todos.",
+              "Minta sempre que isso trouxer algum benefício rápido.",
+              "Faça o que quiser desde que ninguém descubra o ato."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Por que devemos cumprir nossas promessas segundo Kant?",
+            options: [
+              "Apenas quando temos certeza de que vamos ganhar algo.",
+              "Porque se todos quebrassem promessas, ninguém confiaria.",
+              "Porque a ética deontológica só olha para as consequências."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 5 — Ética deontológica (Kant): Baseia-se no dever e na intenção racional; uma ação só é ética se puder se tornar uma lei universal para todos."
+      }
+    ];
+
+    // Questões finais (5 questões fáceis correspondentes às 5 dicas)
+    const EXAM_QUESTIONS = [
+      {
+        relatedTipIds: [1],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Na escola, um aluno vê colegas compartilhando ofensas na internet. Em vez de seguir o grupo por hábito ou medo de ficar de fora, ele para e pensa se aquilo é justo.",
+            question: "Essa atitude de parar e pensar com a razão antes de agir mostra:",
+            options: [
+              "obediência cega aos costumes da turma.",
+              "medo de sofrer alguma punição na escola.",
+              "uso da reflexão ética para avaliar a ação.",
+              "falta de interesse pelos problemas dos outros.",
+              "desejo de agir sem pensar nas consequências."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: obedecer sem pensar é agir por hábito ou convenção, o oposto da reflexão ética.",
+              "Errou: agir só por medo de punição não é reflexão ética.",
+              "",
+              "Errou: refletir eticamente mostra cuidado e responsabilidade com a situação.",
+              "Errou: a reflexão ética serve justamente para pensar antes de agir."
+            ]
+          },
+          {
+            statement: "Muitas vezes fazemos algo apenas porque todo mundo faz ou porque temos medo de levar bronca, sem perguntar se a atitude é realmente boa.",
+            question: "Para mudar isso e agir com consciência, a Filosofia propõe:",
+            options: [
+              "copiar sempre o comportamento da maioria.",
+              "evitar qualquer pergunta sobre nossos atos.",
+              "agir rápido sem analisar nossos motivos.",
+              "praticar a reflexão ética usando a razão.",
+              "seguir apenas o medo de receber castigos."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: copiar a maioria sem pensar é agir por convenção social.",
+              "Errou: a reflexão ética começa justamente quando questionamos nossas ações.",
+              "Errou: agir sem analisar os motivos leva a escolhas irrefletidas.",
+              "",
+              "Errou: o medo de punição não é um fundamento ético."
+            ]
+          },
+          {
+            statement: "Quando justificamos racionalmente por que uma atitude é correta ou incorreta, deixamos de agir no piloto automático.",
+            question: "Esse esforço de fundamentar nossas ações com a razão é chamado de:",
+            options: [
+              "reflexão ética.",
+              "hábito automático.",
+              "medo de punição.",
+              "convenção social.",
+              "ação impulsiva."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: o hábito automático é agir sem pensar.",
+              "Errou: o medo de punição não envolve justificar racionalmente o bem.",
+              "Errou: convenção social é apenas seguir costumes sem refletir.",
+              "Errou: ação impulsiva é o contrário de usar a razão."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [2],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "O filósofo Renato Janine Ribeiro explica que ser ético exige autonomia — 'dar a si próprio a própria lei' —, mas sempre respeitando o princípio da igualdade.",
+            question: "Sobre a relação entre reflexão ética e autonomia, é correto afirmar que:",
+            options: [
+              "a reflexão ética nos torna mais autônomos pelo uso da razão.",
+              "a autonomia permite criar regras egoístas só para si mesmo.",
+              "a reflexão ética diminui nossa liberdade de tomar decisões.",
+              "ser autônomo significa ignorar o direito das outras pessoas.",
+              "a ética proíbe que cada pessoa pense por conta própria."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: um código pessoal egoísta não é ético, pois fere a igualdade.",
+              "Errou: a reflexão ética aumenta nossa autonomia ao guiar a conduta pela razão.",
+              "Errou: a ética exige considerar todos os envolvidos com igualdade.",
+              "Errou: autonomia é justamente decidir por si mesmo de forma consciente."
+            ]
+          },
+          {
+            statement: "Um estudante decide criar suas próprias regras de convivência pensando apenas em levar vantagem sobre os colegas da sala.",
+            question: "Segundo Renato Janine Ribeiro, essa atitude não é ética porque:",
+            options: [
+              "ninguém tem o direito de pensar por si mesmo.",
+              "toda ética se baseia no princípio da igualdade.",
+              "a autonomia exige agir sempre com egoísmo.",
+              "as decisões éticas devem ser tomadas sem razão.",
+              "ser ético significa obedecer sem refletir."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: autonomia é justamente a capacidade de decidir por si mesmo.",
+              "",
+              "Errou: autonomia não é egoísmo; ela exige considerar os outros.",
+              "Errou: toda decisão ética precisa de reflexão racional.",
+              "Errou: a pessoa ética decide conscientemente, não por obediência cega."
+            ]
+          },
+          {
+            statement: "A palavra autonomia vem do grego e significa 'governar-se por suas próprias leis', exercendo liberdade com responsabilidade.",
+            question: "Na prática, uma pessoa age com autonomia ética quando:",
+            options: [
+              "faz o que bem entende sem pensar nos outros.",
+              "segue ordens sem avaliar se são justas ou não.",
+              "busca apenas benefícios próprios em qualquer lugar.",
+              "decide com consciência considerando todos os envolvidos.",
+              "deixa que outras pessoas escolham tudo por ela."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: agir sem pensar nos outros fere a responsabilidade ética.",
+              "Errou: seguir ordens sem refletir não é autonomia.",
+              "Errou: buscar só vantagem própria é egoísmo, não ética.",
+              "",
+              "Errou: deixar os outros escolherem tudo é o oposto de autonomia."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [3],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Na Ética a Nicômaco, Aristóteles afirma que a excelência moral não está nos extremos, mas em encontrar o equilíbrio adequado em cada situação.",
+            question: "Na ética das virtudes de Aristóteles, agir bem significa:",
+            options: [
+              "agir sempre com raiva ou excesso de emoção.",
+              "ignorar os meios usados para defender alguém.",
+              "olhar apenas para o lucro final da atitude.",
+              "buscar o justo meio entre a falta e o excesso.",
+              "evitar qualquer ação para nunca cometer erros."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: agir com excesso é uma deficiência moral para Aristóteles.",
+              "Errou: na ética das virtudes, os meios e a execução importam muito.",
+              "Errou: Aristóteles foca na excelência de caráter, não no lucro.",
+              "",
+              "Errou: o medo extremo que paralisa é uma falta de virtude."
+            ]
+          },
+          {
+            statement: "Na situação da escola, uma amiga quer defender o colega ofendido, mas pensa em expor publicamente os agressores na internet.",
+            question: "Pela ética das virtudes, a excelência moral dessa amiga depende:",
+            options: [
+              "apenas da vontade de se vingar rapidamente.",
+              "também de escolher meios equilibrados e justos.",
+              "de causar o maior escândalo possível na rede.",
+              "de agir no extremo da raiva sem refletir.",
+              "de copiar o mesmo erro feito pelos agressores."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: vingança é excesso e não expressa virtude.",
+              "",
+              "Errou: causar escândalo foge do equilíbrio do justo meio.",
+              "Errou: agir pela raiva é o oposto da sabedoria prática.",
+              "Errou: reproduzir a humilhação não é uma ação virtuosa."
+            ]
+          },
+          {
+            statement: "Para Aristóteles, a felicidade (eudaimonia) é alcançada quando realizamos nossas capacidades humanas segundo a virtude (areté).",
+            question: "Para agir com virtude no dia a dia, o agente deve:",
+            options: [
+              "agir do jeito certo, na hora certa e sem exageros.",
+              "escolher sempre o extremo da falta ou do excesso.",
+              "fazer tudo de qualquer maneira sem pensar nos meios.",
+              "seguir apenas regras que tragam vantagem própria.",
+              "deixar de lado a sabedoria prática nas escolhas."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: falta e excesso são dois extremos que devem ser evitados.",
+              "Errou: a virtude exige atenção à maneira certa de executar a ação.",
+              "Errou: a ética não se resume a vantagem egoísta.",
+              "Errou: a sabedoria prática é essencial para encontrar o justo meio."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [4],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Os filósofos Bentham e Stuart Mill defendem que devemos avaliar se uma atitude é correta observando os resultados que ela produz na vida das pessoas.",
+            question: "O modelo ético que se pauta pelas consequências da ação é chamado de:",
+            options: [
+              "ética das virtudes.",
+              "ética utilitarista.",
+              "ética deontológica.",
+              "ética aristotélica.",
+              "ética individualista."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: a ética das virtudes foca no caráter e no justo meio.",
+              "",
+              "Errou: a ética deontológica foca no dever e na intenção, não nas consequências.",
+              "Errou: a ética aristotélica é a ética das virtudes.",
+              "Errou: o utilitarismo busca o bem coletivo, não o individualismo."
+            ]
+          },
+          {
+            statement: "Antes de publicar uma denúncia nas redes sociais, um grupo avalia se aquela exposição vai diminuir o sofrimento ou gerar ainda mais brigas na escola.",
+            question: "Avaliar uma atitude pelos seus efeitos concretos e pelo bem coletivo segue a:",
+            options: [
+              "ética utilitarista, que busca o bem para a maioria.",
+              "ética deontológica, que ignora as consequências.",
+              "ética egoísta, que pensa só em quem faz a postagem.",
+              "ética das virtudes, focada só no justo meio.",
+              "obediência cega, que não avalia resultado nenhum."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: quem avalia os efeitos concretos usa o critério utilitarista.",
+              "Errou: o utilitarismo considera a felicidade de todos os envolvidos.",
+              "Errou: avaliar consequências para a maioria é próprio do utilitarismo.",
+              "Errou: o utilitarismo analisa justamente os resultados da ação."
+            ]
+          },
+          {
+            statement: "O Princípio da Máxima Felicidade, defendido por John Stuart Mill, orienta nossas escolhas morais na sociedade.",
+            question: "De acordo com esse princípio utilitarista, uma ação é moralmente boa quando:",
+            options: [
+              "traz prazer apenas para quem tomou a decisão.",
+              "aumenta o sofrimento da maioria das pessoas.",
+              "maximiza a felicidade para o maior número de pessoas.",
+              "despreza completamente os efeitos causados nos outros.",
+              "cumpre uma ordem sem olhar se ajuda alguém."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: Stuart Mill afirma que a felicidade não é apenas do próprio agente.",
+              "Errou: o utilitarismo busca reduzir o sofrimento, não aumentá-lo.",
+              "",
+              "Errou: as consequências sobre os outros são centrais no utilitarismo.",
+              "Errou: olhar para o dever sem ver resultados é deontologia."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [5],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Na ética deontológica de Kant, uma ação só é ética se pudermos querer que ela se torne uma lei universal seguida por todas as pessoas.",
+            question: "Segundo Kant, expor pessoas na internet como vingança não é ético porque:",
+            options: [
+              "se todos fizessem isso, haveria exposição e retaliação sem fim.",
+              "as consequências materiais são a única coisa que importa.",
+              "cada pessoa deve criar uma lei diferente só para si.",
+              "o dever moral permite humilhar os outros quando estamos bravos.",
+              "promessas e regras não precisam ser respeitadas por ninguém."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: a ética deontológica não prioriza as consequências.",
+              "Errou: a máxima deve poder virar lei universal para todos.",
+              "Errou: o dever moral exige respeito à dignidade e às normas.",
+              "Errou: Kant defende justamente o cumprimento do dever e das regras."
+            ]
+          },
+          {
+            statement: "Para Kant, devemos cumprir o que prometemos e dizer a verdade por dever moral, e não apenas quando isso nos traz alguma vantagem.",
+            question: "Isso mostra que a ética deontológica prioriza:",
+            options: [
+              "o lucro obtido no final da atitude.",
+              "o equilíbrio entre excesso e falta.",
+              "o dever, a intenção reta e a razão prática.",
+              "a aprovação da maioria nas redes sociais.",
+              "o prazer imediato de quem pratica o ato."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: o lucro não é critério moral na ética kantiana.",
+              "Errou: o equilíbrio entre extremos é da ética das virtudes.",
+              "",
+              "Errou: a ética deontológica se baseia na razão e no dever, não na fama.",
+              "Errou: buscar prazer imediato não define o dever moral."
+            ]
+          },
+          {
+            statement: "Ao denunciar um caso de cyberbullying pelos canais oficiais da escola, respeitamos as normas, o direito à defesa e o dever de dizer a verdade.",
+            question: "Agir por respeito ao dever e a princípios morais universais caracteriza a:",
+            options: [
+              "ética utilitarista.",
+              "ética deontológica.",
+              "ética das virtudes.",
+              "convenção por medo.",
+              "escolha por impulso."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: o utilitarismo foca nas consequências e na maior felicidade.",
+              "",
+              "Errou: a ética das virtudes foca no caráter e no justo meio.",
+              "Errou: agir por dever racional não é agir por medo.",
+              "Errou: o dever moral exige reflexão racional, não impulso."
+            ]
+          }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 6C. CRIAÇÃO DOS 5 ITENS ("Dica 1"..."Dica 5") E 5 INIMIGOS VERMELHOS
+    // ==========================================
+    let gamePhase = 1; // 1 = Coleta, 2 = Perseguição/Disparo
+    let isPaused = true; // Inicia pausado até o jogador digitar o nome e clicar em "Começar"
+    let playerName = "Jogador";
+    let collectedCount = 0;
+    let defeatedEnemiesCount = 0;
+    const TOTAL_SECOND_PHASE_QUESTIONS = EXAM_QUESTIONS.length;
+    let availableExamQuestions = [...EXAM_QUESTIONS];
+
+    // Controle do cronômetro e antitrapaça dos modais de questão
+    let questionTimerInterval = null;
+    let questionTimeRemaining = 0;
+    let activePenaltyCallback = null;
+
+    function clearQuestionTimer() {
+      if (questionTimerInterval) {
+        clearInterval(questionTimerInterval);
+        questionTimerInterval = null;
+      }
+      activePenaltyCallback = null;
+    }
+
+    function startQuestionTimer(seconds, onTimeoutOrCheat) {
+      clearQuestionTimer();
+      questionTimeRemaining = seconds;
+      activePenaltyCallback = onTimeoutOrCheat;
+
+      const timerEl = document.getElementById('modal-q-timer');
+      timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap";
+      timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${questionTimeRemaining}s`;
+
+      questionTimerInterval = setInterval(() => {
+        if (modalQuestion.classList.contains('hidden')) {
+          clearQuestionTimer();
+          return;
+        }
+        questionTimeRemaining--;
+        if (questionTimeRemaining <= 10) {
+          timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-red-950 border border-red-400 text-red-200 whitespace-nowrap";
+        }
+        timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${Math.max(0, questionTimeRemaining)}s`;
+
+        if (questionTimeRemaining <= 0) {
+          const cb = activePenaltyCallback;
+          clearQuestionTimer();
+          if (cb) cb("Tempo esgotado!");
+        }
+      }, 1000);
+    }
+
+    function triggerAntiCheatPenalty(reasonLabel) {
+      if (modalQuestion.classList.contains('hidden')) return;
+      if (!activePenaltyCallback) return;
+      const cb = activePenaltyCallback;
+      clearQuestionTimer();
+      cb(reasonLabel);
+    }
+
+    // Detecta troca de aba, minimização, divisão de tela, perda de foco ou atalhos de print durante a questão
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        triggerAntiCheatPenalty("Saída da tela do jogo detectada!");
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      triggerAntiCheatPenalty("Perda de foco ou tentativa de captura de tela detectada!");
+    });
+
+    window.addEventListener('keydown', (e) => {
+      const isPrintKey = e.key === 'PrintScreen' || e.code === 'PrintScreen';
+      const isWinSnip = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key.toLowerCase() === 's' || e.key === '3' || e.key === '4');
+      if (isPrintKey || isWinSnip) {
+        triggerAntiCheatPenalty("Tentativa de captura de tela detectada!");
+      }
+    });
+
+    // Animação de entrada aérea de 5 segundos no início do jogo
+    let isIntroDescent = false;
+    let introElapsed = 0;
+    const INTRO_DURATION = 5.0;
+    const INTRO_START_Y = 75.0;
+
+    // Tela inicial: captura o nome do jogador e inicia a descida aérea de 5 segundos
+    const modalStart = document.getElementById('modal-start');
+    const playerNameInput = document.getElementById('player-name-input');
+    const btnStartGame = document.getElementById('btn-start-game');
+
+    function startGameWithPlayerName() {
+      const typed = playerNameInput.value.trim();
+      playerName = typed.length > 0 ? typed : "Jogador";
+      modalStart.classList.add('hidden');
+      characterGroup.position.set(0, INTRO_START_Y, 5);
+      isIntroDescent = true;
+      introElapsed = 0;
+      isPaused = true;
+      clock.getDelta();
+    }
+
+    btnStartGame.addEventListener('click', startGameWithPlayerName);
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startGameWithPlayerName();
+    });
+
+    // Atualiza o texto superior de dicas na Fase 1 (mostrando a dica da vez)
+    function updatePhaseOneBadge() {
+      const currentTipNumber = Math.min(collectedCount + 1, CARTESIAN_ITEMS.length);
+      document.getElementById('phase-badge').textContent =
+        `Colete a dica ${currentTipNumber}. Cuidado com os inimigos!`;
+    }
+
+    // Atualiza o texto superior da Fase 2 com a contagem regressiva de questões faltantes
+    function updatePhaseTwoBadge() {
+      const remainingQuestions = TOTAL_SECOND_PHASE_QUESTIONS - defeatedEnemiesCount;
+      const faltaText = remainingQuestions === 1
+        ? "Falta 1 questão."
+        : `Faltam ${remainingQuestions} questões.`;
+      document.getElementById('phase-badge').textContent =
+        `Atinja os inimigos e responda às questões! ${faltaText}`;
+    }
+
+    const sharedTipRingGeo = new THREE.RingGeometry(0.65, 0.9, 16);
+    const sharedTipRingMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+
+    // Constrói malha 3D identificando "Dica 1", "Dica 2", etc.
+    function createTipItemMesh(tipNumber) {
+      const qGroup = new THREE.Group();
+
+      // Placa flutuante com texto "Dica X"
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(6, 8, 244, 80, 16);
+      ctx.fill();
+
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 46px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Dica ${tipNumber}`, 128, 49);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(2.8, 1.05, 1);
+      sprite.position.set(0, 1.35, 0);
+      qGroup.add(sprite);
+
+      // Anel luminoso no chão compartilhado
+      const ringMesh = new THREE.Mesh(sharedTipRingGeo, sharedTipRingMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.05;
+      qGroup.add(ringMesh);
+
+      return qGroup;
+    }
+
+    // Pontos seguros nas ruas para spawn / teletransporte
+    const safeRoadSpots = [
+      { x: -90, z: -90 }, { x: -45, z: -90 }, { x: 0, z: -90 }, { x: 45, z: -90 }, { x: 90, z: -90 },
+      { x: -90, z: -45 }, { x: -45, z: -45 }, { x: 0, z: -45 }, { x: 45, z: -45 }, { x: 90, z: -45 },
+      { x: -90, z: 0 },   { x: -45, z: 0 },                     { x: 45, z: 0 },   { x: 90, z: 0 },
+      { x: -90, z: 45 },  { x: -45, z: 45 },  { x: 0, z: 45 },  { x: 45, z: 45 },  { x: 90, z: 45 },
+      { x: -90, z: 90 },  { x: -45, z: 90 },  { x: 0, z: 90 },  { x: 45, z: 90 },  { x: 90, z: 90 }
+    ];
+
+    function getRandomFreeSpot(minDistFromPlayer = 18) {
+      const candidates = safeRoadSpots.filter(s => {
+        const dx = s.x - characterGroup.position.x;
+        const dz = s.z - characterGroup.position.z;
+        return Math.hypot(dx, dz) >= minDistFromPlayer;
+      });
+      const pool = candidates.length > 0 ? candidates : safeRoadSpots;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const collectibleEntities = [];
+    const initialItemSpots = [
+      { x: 0, z: -45 },
+      { x: 45, z: 0 },
+      { x: -45, z: 0 },
+      { x: 45, z: 45 },
+      { x: -45, z: -45 },
+      { x: 0, z: 90 },
+      { x: 90, z: -45 }
+    ];
+
+    CARTESIAN_ITEMS.forEach((data, idx) => {
+      const mesh = createTipItemMesh(data.id);
+      const pos = initialItemSpots[idx % initialItemSpots.length];
+      mesh.position.set(pos.x, 0, pos.z);
+      // Mostra apenas a dica 1 inicialmente; as seguintes aparecem uma por vez
+      mesh.visible = idx === 0;
+      scene.add(mesh);
+      collectibleEntities.push({
+        data,
+        mesh,
+        collected: false,
+        cooldown: 0,
+        attemptIndex: 0
+      });
+    });
+
+    // Inimigos Vermelhos ajustados ao número de dicas na Fase 1 (5) e ao número de questões na Fase 2 (5)
+    const enemyEntities = [];
+    const initialEnemySpots = [
+      { x: -90, z: -90 },
+      { x: 90, z: -90 },
+      { x: -90, z: 90 },
+      { x: 90, z: 90 },
+      { x: 0, z: -90 },
+      { x: -90, z: 0 },
+      { x: 90, z: 0 }
+    ];
+
+    const enemyPatrolRoutes = [
+      [ { x: -90, z: -90 }, { x: 0, z: -90 }, { x: 0, z: -45 }, { x: -90, z: -45 } ],
+      [ { x: 90, z: -90 }, { x: 90, z: 0 }, { x: 45, z: 0 }, { x: 45, z: -90 } ],
+      [ { x: -90, z: 90 }, { x: -90, z: 0 }, { x: -45, z: 0 }, { x: -45, z: 90 } ],
+      [ { x: 90, z: 90 }, { x: 0, z: 90 }, { x: 0, z: 45 }, { x: 90, z: 45 } ],
+      [ { x: 0, z: -90 }, { x: 45, z: -45 }, { x: -45, z: -45 }, { x: -45, z: 45 } ],
+      [ { x: -90, z: 0 }, { x: -45, z: -45 }, { x: 45, z: 45 }, { x: 90, z: 0 } ],
+      [ { x: 90, z: 0 }, { x: 45, z: 45 }, { x: 45, z: -45 }, { x: 0, z: 90 } ]
+    ];
+
+    function spawnEnemiesForCount(count) {
+      for (let i = 0; i < enemyEntities.length; i++) {
+        scene.remove(enemyEntities[i].rig.group);
+      }
+      enemyEntities.length = 0;
+
+      for (let idx = 0; idx < count; idx++) {
+        const spot = initialEnemySpots[idx % initialEnemySpots.length];
+        const rig = buildCharacterRig(enemyTorsoMats);
+        rig.group.position.set(spot.x, 0, spot.z);
+        scene.add(rig.group);
+        enemyEntities.push({
+          id: idx,
+          rig,
+          angle: (idx * Math.PI) / 3.5,
+          walkCycle: Math.random() * 10,
+          defeated: false,
+          explodingPending: false,
+          wanderTimer: 0.5 + idx * 0.4,
+          route: enemyPatrolRoutes[idx % enemyPatrolRoutes.length],
+          waypointIdx: 1,
+          turnBias: (idx % 2 === 0 ? 1 : -1) * (0.45 + idx * 0.08)
+        });
+      }
+    }
+
+    // Fase 1 inicia com quantidade de inimigos igual ao número de dicas
+    spawnEnemiesForCount(CARTESIAN_ITEMS.length);
+
+    // Projétil 3D: bola vermelha e partículas de explosão não violenta
+    const projectiles = [];
+    const explosionParticles = [];
+    const playerHeadRadius = 0.28;
+    const redBallGeometry = new THREE.SphereGeometry((playerHeadRadius / 3) * 2, 12, 12);
+    const redBallMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0x7f1d1d,
+      emissiveIntensity: 0.35,
+      roughness: 0.35
+    });
+    const sharedExplosionGeo = new THREE.SphereGeometry(0.18, 6, 6);
+
+    function createPhilosophyProjectileMesh() {
+      return new THREE.Mesh(redBallGeometry, redBallMaterial);
+    }
+
+    function spawnNonViolentExplosion(pos) {
+      const colors = [0xfacc15, 0x38bdf8, 0xffffff, 0x34d399];
+      for (let i = 0; i < 16; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: colors[i % colors.length],
+          transparent: true,
+          opacity: 1.0
+        });
+        const p = new THREE.Mesh(sharedExplosionGeo, mat);
+        p.position.set(pos.x, pos.y + 1.3, pos.z);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.08 + Math.random() * 0.18;
+        const vy = 0.12 + Math.random() * 0.22;
+        scene.add(p);
+        explosionParticles.push({
+          mesh: p,
+          vx: Math.cos(angle) * speed,
+          vy,
+          vz: Math.sin(angle) * speed,
+          life: 1.0
+        });
+      }
+    }
+
+    // ==========================================
+    // 7. FÍSICA, COLISÃO E GRAVIDADE
+    // ==========================================
+    characterGroup.position.set(0, INTRO_START_Y, 5);
+    let characterAngle = Math.PI;
+
+    const playerRadius = 0.45;
+    const playerHeight = 2.3;
+    const moveSpeed = 0.44;
+    const turnSpeed = 0.048;
+
+    let verticalVelocity = 0;
+    let isGrounded = true;
+    const gravity = -0.022;
+
+    const dpadState = { left: false, right: false };
+    const handWorldPosVec = new THREE.Vector3();
+
+    function throwPhilosophyWord() {
+      if (isPaused || gamePhase !== 2) return;
+
+      // Calcula a posição da mão direita do personagem sem alocar novos vetores
+      armRightGroup.getWorldPosition(handWorldPosVec);
+      handWorldPosVec.y -= 0.35;
+
+      const dirX = Math.sin(characterAngle);
+      const dirZ = Math.cos(characterAngle);
+
+      const projectileMesh = createPhilosophyProjectileMesh();
+      projectileMesh.position.set(handWorldPosVec.x + dirX * 0.6, handWorldPosVec.y, handWorldPosVec.z + dirZ * 0.6);
+      scene.add(projectileMesh);
+
+      projectiles.push({
+        mesh: projectileMesh,
+        dirX,
+        dirZ,
+        traveled: 0,
+        maxDistance: 75 // Percorre boa parte do cenário e some depois
+      });
+    }
+
+    function resolveHorizontalCollisions(nextX, nextZ, currentY) {
+      const maxBound = CITY_LIMIT - playerRadius;
+      nextX = Math.max(-maxBound, Math.min(maxBound, nextX));
+      nextZ = Math.max(-maxBound, Math.min(maxBound, nextZ));
+
+      const pBottom = currentY + 0.08;
+      const pTop = currentY + playerHeight;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+
+        if (pTop > box.minY && pBottom < box.maxY) {
+          const closestX = Math.max(box.minX, Math.min(nextX, box.maxX));
+          const closestZ = Math.max(box.minZ, Math.min(nextZ, box.maxZ));
+
+          const distX = nextX - closestX;
+          const distZ = nextZ - closestZ;
+          const distSq = distX * distX + distZ * distZ;
+
+          if (distSq < playerRadius * playerRadius) {
+            const dist = Math.sqrt(distSq);
+            if (dist > 0.0001) {
+              const overlap = playerRadius - dist;
+              nextX += (distX / dist) * overlap;
+              nextZ += (distZ / dist) * overlap;
+            } else {
+              const penLeft = Math.abs(nextX - box.minX);
+              const penRight = Math.abs(box.maxX - nextX);
+              const penFront = Math.abs(nextZ - box.minZ);
+              const penBack = Math.abs(box.maxZ - nextZ);
+              const minPen = Math.min(penLeft, penRight, penFront, penBack);
+
+              if (minPen === penLeft) nextX = box.minX - playerRadius;
+              else if (minPen === penRight) nextX = box.maxX + playerRadius;
+              else if (minPen === penFront) nextZ = box.minZ - playerRadius;
+              else nextZ = box.maxZ + playerRadius;
+            }
+          }
+        }
+      }
+
+      return { x: nextX, z: nextZ };
+    }
+
+    function getSupportFloorHeight(x, z, currentY) {
+      let highestFloor = 0;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+        const withinX = (x + playerRadius * 0.75) > box.minX && (x - playerRadius * 0.75) < box.maxX;
+        const withinZ = (z + playerRadius * 0.75) > box.minZ && (z - playerRadius * 0.75) < box.maxZ;
+
+        if (withinX && withinZ) {
+          if (currentY >= box.maxY - 0.35 && box.maxY > highestFloor) {
+            highestFloor = box.maxY;
+          }
+        }
+      }
+      return highestFloor;
+    }
+
+    // ==========================================
+    // 7B. INTERFACE PEDAGÓGICA (MODAIS, DICAS E FASES)
+    // ==========================================
+    const modalQuestion = document.getElementById('modal-question');
+    const modalQHeader = document.getElementById('modal-q-header');
+    const modalQBadge = document.getElementById('modal-q-badge');
+    const modalQSubtitle = document.getElementById('modal-q-subtitle');
+    const modalQTipsBox = document.getElementById('modal-q-tips-box');
+    const modalQTipsList = document.getElementById('modal-q-tips-list');
+    const modalQText = document.getElementById('modal-q-text');
+    const modalQPrompt = document.getElementById('modal-q-prompt');
+    const modalQOptions = document.getElementById('modal-q-options');
+    const modalQFeedback = document.getElementById('modal-q-feedback');
+    const btnContinueGame = document.getElementById('btn-continue-game');
+
+    const modalPhase2Intro = document.getElementById('modal-phase2-intro');
+    const btnProceedPhase2 = document.getElementById('btn-proceed-phase2');
+
+    const toastBanner = document.getElementById('toast-banner');
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 3500) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBanner.classList.add('hidden');
+      }, duration);
+    }
+
+    function resetMovementKeys() {
+      dpadState.left = false;
+      dpadState.right = false;
+      document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function renderMatchingTipsInQuestionModal(relatedTipIds) {
+      const matchingItems = CARTESIAN_ITEMS.filter(item => relatedTipIds.includes(item.id));
+      modalQTipsList.innerHTML = matchingItems.map(item => `
+        <div class="text-slate-200 leading-relaxed">
+          <span class="font-bold text-amber-300">${item.tip}</span>
+        </div>
+      `).join('<div class="my-2 border-t border-amber-400/20"></div>');
+    }
+
+    function openPhaseTwoIntroModal() {
+      isPaused = true;
+      resetMovementKeys();
+      toastBanner.classList.add('hidden');
+      modalPhase2Intro.classList.remove('hidden');
+    }
+
+    btnProceedPhase2.addEventListener('click', () => {
+      modalPhase2Intro.classList.add('hidden');
+      gamePhase = 2;
+      // Fase 2 ajusta a quantidade de inimigos para o número de questões da segunda parte
+      spawnEnemiesForCount(TOTAL_SECOND_PHASE_QUESTIONS);
+
+      // Mantém o mesmo controle da primeira parte com o botão "Jogue" no meio
+      document.getElementById('btn-throw').classList.remove('hidden');
+
+      updatePhaseTwoBadge();
+      isPaused = false;
+      clock.getDelta();
+    });
+
+    function openItemQuestionModal(itemEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      // Seleciona a versão da pergunta de verificação conforme o ciclo de tentativas (1ª -> 2ª -> 3ª -> 1ª...)
+      const versions = itemEntity.data.verificationVersions;
+      const currentVersion = versions[itemEntity.attemptIndex % versions.length];
+
+      modalQHeader.classList.remove('hidden');
+      modalQTipsBox.classList.add('hidden');
+      modalQBadge.textContent = "Verificação de Leitura";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = itemEntity.data.title;
+      modalQText.textContent = itemEntity.data.readingText;
+      modalQPrompt.textContent = currentVersion.checkQuestion;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+
+      function applyItemWrongOutcome(customPrefix) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        // Avança o índice cíclico para exibir a próxima pergunta de verificação na tentativa seguinte
+        itemEntity.attemptIndex = (itemEntity.attemptIndex + 1) % versions.length;
+
+        // Muda o item de posição no cenário
+        const newSpot = getRandomFreeSpot(25);
+        itemEntity.mesh.position.set(newSpot.x, 0, newSpot.z);
+        itemEntity.cooldown = 2.0;
+
+        const prefix = customPrefix || "Ops! Resposta incorreta.";
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = `${prefix} A Dica ${itemEntity.data.id} mudou para outro lugar da cidade. Procure-a e tente novamente!`;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      // Inicia cronômetro de 20s e vincula antitrapaça à mesma penalidade do erro
+      startQuestionTimer(20, (reason) => applyItemWrongOutcome(reason));
+
+      currentVersion.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + idx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = idx === currentVersion.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+            itemEntity.collected = true;
+            itemEntity.mesh.visible = false;
+            collectedCount++;
+
+            // Libera apenas a próxima dica no cenário
+            if (collectedCount < collectibleEntities.length) {
+              collectibleEntities[collectedCount].mesh.visible = true;
+            }
+            updatePhaseOneBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Resposta correta! Você coletou a dica e ela ficará disponível para consulta na segunda parte do jogo.";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+            applyItemWrongOutcome("Ops! Resposta incorreta.");
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (collectedCount === CARTESIAN_ITEMS.length && gamePhase === 1) {
+          openPhaseTwoIntroModal();
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    function openEnemyExamModal(enemyEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      if (availableExamQuestions.length === 0) {
+        availableExamQuestions = [...EXAM_QUESTIONS];
+      }
+      const qIndex = Math.floor(Math.random() * availableExamQuestions.length);
+      const examTopic = availableExamQuestions[qIndex];
+      const examQ = examTopic.versions[examTopic.attemptIndex % examTopic.versions.length];
+
+      // Mantém o cabeçalho visível com o cronômetro de 20 segundos na Fase 2
+      modalQHeader.classList.remove('hidden');
+      modalQBadge.textContent = "Questão Modelo Provão";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = "Consulte a dica abaixo";
+
+      // Exibe apenas a(s) dica(s) correspondente(s) à questão no mesmo bloco de rolagem
+      renderMatchingTipsInQuestionModal(examTopic.relatedTipIds);
+      modalQTipsBox.classList.remove('hidden');
+
+      modalQText.textContent = examQ.statement;
+      modalQPrompt.textContent = examQ.question;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+      let answeredCorrectly = false;
+
+      function applyExamWrongOutcome(customMessage) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        // Avança o ciclo para a próxima versão desta questão do Provão (1ª -> 2ª -> 3ª -> 1ª...)
+        examTopic.attemptIndex = (examTopic.attemptIndex + 1) % examTopic.versions.length;
+
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = customMessage;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      // Inicia cronômetro de 20s e vincula antitrapaça à mesma penalidade do erro
+      startQuestionTimer(20, (reason) => {
+        applyExamWrongOutcome(`${reason} A questão foi anulada e o oponente escapou. Leia a dica com atenção, persiga-o e tente novamente!`);
+      });
+
+      examQ.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + idx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = idx === examQ.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            answeredCorrectly = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+
+            availableExamQuestions.splice(qIndex, 1);
+            defeatedEnemiesCount++;
+            updatePhaseTwoBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Excelente! Resposta correta! O oponente foi derrotado pela força da Filosofia!";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+
+            const reason = (examQ.errorReasons && examQ.errorReasons[idx])
+              ? examQ.errorReasons[idx]
+              : "A alternativa escolhida não corresponde aos conceitos da reflexão ética estudados.";
+
+            applyExamWrongOutcome(`Resposta incorreta! Motivo: ${reason} Leia novamente a dica acima e tente acertá-lo novamente!`);
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (answeredCorrectly) {
+          // Mostra primeiro o inimigo no cenário por 0,5 segundo e depois explode
+          enemyEntity.explodingPending = true;
+          setTimeout(() => {
+            enemyEntity.defeated = true;
+            enemyEntity.rig.group.visible = false;
+            spawnNonViolentExplosion(enemyEntity.rig.group.position);
+
+            if (defeatedEnemiesCount >= TOTAL_SECOND_PHASE_QUESTIONS) {
+              setTimeout(() => {
+                isPaused = true;
+                document.getElementById('victory-message').textContent =
+                  `Parabéns, ${playerName}! Mostre esta tela para o professor e receba o seu ponto!`;
+                document.getElementById('modal-victory').classList.remove('hidden');
+              }, 600);
+            }
+          }, 500);
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 8. TRANSPARÊNCIA DE OBJETOS ENTRE CÂMERA E PERSONAGEM
+    // ==========================================
+    const raycaster = new THREE.Raycaster();
+    const currentlyFaded = new Set();
+    const targetPosVec = new THREE.Vector3();
+    const dirVec = new THREE.Vector3();
+    let occlusionFrameCounter = 0;
+
+    function setMeshOpacity(mesh, value) {
+      if (Array.isArray(mesh.material)) {
+        for (let i = 0; i < mesh.material.length; i++) {
+          mesh.material[i].opacity = value;
+        }
+      } else {
+        mesh.material.opacity = value;
+      }
+    }
+
+    function updateCameraOcclusion() {
+      occlusionFrameCounter++;
+      if (occlusionFrameCounter % 3 !== 0) return;
+
+      currentlyFaded.forEach(mesh => {
+        setMeshOpacity(mesh, 1.0);
+      });
+      currentlyFaded.clear();
+
+      targetPosVec.set(
+        characterGroup.position.x,
+        characterGroup.position.y + 1.4,
+        characterGroup.position.z
+      );
+
+      dirVec.subVectors(targetPosVec, camera.position);
+      const distToPlayer = dirVec.length();
+      dirVec.divideScalar(distToPlayer);
+
+      raycaster.set(camera.position, dirVec);
+      raycaster.far = distToPlayer - 0.4;
+
+      const hits = raycaster.intersectObjects(occludableMeshes, false);
+      for (let i = 0; i < hits.length; i++) {
+        const hitMesh = hits[i].object;
+        setMeshOpacity(hitMesh, 0.25);
+        currentlyFaded.add(hitMesh);
+      }
+    }
+
+    // ==========================================
+    // 9. CONTROLES (DIREÇÃO E DISPARO)
+    // ==========================================
+    function setupDpadButton(elementId, directionKey) {
+      const btn = document.getElementById(elementId);
+      const startPress = (e) => {
+        e.preventDefault();
+        if (isPaused) return;
+        dpadState[directionKey] = true;
+        btn.classList.add('active');
+      };
+      const endPress = (e) => {
+        e.preventDefault();
+        dpadState[directionKey] = false;
+        btn.classList.remove('active');
+      };
+      btn.addEventListener('pointerdown', startPress);
+      btn.addEventListener('pointerup', endPress);
+      btn.addEventListener('pointerleave', endPress);
+      btn.addEventListener('pointercancel', endPress);
+    }
+
+    setupDpadButton('btn-left', 'left');
+    setupDpadButton('btn-right', 'right');
+
+    document.getElementById('btn-throw').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      throwPhilosophyWord();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (isPaused) return;
+      if (e.key === ' ' || e.code === 'Space') throwPhilosophyWord();
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = true;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = false;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = false;
+    });
+
+    // ==========================================
+    // 10. LOOP PRINCIPAL DE ANIMAÇÃO
+    // ==========================================
+    const clock = new THREE.Clock();
+    let walkCycle = 0;
+
+    const cameraDistance = 13.5;
+    const cameraHeight = 6.8;
+    const cameraTargetHeight = 1.6;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.05);
+      const time = clock.getElapsedTime();
+
+      // Sequência inicial de 5 segundos: visão por cima do cenário descendo até o ponto inicial
+      if (isIntroDescent) {
+        introElapsed += delta;
+        const progress = Math.min(introElapsed / INTRO_DURATION, 1.0);
+        // Suavização suave (easeInOutCubic)
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        characterGroup.position.set(0, INTRO_START_Y * (1 - ease), 5);
+        characterGroup.rotation.y = characterAngle;
+
+        // Câmera começa bem acima mostrando o cenário de cima e desce suavemente até a posição normal
+        const normalCamX = characterGroup.position.x + Math.sin(characterAngle) * -cameraDistance;
+        const normalCamY = cameraHeight;
+        const normalCamZ = characterGroup.position.z + Math.cos(characterAngle) * -cameraDistance;
+
+        const topCamX = 0;
+        const topCamY = 128;
+        const topCamZ = -22;
+
+        camera.position.set(
+          topCamX + (normalCamX - topCamX) * ease,
+          topCamY + (normalCamY - topCamY) * ease,
+          topCamZ + (normalCamZ - topCamZ) * ease
+        );
+        camera.lookAt(
+          characterGroup.position.x,
+          characterGroup.position.y + cameraTargetHeight,
+          characterGroup.position.z
+        );
+
+        if (progress >= 1.0) {
+          characterGroup.position.set(0, 0, 5);
+          isIntroDescent = false;
+          isPaused = false;
+        }
+
+        renderer.render(scene, camera);
+        return;
+      }
+
+      if (!isPaused) {
+        // 1. Rotação do personagem
+        if (dpadState.left) characterAngle += turnSpeed;
+        if (dpadState.right) characterAngle -= turnSpeed;
+        characterGroup.rotation.y = characterAngle;
+
+        // 2. Movimento horizontal contínuo + Colisão (na Fase 2 a velocidade cai pela metade)
+        const isMoving = true;
+        const currentMoveSpeed = gamePhase === 2 ? moveSpeed * 0.5 : moveSpeed;
+        const desiredX = characterGroup.position.x + Math.sin(characterAngle) * currentMoveSpeed;
+        const desiredZ = characterGroup.position.z + Math.cos(characterAngle) * currentMoveSpeed;
+
+        const resolvedPos = resolveHorizontalCollisions(desiredX, desiredZ, characterGroup.position.y);
+        characterGroup.position.x = resolvedPos.x;
+        characterGroup.position.z = resolvedPos.z;
+
+        // 3. Física Vertical
+        const supportY = getSupportFloorHeight(
+          characterGroup.position.x,
+          characterGroup.position.z,
+          characterGroup.position.y
+        );
+
+        if (isGrounded && characterGroup.position.y > supportY + 0.01) {
+          isGrounded = false;
+          verticalVelocity = -0.05;
+        }
+
+        if (!isGrounded) {
+          characterGroup.position.y += verticalVelocity;
+          verticalVelocity += gravity;
+
+          if (characterGroup.position.y <= supportY) {
+            characterGroup.position.y = supportY;
+            isGrounded = true;
+            verticalVelocity = 0;
+          }
+        } else {
+          characterGroup.position.y = supportY;
+        }
+
+        // 4. Animação contínua dos Membros do Jogador
+        if (isMoving) {
+          walkCycle += delta * (gamePhase === 2 ? 11 : 18);
+          const swingAngle = Math.sin(walkCycle) * 0.65;
+          legLeftGroup.rotation.x = swingAngle;
+          legRightGroup.rotation.x = -swingAngle;
+          armLeftGroup.rotation.x = -swingAngle * 0.85;
+          armRightGroup.rotation.x = swingAngle * 0.85;
+          torso.position.y = 1.35 + Math.abs(Math.sin(walkCycle * 2)) * 0.06;
+          head.rotation.z = Math.sin(walkCycle) * 0.04;
+        }
+
+        // 5. Animação e Coleta dos 5 Itens ("Dica 1" ... "Dica 5", um por vez)
+        for (let i = 0; i < collectibleEntities.length; i++) {
+          const item = collectibleEntities[i];
+          if (item.collected || !item.mesh.visible) continue;
+          if (item.cooldown > 0) item.cooldown -= delta;
+
+          item.mesh.rotation.y += delta * 2.2;
+          item.mesh.position.y = Math.sin(time * 3 + i) * 0.18;
+
+          if (item.cooldown <= 0) {
+            const dist = Math.hypot(
+              characterGroup.position.x - item.mesh.position.x,
+              characterGroup.position.z - item.mesh.position.z
+            );
+            if (dist < 1.35) {
+              openItemQuestionModal(item);
+              break;
+            }
+          }
+        }
+
+        // 6. IA e Movimento dos Inimigos Vermelhos
+        const enemySpeed = gamePhase === 1 ? 0.145 : 0.095;
+        const safeMargin = 3.0;
+        const innerLimit = CITY_LIMIT - safeMargin;
+
+        for (let i = 0; i < enemyEntities.length; i++) {
+          const enemy = enemyEntities[i];
+          if (enemy.defeated || enemy.explodingPending) continue;
+
+          const ePos = enemy.rig.group.position;
+          const toPlayerX = characterGroup.position.x - ePos.x;
+          const toPlayerZ = characterGroup.position.z - ePos.z;
+          const distToPlayer = Math.hypot(toPlayerX, toPlayerZ);
+
+          if (gamePhase === 1) {
+            // Fase 1: Cada inimigo segue sua própria rota de patrulha e só persegue se o jogador chegar perto
+            if (distToPlayer < 26 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(toPlayerX, toPlayerZ);
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 3.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          } else {
+            // Fase 2: Cada inimigo foge por caminhos diferentes usando seu próprio desvio angular e rota
+            if (distToPlayer < 38 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(-toPlayerX, -toPlayerZ) + enemy.turnBias * 0.35;
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 4.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          }
+
+          let dirEX = Math.sin(enemy.angle);
+          let dirEZ = Math.cos(enemy.angle);
+          let nextEX = ePos.x + dirEX * enemySpeed;
+          let nextEZ = ePos.z + dirEZ * enemySpeed;
+
+          // Se encostar nas bordas laterais do cenário, rebate de volta para dentro
+          let hitWallBorder = false;
+          if (nextEX >= innerLimit) {
+            nextEX = innerLimit - 0.3;
+            dirEX = -Math.abs(dirEX);
+            hitWallBorder = true;
+          } else if (nextEX <= -innerLimit) {
+            nextEX = -innerLimit + 0.3;
+            dirEX = Math.abs(dirEX);
+            hitWallBorder = true;
+          }
+
+          if (nextEZ >= innerLimit) {
+            nextEZ = innerLimit - 0.3;
+            dirEZ = -Math.abs(dirEZ);
+            hitWallBorder = true;
+          } else if (nextEZ <= -innerLimit) {
+            nextEZ = -innerLimit + 0.3;
+            dirEZ = Math.abs(dirEZ);
+            hitWallBorder = true;
+          }
+
+          if (hitWallBorder) {
+            // Garante que o ângulo aponte para o interior do cenário e avança para o próximo ponto da rota
+            const toCenterX = -ePos.x;
+            const toCenterZ = -ePos.z;
+            const centerLen = Math.hypot(toCenterX, toCenterZ) || 1;
+            dirEX = dirEX * 0.6 + (toCenterX / centerLen) * 0.4;
+            dirEZ = dirEZ * 0.6 + (toCenterZ / centerLen) * 0.4;
+            enemy.angle = Math.atan2(dirEX, dirEZ);
+            enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+            nextEX = ePos.x + Math.sin(enemy.angle) * enemySpeed;
+            nextEZ = ePos.z + Math.cos(enemy.angle) * enemySpeed;
+          }
+
+          const resolvedE = resolveHorizontalCollisions(nextEX, nextEZ, 0);
+
+          // Desvia se bater em parede/prédio usando a direção própria de cada inimigo
+          if (Math.hypot(resolvedE.x - nextEX, resolvedE.z - nextEZ) > 0.05) {
+            enemy.angle += enemy.turnBias * Math.PI * 0.9;
+          }
+
+          // Garantia final para nunca penetrar nos muros laterais
+          ePos.x = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.x));
+          ePos.z = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.z));
+          enemy.rig.group.rotation.y = enemy.angle;
+
+          // Animação de corrida do inimigo
+          enemy.walkCycle += delta * 15;
+          const eSwing = Math.sin(enemy.walkCycle) * 0.6;
+          enemy.rig.legLeftGroup.rotation.x = eSwing;
+          enemy.rig.legRightGroup.rotation.x = -eSwing;
+          enemy.rig.armLeftGroup.rotation.x = -eSwing * 0.85;
+          enemy.rig.armRightGroup.rotation.x = eSwing * 0.85;
+
+          // Fase 1: Se encostar no personagem, teletransporta o jogador aleatoriamente
+          if (gamePhase === 1 && distToPlayer < 1.05) {
+            const teleportSpot = getRandomFreeSpot(35);
+            characterGroup.position.set(teleportSpot.x, 0, teleportSpot.z);
+            showToast("Um oponente encostou em você! Você foi teletransportado para outro ponto da cidade!");
+            break;
+          }
+        }
+
+        // 7. Movimento e Colisão da esfera vermelha (Fase 2)
+        const projSpeed = 1.15;
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const proj = projectiles[i];
+          proj.mesh.position.x += proj.dirX * projSpeed;
+          proj.mesh.position.z += proj.dirZ * projSpeed;
+          proj.traveled += projSpeed;
+
+          let hitEnemy = null;
+          for (let j = 0; j < enemyEntities.length; j++) {
+            const enemy = enemyEntities[j];
+            if (enemy.defeated || enemy.explodingPending) continue;
+            const d = Math.hypot(
+              proj.mesh.position.x - enemy.rig.group.position.x,
+              proj.mesh.position.z - enemy.rig.group.position.z
+            );
+            if (d < 1.45) {
+              hitEnemy = enemy;
+              break;
+            }
+          }
+
+          if (hitEnemy) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+            openEnemyExamModal(hitEnemy);
+            break;
+          }
+
+          if (proj.traveled >= proj.maxDistance) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+          }
+        }
+
+      }
+
+      // 8. Partículas da explosão não violenta (atualizadas sempre para finalizar a explosão)
+      for (let i = explosionParticles.length - 1; i >= 0; i--) {
+        const pt = explosionParticles[i];
+        pt.mesh.position.x += pt.vx;
+        pt.mesh.position.y += pt.vy;
+        pt.mesh.position.z += pt.vz;
+        pt.vy -= 0.008;
+        pt.life -= delta * 1.4;
+        pt.mesh.material.opacity = Math.max(0, pt.life);
+
+        if (pt.life <= 0) {
+          scene.remove(pt.mesh);
+          pt.mesh.material.dispose();
+          explosionParticles.splice(i, 1);
+        }
+      }
+
+      // 9. Câmera de Terceira Pessoa
+      const camOffsetX = Math.sin(characterAngle) * -cameraDistance;
+      const camOffsetZ = Math.cos(characterAngle) * -cameraDistance;
+      const targetCamX = characterGroup.position.x + camOffsetX;
+      const targetCamY = characterGroup.position.y + cameraHeight;
+      const targetCamZ = characterGroup.position.z + camOffsetZ;
+
+      camera.position.x += (targetCamX - camera.position.x) * 0.16;
+      camera.position.y += (targetCamY - camera.position.y) * 0.16;
+      camera.position.z += (targetCamZ - camera.position.z) * 0.16;
+      camera.lookAt(
+        characterGroup.position.x,
+        characterGroup.position.y + cameraTargetHeight,
+        characterGroup.position.z
+      );
+
+      // 10. Transparência de objetos entre câmera e personagem
+      updateCameraOcclusion();
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.onload = () => {
+      animate();
+    };
+  </script>
+</body>
+</html>
