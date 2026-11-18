@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>PV Fire - Projeto de Vida 3D</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #7dd3fc;
+      touch-action: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    .dpad-btn {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1.5px solid rgba(245, 158, 11, 0.7);
+      backdrop-filter: blur(8px);
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: all 0.1s ease;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: #f59e0b;
+      color: #0f172a;
+      transform: scale(0.92);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+    }
+    .jump-btn {
+      background: radial-gradient(circle, #f59e0b 0%, #d97706 100%);
+      border: 1.5px solid #fef08a;
+      color: #0f172a;
+      border-radius: 50%;
+      font-weight: 800;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+    }
+    .jump-btn:active {
+      transform: scale(0.9);
+      box-shadow: 0 0 18px rgba(254, 240, 138, 0.9);
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- Tela Inicial -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-fire"></i>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Coloque seu nome abaixo para jogar o PV Fire!
+      </h2>
+      <div>
+        <input
+          id="player-name-input"
+          type="text"
+          placeholder="Digite seu nome aqui..."
+          class="w-full px-4 py-3 rounded-xl bg-slate-800 border-2 border-slate-600 focus:border-amber-400 focus:outline-none text-white text-center font-semibold text-base"
+        />
+      </div>
+      <button id="btn-start-game" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Começar
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas principal 3D -->
+  <div id="canvas-container"></div>
+
+  <!-- Interface HUD do Jogo -->
+  <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+
+    <!-- Topo: Status da Fase centralizado -->
+    <div class="flex items-start justify-center w-full">
+      <div id="phase-badge" class="bg-slate-900/85 border border-amber-400/60 text-amber-300 px-4 py-2 rounded-xl text-sm sm:text-base font-bold shadow-lg text-center">
+        Colete a dica 1. Cuidado com os inimigos!
+      </div>
+    </div>
+
+    <!-- Rodapé e Controle Virtual (apenas direção e botão Jogue no meio na Fase 2) -->
+    <div class="max-w-sm mx-auto w-full pointer-events-auto">
+      
+      <!-- Controle Físico Compacto -->
+      <div id="dpad-container" class="grid grid-cols-3 gap-1.5 w-36 h-14 mx-auto p-1.5 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-700/80 shadow-2xl">
+        <button id="btn-left" class="dpad-btn text-xs" title="Girar Esquerda (A / Seta Esq)">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+        <div id="center-slot" class="flex items-center justify-center">
+          <button id="btn-throw" class="hidden dpad-btn jump-btn w-full h-full text-[9px] flex-col gap-0" title="Lançar Esfera (Espaço)">
+            <i class="fa-solid fa-bolt text-xs"></i>
+            <span>Jogue</span>
+          </button>
+        </div>
+        <button id="btn-right" class="dpad-btn text-xs" title="Girar Direita (D / Seta Dir)">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Banner rápido de feedback / transição -->
+  <div id="toast-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-4 py-2 rounded-xl shadow-2xl text-xs sm:text-sm font-bold text-center max-w-md pointer-events-none"></div>
+
+  <!-- Modal de Transição para a Fase 2 -->
+  <div id="modal-phase2-intro" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-bolt"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-amber-300 leading-snug">
+        O jogo virou! Persiga os inimigos!
+      </h2>
+      <button id="btn-proceed-phase2" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Prosseguir
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Leitura e Pergunta (Fase 1 e Fase 2) -->
+  <div id="modal-question" class="hidden fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div id="modal-q-header" class="px-5 py-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between gap-2">
+        <span id="modal-q-badge" class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">
+          Leitura do Projeto de Vida
+        </span>
+        <span id="modal-q-subtitle" class="text-xs text-slate-300 font-semibold truncate">Construindo o Futuro</span>
+        <span id="modal-q-timer" class="text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap">
+          <i class="fa-regular fa-clock mr-1"></i>16s
+        </span>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Dica correspondente (exibida no mesmo bloco de rolagem da questão na Fase 2) -->
+        <div id="modal-q-tips-box" class="hidden bg-slate-950/80 border border-amber-400/50 rounded-xl p-3.5">
+          <div id="modal-q-tips-list" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <!-- Texto base / enunciado -->
+        <div id="modal-q-text" class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 text-sm sm:text-base leading-relaxed text-slate-100"></div>
+
+        <!-- Pergunta -->
+        <p id="modal-q-prompt" class="font-bold text-amber-300 text-sm sm:text-base"></p>
+
+        <!-- Alternativas -->
+        <div id="modal-q-options" class="space-y-2.5"></div>
+
+        <!-- Feedback -->
+        <div id="modal-q-feedback" class="hidden rounded-xl p-3.5 text-sm font-semibold"></div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-800 border-t border-slate-700 flex justify-end">
+        <button id="btn-continue-game" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-sm shadow-lg transition">
+          CONTINUAR JOGO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Vitória Final -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 id="victory-message" class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Parabéns, Jogador! Mostre esta tela para o professor e receba o seu ponto!
+      </h2>
+      <button onclick="location.reload()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-sm shadow-lg transition">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONFIGURAÇÕES INICIAIS (CENÁRIO DIURNO)
+    // ==========================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    
+    // Céu de dia vibrante e neblina atmosférica clara
+    const skyColor = new THREE.Color(0x87ceeb);
+    scene.background = skyColor;
+    scene.fog = new THREE.Fog(0xbae6fd, 85, 320);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.5, 450);
+    const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", stencil: false, depth: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
+    renderer.shadowMap.autoUpdate = false;
+    container.appendChild(renderer.domElement);
+
+    // ==========================================
+    // 2. ILUMINAÇÃO SOLAR (DIA)
+    // ==========================================
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x64748b, 0.8);
+    hemiLight.position.set(0, 100, 0);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+    sunLight.position.set(80, 140, 65);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 512;
+    sunLight.shadow.mapSize.height = 512;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 360;
+    const d = 145;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    // ==========================================
+    // 3. ESTRUTURAS DE COLISÃO E TRANSPARÊNCIA
+    // ==========================================
+    const colliders = [];          // Objetos sólidos com física (caixas AABB)
+    const occludableMeshes = [];   // Malhas que podem ficar transparentes
+
+    // Cenário 2x maior
+    const CITY_LIMIT = 136;
+
+    // Cache de texturas de fachada para evitar recriar canvas idênticos na GPU
+    const wallTextureCache = new Map();
+    const sharedRoofMat = new THREE.MeshStandardMaterial({
+      color: 0x64748b,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 1.0
+    });
+
+    function getCachedWallTexture(hexStr, wallW, wallH, hasDoor) {
+      const key = `${hexStr}_${wallW}_${wallH}_${hasDoor}`;
+      if (wallTextureCache.has(key)) return wallTextureCache.get(key);
+
+      const canvas = document.createElement('canvas');
+      const pxPerUnit = 12; // Resolução otimizada para memória de vídeo e fluidez
+      canvas.width = Math.max(64, Math.round(wallW * pxPerUnit));
+      canvas.height = Math.max(64, Math.round(wallH * pxPerUnit));
+      const ctx = canvas.getContext('2d');
+
+      // Cor base da parede
+      ctx.fillStyle = hexStr;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Friso / Rodapé arquitetônico
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+      ctx.fillRect(0, canvas.height - 14, canvas.width, 14);
+      ctx.fillRect(0, 0, canvas.width, 8);
+
+      // Janelas
+      const cols = Math.max(2, Math.floor(wallW / 2.4));
+      const isLowHouse = wallH <= 4.0;
+      const rows = isLowHouse ? 1 : Math.max(2, Math.floor((wallH - 3.5) / 3.0));
+      const padX = canvas.width / cols;
+      const topAreaH = isLowHouse ? canvas.height * 0.65 : canvas.height - 3.6 * pxPerUnit;
+      const padY = topAreaH / rows;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (isLowHouse && hasDoor && c === Math.floor(cols / 2)) continue;
+
+          const wx = c * padX + padX * 0.24;
+          const wy = (isLowHouse ? canvas.height * 0.28 : 12) + r * padY + padY * 0.16;
+          const ww = padX * 0.52;
+          const wh = Math.min(padY * 0.62, canvas.height * 0.38);
+
+          ctx.fillStyle = '#334155';
+          ctx.fillRect(wx - 1.5, wy - 1.5, ww + 3, wh + 3);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(wx, wy, ww, wh);
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+          ctx.fillRect(wx + 1.5, wy + 1.5, ww * 0.35, wh - 3);
+        }
+      }
+
+      // Porta no térreo
+      if (hasDoor) {
+        const doorW = Math.min(canvas.width * 0.24, 1.6 * pxPerUnit);
+        const doorH = Math.min(canvas.height * 0.68, 2.5 * pxPerUnit);
+        const doorX = (canvas.width - doorW) / 2;
+        const doorY = canvas.height - doorH;
+
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(doorX - 3, doorY - 3, doorW + 6, doorH + 3);
+
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(doorX, doorY, doorW, doorH);
+
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillRect(doorX + doorW * 0.18, doorY + doorH * 0.12, doorW * 0.64, doorH * 0.42);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(doorX + doorW * 0.78, doorY + doorH * 0.58, 3, 7);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.generateMipmaps = false;
+      tex.minFilter = THREE.LinearFilter;
+      wallTextureCache.set(key, tex);
+      return tex;
+    }
+
+    // Gera materiais de fachada individuais por prédio (para transparência individual sem duplicar texturas)
+    function createBuildingMaterials(baseColorHex, width, height, depth) {
+      const hexStr = '#' + new THREE.Color(baseColorHex).getHexString();
+
+      const sideTex = getCachedWallTexture(hexStr, depth, height, false);
+      const frontTex = getCachedWallTexture(hexStr, width, height, true);
+
+      const sideMat = new THREE.MeshStandardMaterial({
+        map: sideTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+      const frontMat = new THREE.MeshStandardMaterial({
+        map: frontTex,
+        roughness: 0.65,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 1.0
+      });
+
+      return [sideMat, sideMat, sharedRoofMat, sharedRoofMat, frontMat, frontMat];
+    }
+
+    // Função auxiliar para criar qualquer bloco sólido da cidade
+    function createSolidBox(x, y, z, w, h, d, colorHex, options = {}) {
+      const geo = new THREE.BoxGeometry(w, h, d);
+      const mat = options.isBuilding
+        ? createBuildingMaterials(colorHex, w, h, d)
+        : new THREE.MeshStandardMaterial({
+            color: colorHex,
+            roughness: options.roughness ?? 0.7,
+            metalness: options.metalness ?? 0.1,
+            transparent: options.occludable !== false,
+            opacity: 1.0
+          });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(x, y + h / 2, z);
+      mesh.castShadow = options.castShadow !== false;
+      mesh.receiveShadow = options.receiveShadow !== false;
+      mesh.matrixAutoUpdate = false;
+      mesh.updateMatrix();
+      scene.add(mesh);
+
+      if (options.occludable !== false) {
+        occludableMeshes.push(mesh);
+      }
+
+      const collider = {
+        mesh: mesh,
+        minX: x - w / 2,
+        maxX: x + w / 2,
+        minY: y,
+        maxY: y + h,
+        minZ: z - d / 2,
+        maxZ: z + d / 2
+      };
+
+      colliders.push(collider);
+      return collider;
+    }
+
+    // ==========================================
+    // 4. CONSTRUÇÃO DA CIDADE E HORIZONTE
+    // ==========================================
+    
+    // Chão principal (300x300)
+    const groundGeo = new THREE.PlaneGeometry(300, 300);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    ground.matrixAutoUpdate = false;
+    ground.updateMatrix();
+    scene.add(ground);
+
+    const roadPositions = [-90, -45, 0, 45, 90];
+
+    // Malha de Ruas sem linhas amarelas
+    function createCityRoads() {
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+
+      const geoNS = new THREE.PlaneGeometry(11, 272);
+      const geoLO = new THREE.PlaneGeometry(272, 11);
+
+      roadPositions.forEach(pos => {
+        const rNS = new THREE.Mesh(geoNS, roadMat);
+        rNS.rotation.x = -Math.PI / 2;
+        rNS.position.set(pos, 0.01, 0);
+        rNS.receiveShadow = true;
+        rNS.matrixAutoUpdate = false;
+        rNS.updateMatrix();
+        scene.add(rNS);
+
+        const rLO = new THREE.Mesh(geoLO, roadMat);
+        rLO.rotation.x = -Math.PI / 2;
+        rLO.position.set(0, 0.012, pos);
+        rLO.receiveShadow = true;
+        rLO.matrixAutoUpdate = false;
+        rLO.updateMatrix();
+        scene.add(rLO);
+      });
+    }
+    createCityRoads();
+
+    // Muros de Limite da Cidade
+    function createCityBoundaries() {
+      const wallHeight = 5.0;
+      const wallThickness = 2.5;
+      const span = CITY_LIMIT * 2 + wallThickness;
+      const wallColor = 0x94a3b8;
+
+      createSolidBox(0, 0, -CITY_LIMIT - 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(0, 0, CITY_LIMIT + 1.25, span, wallHeight, wallThickness, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(-CITY_LIMIT - 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+      createSolidBox(CITY_LIMIT + 1.25, 0, 0, wallThickness, wallHeight, span, wallColor, { occludable: false, castShadow: false });
+    }
+    createCityBoundaries();
+
+    // Horizonte da Cidade mesclado em 1 única malha
+    function createCityHorizon() {
+      const palette = [
+        new THREE.Color(0x94a3b8),
+        new THREE.Color(0x64748b),
+        new THREE.Color(0xcbd5e1),
+        new THREE.Color(0x7dd3fc),
+        new THREE.Color(0xe2e8f0)
+      ];
+      const farColor = new THREE.Color(0xb0c4de);
+
+      const positions = [];
+      const normals = [];
+      const colors = [];
+      const indices = [];
+      let vertexOffset = 0;
+
+      function appendBox(bx, by, bz, bw, bh, bd, colorObj) {
+        const boxGeo = new THREE.BoxGeometry(bw, bh, bd);
+        boxGeo.translate(bx, by, bz);
+        const nonIndexed = boxGeo.index ? boxGeo.toNonIndexed() : boxGeo;
+        const posAttr = nonIndexed.attributes.position;
+        const normAttr = nonIndexed.attributes.normal;
+
+        for (let i = 0; i < posAttr.count; i++) {
+          positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
+          normals.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i));
+          colors.push(colorObj.r, colorObj.g, colorObj.b);
+          indices.push(vertexOffset++);
+        }
+        boxGeo.dispose();
+        if (nonIndexed !== boxGeo) nonIndexed.dispose();
+      }
+
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+        const dist = 165 + (Math.sin(angle * 7) * 20 + 20);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bw = 12 + Math.abs(Math.cos(angle * 5)) * 14;
+        const bd = 12 + Math.abs(Math.sin(angle * 3)) * 14;
+        const bh = 30 + Math.abs(Math.sin(angle * 11)) * 60;
+        const col = palette[Math.floor(Math.abs(Math.sin(angle * 13)) * palette.length)];
+        appendBox(bx, bh / 2 - 1, bz, bw, bh, bd, col);
+      }
+
+      for (let angle = 0.04; angle < Math.PI * 2; angle += 0.11) {
+        const dist = 225 + (Math.cos(angle * 5) * 25 + 25);
+        const bx = Math.cos(angle) * dist;
+        const bz = Math.sin(angle) * dist;
+        const bh = 60 + Math.abs(Math.cos(angle * 9)) * 75;
+        appendBox(bx, bh / 2 - 1, bz, 22, bh, 22, farColor);
+      }
+
+      const mergedGeo = new THREE.BufferGeometry();
+      mergedGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      mergedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+      mergedGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      mergedGeo.setIndex(indices);
+
+      const mergedMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.7
+      });
+
+      const horizonMesh = new THREE.Mesh(mergedGeo, mergedMat);
+      horizonMesh.matrixAutoUpdate = false;
+      horizonMesh.updateMatrix();
+      scene.add(horizonMesh);
+    }
+    createCityHorizon();
+
+    // ==========================================
+    // 5. PRÉDIOS DA CIDADE
+    // ==========================================
+    function populateCity() {
+      const buildingCoords = [
+        // Anel Interno
+        { x: -24, z: -24, w: 12, h: 18, d: 12, c: 0xe2e8f0 },
+        { x: 24,  z: -24, w: 12, h: 22, d: 12, c: 0xcbd5e1 },
+        { x: -24, z: 24,  w: 12, h: 16, d: 12, c: 0xf1f5f9 },
+        { x: 24,  z: 24,  w: 12, h: 20, d: 12, c: 0x94a3b8 },
+
+        // Anel Médio
+        { x: -68, z: -24, w: 14, h: 24, d: 12, c: 0xe2e8f0 },
+        { x: 68,  z: -24, w: 14, h: 20, d: 12, c: 0xcbd5e1 },
+        { x: -68, z: 24,  w: 14, h: 19, d: 12, c: 0xf8fafc },
+        { x: 68,  z: 24,  w: 14, h: 26, d: 12, c: 0x94a3b8 },
+        { x: -24, z: -68, w: 12, h: 21, d: 14, c: 0xcbd5e1 },
+        { x: 24,  z: -68, w: 12, h: 25, d: 14, c: 0xe2e8f0 },
+        { x: -24, z: 68,  w: 12, h: 18, d: 14, c: 0xf1f5f9 },
+        { x: 24,  z: 68,  w: 12, h: 23, d: 14, c: 0xcbd5e1 },
+        { x: -68, z: -68, w: 14, h: 28, d: 14, c: 0x94a3b8 },
+        { x: 68,  z: -68, w: 14, h: 24, d: 14, c: 0xe2e8f0 },
+        { x: -68, z: 68,  w: 14, h: 22, d: 14, c: 0xcbd5e1 },
+        { x: 68,  z: 68,  w: 14, h: 27, d: 14, c: 0xf1f5f9 },
+
+        // Anel Externo
+        { x: -112, z: -112, w: 16, h: 30, d: 16, c: 0xe2e8f0 },
+        { x: -68,  z: -112, w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+        { x: -24,  z: -112, w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 24,   z: -112, w: 15, h: 28, d: 15, c: 0xf1f5f9 },
+        { x: 68,   z: -112, w: 15, h: 22, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: -112, w: 16, h: 32, d: 16, c: 0xcbd5e1 },
+
+        { x: -112, z: -68,  w: 15, h: 25, d: 15, c: 0xf8fafc },
+        { x: 112,  z: -68,  w: 15, h: 27, d: 15, c: 0x94a3b8 },
+        { x: -112, z: -24,  w: 15, h: 21, d: 15, c: 0xcbd5e1 },
+        { x: 112,  z: -24,  w: 15, h: 23, d: 15, c: 0xe2e8f0 },
+        { x: -112, z: 24,   w: 15, h: 24, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 24,   w: 15, h: 20, d: 15, c: 0xf1f5f9 },
+        { x: -112, z: 68,   w: 15, h: 29, d: 15, c: 0xe2e8f0 },
+        { x: 112,  z: 68,   w: 15, h: 26, d: 15, c: 0xcbd5e1 },
+
+        { x: -112, z: 112,  w: 16, h: 31, d: 16, c: 0x94a3b8 },
+        { x: -68,  z: 112,  w: 15, h: 23, d: 15, c: 0xf1f5f9 },
+        { x: -24,  z: 112,  w: 15, h: 27, d: 15, c: 0xe2e8f0 },
+        { x: 24,   z: 112,  w: 15, h: 25, d: 15, c: 0xcbd5e1 },
+        { x: 68,   z: 112,  w: 15, h: 28, d: 15, c: 0x94a3b8 },
+        { x: 112,  z: 112,  w: 16, h: 30, d: 16, c: 0xe2e8f0 }
+      ];
+
+      buildingCoords.forEach(b => {
+        createSolidBox(b.x, 0, b.z, b.w, b.h, b.d, b.c, { isBuilding: true, receiveShadow: false });
+      });
+
+      // Atualiza o mapa de sombras estático dos prédios uma única vez
+      renderer.shadowMap.needsUpdate = true;
+    }
+    populateCity();
+
+    // ==========================================
+    // 6. PERSONAGEM E INIMIGOS
+    // ==========================================
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 });
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
+    const darkGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.6 });
+    const redBodyMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.6 });
+
+    const sharedTorsoGeo = new THREE.BoxGeometry(0.7, 1.1, 0.4);
+    const sharedHeadGeo = new THREE.SphereGeometry(0.28, 12, 12);
+    const sharedEyeMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
+    const sharedEyeGeo = new THREE.SphereGeometry(0.035, 6, 6);
+    const sharedSmileGeo = new THREE.TorusGeometry(0.08, 0.015, 5, 10, Math.PI);
+    const sharedArmGeo = new THREE.BoxGeometry(0.18, 0.75, 0.18);
+    sharedArmGeo.translate(0, -0.375, 0);
+    const sharedLegGeo = new THREE.BoxGeometry(0.22, 0.95, 0.22);
+    sharedLegGeo.translate(0, -0.475, 0);
+
+    function createPVMaterials(hexColor, baseMat) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = hexColor;
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 70px "Inter", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('PV', 64, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const frontBackMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.6 });
+      return [baseMat, baseMat, baseMat, baseMat, frontBackMat, frontBackMat];
+    }
+
+    const playerTorsoMats = createPVMaterials('#064e3b', darkGreenMat);
+    const enemyTorsoMats = createPVMaterials('#b91c1c', redBodyMat);
+
+    function buildCharacterRig(torsoMaterials) {
+      const group = new THREE.Group();
+      const torsoHeight = 1.1;
+      const torso = new THREE.Mesh(sharedTorsoGeo, torsoMaterials);
+      torso.position.y = 1.35;
+      group.add(torso);
+
+      const headRadius = 0.28;
+      const head = new THREE.Mesh(sharedHeadGeo, whiteMat);
+      head.position.y = torsoHeight / 2 + headRadius + 0.05;
+      torso.add(head);
+
+      const eyeLeft = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeLeft.position.set(-0.1, 0.05, 0.24);
+      head.add(eyeLeft);
+
+      const eyeRight = new THREE.Mesh(sharedEyeGeo, sharedEyeMat);
+      eyeRight.position.set(0.1, 0.05, 0.24);
+      head.add(eyeRight);
+
+      const smile = new THREE.Mesh(sharedSmileGeo, sharedEyeMat);
+      smile.position.set(0, -0.06, 0.24);
+      smile.rotation.x = Math.PI;
+      head.add(smile);
+
+      const armLeftGroup = new THREE.Group();
+      armLeftGroup.position.set(0.48, torsoHeight / 2 + 0.1, 0);
+      const armLeft = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armLeftGroup.add(armLeft);
+      torso.add(armLeftGroup);
+
+      const armRightGroup = new THREE.Group();
+      armRightGroup.position.set(-0.48, torsoHeight / 2 + 0.1, 0);
+      const armRight = new THREE.Mesh(sharedArmGeo, whiteMat);
+      armRightGroup.add(armRight);
+      torso.add(armRightGroup);
+
+      const legLeftGroup = new THREE.Group();
+      legLeftGroup.position.set(0.18, -torsoHeight / 2, 0);
+      const legLeft = new THREE.Mesh(sharedLegGeo, blackMat);
+      legLeftGroup.add(legLeft);
+      torso.add(legLeftGroup);
+
+      const legRightGroup = new THREE.Group();
+      legRightGroup.position.set(-0.18, -torsoHeight / 2, 0);
+      const legRight = new THREE.Mesh(sharedLegGeo, blackMat);
+      legRightGroup.add(legRight);
+      torso.add(legRightGroup);
+
+      return { group, torso, head, armLeftGroup, armRightGroup, legLeftGroup, legRightGroup };
+    }
+
+    const playerRig = buildCharacterRig(playerTorsoMats);
+    const characterGroup = playerRig.group;
+    const torso = playerRig.torso;
+    const head = playerRig.head;
+    const armLeftGroup = playerRig.armLeftGroup;
+    const armRightGroup = playerRig.armRightGroup;
+    const legLeftGroup = playerRig.legLeftGroup;
+    const legRightGroup = playerRig.legRightGroup;
+    scene.add(characterGroup);
+
+    // ==========================================
+    // 6B. CONTEÚDO PEDAGÓGICO BASEADO NOS SLIDES (AULA 5 - VALORES E DECISÕES)
+    // ==========================================
+    const CARTESIAN_ITEMS = [
+      {
+        id: 1,
+        title: "1. Valores como Bússola",
+        readingText: "Frente a tantas possibilidades para o futuro pós-escola, os seus valores funcionam como uma bússola, ajudando a orientar escolhas, prioridades e decisões importantes.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que os valores pessoais representam diante das escolhas de futuro?",
+            options: [
+              "São regras rígidas impostas pela escola sem nenhum sentido prático.",
+              "Funcionam como uma bússola para orientar escolhas e prioridades.",
+              "Servem para impedir que o estudante reflita sobre o seu amanhã."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Por que os valores são importantes nas decisões de estudo e trabalho?",
+            options: [
+              "Porque eliminam totalmente a necessidade de organizar o próprio tempo.",
+              "Porque proíbem o estudante de ajustar seus planos ao longo da vida.",
+              "Porque ajudam a priorizar caminhos com diferentes níveis de compromisso."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "De acordo com os conceitos da aula, o que orienta os caminhos no pós-escola?",
+            options: [
+              "Os valores pessoais atuando como guias de escolhas e prioridades.",
+              "A ausência completa de critérios internos ou metas de longo prazo.",
+              "Apenas a sorte e o acaso sem nenhuma reflexão sobre o futuro."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 1 — Valores como Bússola: Seus valores orientam escolhas e prioridades em decisões de estudo e trabalho."
+      },
+      {
+        id: 2,
+        title: "2. Situações de Escolha",
+        readingText: "Para reconhecer nossos valores, é preciso observar situações concretas de escolha — como decidir entre estabilidade e áreas de interesse —, avaliando o que cada opção oferece e demanda.",
+        verificationVersions: [
+          {
+            checkQuestion: "Como podemos identificar quais valores direcionam nossas decisões?",
+            options: [
+              "Evitando pensar sobre o futuro escolar ou sobre opções de trabalho.",
+              "Seguindo sempre a opinião de outras pessoas sem nenhum questionamento.",
+              "Observando situações concretas de escolha entre diferentes caminhos."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "O que envolve a análise de uma situação de escolha no Projeto de Vida?",
+            options: [
+              "Escolher a primeira opção que surgir sem verificar as consequências.",
+              "Avaliar o que cada alternativa oferece e demanda na prática.",
+              "Recusar qualquer oportunidade ligada ao estudo ou ao trabalho."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Qual é a utilidade de analisar dilemas entre estabilidade e interesse?",
+            options: [
+              "Garantir que nunca precisaremos tomar decisões difíceis na vida.",
+              "Tornar o planejamento escolar algo impossível de ser realizado.",
+              "Compreender o peso dos valores em nossas decisões reais de futuro."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 2 — Situações de Escolha: Analisar situações concretas permite ver o que cada opção oferece e demanda."
+      },
+      {
+        id: 3,
+        title: "3. Reconhecimento e Equilíbrio",
+        readingText: "Muitas vezes ponderamos entre buscar visibilidade e reconhecimento versus manter uma rotina equilibrada com momentos de descanso e lazer.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que costuma estar em jogo ao decidir entre visibilidade e rotina?",
+            options: [
+              "A obrigação de abandonar os estudos para buscar fama imediata.",
+              "A balança entre reconhecimento externo e bem-estar na rotina.",
+              "A proibição de participar de qualquer projeto dentro da escola."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Por que equilibrar descanso e projetos exigentes é um desafio?",
+            options: [
+              "Porque o descanso impede totalmente o aprendizado e o crescimento.",
+              "Porque nunca é necessário organizar horários de lazer e estudo.",
+              "Porque projetos com visibilidade exigem abrir mão de momentos de lazer."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "O valor de equilíbrio na rotina está relacionado a quê?",
+            options: [
+              "Ao cuidado com a saúde, o lazer e a organização entre áreas da vida.",
+              "Ao desejo de buscar visibilidade a qualquer custo sem descansar.",
+              "À recusa em realizar qualquer tipo de atividade escolar ou projeto."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 3 — Reconhecimento e Equilíbrio: Pesar visibilidade, reconhecimento e momentos de descanso na rotina."
+      },
+      {
+        id: 4,
+        title: "4. Autonomia e Expectativas",
+        readingText: "Seguir um caminho próprio que faz sentido para você pode gerar questionamentos das pessoas ao redor, exigindo autonomia frente às expectativas familiares e sociais.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que significa ter autonomia na construção do Projeto de Vida?",
+            options: [
+              "Fazer apenas o que os outros mandam sem refletir sobre suas metas.",
+              "Desistir de estudar para evitar assumir qualquer responsabilidade.",
+              "Ter liberdade para tomar decisões alinhadas ao que faz sentido para você."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "O que pode acontecer ao escolher um percurso próprio diferente das expectativas alheias?",
+            options: [
+              "Garante aprovação imediata e unânime de todas as pessoas ao redor.",
+              "Pode gerar dúvidas ou questionamentos das pessoas ao seu redor.",
+              "Elimina qualquer tipo de desafio ou esforço na vida após a escola."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Qual valor orienta a escolha por um caminho que faz sentido pessoal?",
+            options: [
+              "A busca por realização pessoal e autonomia nas decisões.",
+              "A imitação cega de padrões escolhidos por outras pessoas.",
+              "O medo absoluto de enfrentar mudanças ou questionamentos."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 4 — Autonomia e Expectativas: Equilibrar expectativas externas com escolhas que fazem sentido pessoal."
+      },
+      {
+        id: 5,
+        title: "5. Ajustes e Revisão do Plano",
+        readingText: "Como os valores podem mudar ao longo do tempo, revisar periodicamente o Projeto de Vida ajuda a mantê-lo coerente com nossas escolhas atuais e metas futuras.",
+        verificationVersions: [
+          {
+            checkQuestion: "Por que é importante revisar o Projeto de Vida periodicamente?",
+            options: [
+              "Porque o plano inicial nunca deve sofrer nenhum tipo de alteração.",
+              "Porque os valores podem mudar ao longo do tempo e exigir ajustes.",
+              "Para garantir que esqueçamos tudo o que foi planejado antes."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "O que a revisão periódica ajuda a garantir?",
+            options: [
+              "A rigidez absoluta do plano sem espaço para novas adaptações.",
+              "A repetição de escolhas antigas sem nenhuma reflexão crítica.",
+              "A coerência entre o planejado e os valores das escolhas recentes."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Qual é o principal aprendizado sobre a evolução dos valores?",
+            options: [
+              "Eles nos acompanham, mas podem mudar, exigindo ajustes no plano.",
+              "Eles são fixos na infância e nunca mais sofrem transformações.",
+              "Eles não exercem nenhuma influência nas decisões após a escola."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 5 — Ajustes e Revisão: Valores mudam ao longo do tempo; revisar o plano garante coerência com o presente."
+      }
+    ];
+
+    // Questões finais baseadas nos slides (5 questões alinhadas à Aula 5)
+    const EXAM_QUESTIONS = [
+      {
+        relatedTipIds: [1],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Frente a tantas possibilidades e caminhos após a escola, as decisões exigem critérios internos para orientar prioridades.",
+            question: "Segundo os estudos da aula, o que atua como uma 'bússola' orientando nossas escolhas e prioridades?",
+            options: [
+              "A opinião exclusiva de pessoas desconhecidas.",
+              "A falta de qualquer critério para tomar decisões.",
+              "Os seus próprios valores pessoais e prioridades.",
+              "O acaso sem reflexão ou planejamento de futuro.",
+              "As restrições impostas pelo clima ou pelo local."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: os valores vêm de dentro e orientam o indivíduo.",
+              "Errou: as decisões são guiadas por valores internos.",
+              "",
+              "Errou: escolhas conscientes exigem a bússola dos valores.",
+              "Errou: valores organizam prioridades de forma intencional."
+            ]
+          },
+          {
+            statement: "Em decisões ligadas ao futuro profissional e acadêmico, diferentes caminhos exigem compromissos e adaptações distintas.",
+            question: "Qual é o papel dos valores nas decisões sobre estudo e trabalho?",
+            options: [
+              "Tornar todas as profissões exatamente iguais em exigências.",
+              "Impedir que o estudante escolha ingressar no ensino superior.",
+              "Eliminar a necessidade de adaptação a novos contextos de vida.",
+              "Orientar escolhas e prioridades alinhadas ao que faz sentido.",
+              "Garantir renda imediata sem nenhum esforço ou compromisso."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: caminhos exigem níveis distintos de compromisso.",
+              "Errou: valores ajudam a direcionar o estudante para o que faz sentido.",
+              "Errou: adaptação e tempo fazem parte das escolhas.",
+              "",
+              "Errou: valores guiam prioridades para além da renda imediata."
+            ]
+          },
+          {
+            statement: "Nem sempre é fácil perceber o que orienta nossas decisões, pois muitas vezes somos influenciados pelo contexto.",
+            question: "Por que é fundamental refletir sobre o que orienta nossas decisões de futuro?",
+            options: [
+              "Para garantir que sigamos modismos sem nenhum questionamento.",
+              "Para identificar o que priorizamos e conectar escolhas aos valores.",
+              "Para deixar de fazer planos para a vida após o Ensino Médio.",
+              "Para transferir a responsabilidade das escolhas para terceiros.",
+              "Para eliminar qualquer possibilidade de cometer erros na vida."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: a reflexão busca autonomia frente a pressões externas.",
+              "",
+              "Errou: o objetivo é construir um Projeto de Vida consciente.",
+              "Errou: a responsabilidade sobre o futuro é pessoal.",
+              "Errou: erros fazem parte do aprendizado e ajuste de rotas."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [2],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Analisar situações concretas de escolha ajuda a reconhecer o peso de diferentes critérios em jogo.",
+            question: "Ao analisar situações de escolha no pós-escola, o que devemos avaliar em cada alternativa?",
+            options: [
+              "Apenas qual opção é mais fácil de ser ignorada no dia a dia.",
+              "Como evitar qualquer tipo de compromisso ou esforço futuro.",
+              "A quantidade de regras que proíbem o estudante de crescer.",
+              "O motivo para desistir rapidamente de todas as metas pessoais.",
+              "O que cada opção oferece e demanda em tempo e compromisso."
+            ],
+            correctIndex: 4,
+            errorReasons: [
+              "Errou: escolhas exigem avaliar demandas reais.",
+              "Errou: compromissos fazem parte da transição para a vida adulta.",
+              "Errou: regras escolares apoiam o desenvolvimento.",
+              "Errou: metas pessoais estruturam o Projeto de Vida.",
+              ""
+            ]
+          },
+          {
+            statement: "Diante de uma oportunidade estável versus uma área de interesse com incerteza, os valores entram em tensão.",
+            question: "O que caracteriza a análise de situações de escolha na prática?",
+            options: [
+              "Escolher sempre a opção mais longa sem avaliar o contexto.",
+              "Reconhecer o que direciona decisões quando há mais de uma opção.",
+              "Recusar analisar qualquer dilema ligado ao mundo do trabalho.",
+              "Deixar que o acaso decida sozinho o seu futuro profissional.",
+              "Ignorar completamente os interesses pessoais e habilidades."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: a análise busca clareza e não repetição cega.",
+              "",
+              "Errou: enfrentar situações de escolha qualifica o Projeto de Vida.",
+              "Errou: escolhas conscientes requerem atenção aos critérios.",
+              "Errou: interesses e valores são centrais nas decisões."
+            ]
+          },
+          {
+            statement: "Decidir entre segurança financeira e realização pessoal exige ponderar prioridades.",
+            question: "O exercício de analisar escolhas concretas nos ajuda a perceber:",
+            options: [
+              "que nenhuma escolha tem importância para o futuro pessoal.",
+              "que devemos evitar pensar sobre o mundo do trabalho agora.",
+              "que a estabilidade financeira é o único valor que existe.",
+              "quais valores pesam mais em nossas decisões do dia a dia.",
+              "que o planejamento de futuro é uma atividade totalmente inútil."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: decisões de pós-escola moldam a trajetória pessoal.",
+              "Errou: o mundo do trabalho é parte essencial do planejamento.",
+              "Errou: existem diversos valores como autonomia, bem-estar e propósito.",
+              "",
+              "Errou: planejar auxilia a alinhar intenções e ações."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [3],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Participar de projetos que trazem visibilidade exige muitas vezes abrir mão de momentos de descanso e lazer.",
+            question: "Essa situação de escolha entre reconhecimento e descanso envolve principalmente qual conflito de valores?",
+            options: [
+              "A falta absoluta de objetivos escolares definidos no ano.",
+              "A recusa em aprender conteúdos novos nas aulas regulares.",
+              "Reconhecimento externo versus bem-estar e equilíbrio na rotina.",
+              "O desejo de abandonar os estudos antes de concluir o curso.",
+              "A proibição de trabalhar em equipe com os colegas de sala."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: objetivos claros norteiam o planejamento.",
+              "Errou: o aprendizado é valorizado nas atividades.",
+              "",
+              "Errou: o foco é a gestão do tempo e das prioridades.",
+              "Errou: trabalho em equipe é incentivado como apoio."
+            ]
+          },
+          {
+            statement: "Manter uma rotina equilibrada com menos exposição e mais bem-estar é uma escolha legítima de prioridades.",
+            question: "O que a busca por equilíbrio na rotina nos ensina sobre as decisões?",
+            options: [
+              "Que devemos buscar visibilidade a qualquer custo sem dormir.",
+              "Que o descanso impede totalmente o sucesso na vida adulta.",
+              "Que nunca devemos participar de projetos na escola ou fora.",
+              "Que o estresse constante é obrigatório para todo estudante.",
+              "Que priorizar a saúde e o descanso é uma escolha legítima."
+            ],
+            correctIndex: 4,
+            errorReasons: [
+              "Errou: equilíbrio significa cuidar da saúde e do descanso.",
+              "Errou: o sucesso pode vir com sustentabilidade e saúde.",
+              "Errou: projetos enriquecem a trajetória quando bem dosados.",
+              "Errou: qualidade de vida é prioridade em muitas escolhas.",
+              ""
+            ]
+          },
+          {
+            statement: "O excesso de demandas sem pausas pode levar ao cansaço mental e à fadiga de decisão.",
+            question: "Como o equilíbrio e o cuidado com o bem-estar impactam o Projeto de Vida?",
+            options: [
+              "Tornando o estudante incapaz de realizar qualquer tarefa.",
+              "Garantindo sustentabilidade e saúde na busca de metas longas.",
+              "Eliminando a ambição de aprender coisas novas no futuro.",
+              "Incentivando o acúmulo infinito de tarefas e de estresse.",
+              "Proibindo o planejamento de horários de estudo e descanso."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: o bem-estar fortalece a consistência das ações.",
+              "",
+              "Errou: cuidar da saúde amplia a clareza mental.",
+              "Errou: metas de longo prazo exigem energia sustentável.",
+              "Errou: planejar horários reduz a fadiga de decisão."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [4],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Seguir um percurso que faz sentido pessoal pode gerar questionamentos das pessoas ao redor e da família.",
+            question: "O que a necessidade de ponderar expectativas familiares e escolhas pessoais exige do estudante?",
+            options: [
+              "Submissão cega a qualquer opinião alheia sem nenhuma reflexão.",
+              "Desistência imediata de todos os sonhos e projetos pessoais.",
+              "Isolamento completo dos amigos, familiares e professores.",
+              "Autonomia e responsabilidade para sustentar suas decisões.",
+              "Fuga de qualquer diálogo sincero sobre os planos de futuro."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: autonomia pressupõe capacidade crítica e ponderação.",
+              "Errou: sonhos e valores pessoais devem ser cultivados.",
+              "Errou: diálogo e redes de apoio são essenciais.",
+              "",
+              "Errou: o planejamento envolve compartilhar expectativas."
+            ]
+          },
+          {
+            statement: "A autonomia permite exercer a liberdade de escolha, mas vem acompanhada de responsabilidade pelos caminhos trilhados.",
+            question: "Qual é a relação entre autonomia e escolhas no Projeto de Vida?",
+            options: [
+              "Autonomia significa fazer o que quiser sem pensar em ninguém.",
+              "Autonomia elimina a necessidade de organizar suas prioridades.",
+              "Autonomia é a liberdade de decidir com responsabilidade própria.",
+              "Autonomia impede o estudante de pedir ajuda quando precisa.",
+              "Autonomia é seguir regras prontas sem nunca questionar nada."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: responsabilidade acompanha a liberdade de escolha.",
+              "Errou: organizar prioridades é parte da autonomia madura.",
+              "",
+              "Errou: pedir ajuda a redes de apoio fortalece o plano.",
+              "Errou: autonomia exige discernimento e reflexão."
+            ]
+          },
+          {
+            statement: "Muitas vezes o caminho seguro esperado pela família difere daquele que desperta maior interesse pessoal.",
+            question: "Como lidar com divergências entre expectativas externas e desejos pessoais?",
+            options: [
+              "Rompendo relações com todos ao primeiro sinal de divergência.",
+              "Analisando valores, dialogando e assumindo escolhas conscientes.",
+              "Aceitando passivamente qualquer imposição sem refletir antes.",
+              "Parando de estudar para evitar conflitos com as outras pessoas.",
+              "Deixando que o acaso resolva o impasse sem tomar nenhuma atitude."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: diálogo e fundamentação evitam conflitos destrutivos.",
+              "",
+              "Errou: escolhas conscientes requerem maturidade e clareza.",
+              "Errou: a reflexão é o pilar do Projeto de Vida.",
+              "Errou: ações intencionais superam a passividade."
+            ]
+          }
+        ]
+      },
+      {
+        relatedTipIds: [5],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Os valores pessoais não são estáticos; eles podem mudar ao longo do tempo conforme acumulamos experiências.",
+            question: "Por que é necessário revisar o Projeto de Vida periodicamente?",
+            options: [
+              "Porque o plano antigo perde a validade legal após alguns meses.",
+              "Para garantir que nunca mais alcancemos nenhuma meta traçada.",
+              "Porque o passado não tem nenhuma relação com o nosso futuro.",
+              "Para apagar todas as memórias e registros feitos na escola.",
+              "Porque os valores mudam e a revisão mantém o plano coerente."
+            ],
+            correctIndex: 4,
+            errorReasons: [
+              "Errou: a revisão é um processo pedagógico de alinhamento.",
+              "Errou: o objetivo é manter metas vivas e significativas.",
+              "Errou: memória e expectativa articulam-se na trajetória.",
+              "Errou: registros da linha do tempo preservam a história pessoal.",
+              ""
+            ]
+          },
+          {
+            statement: "Retomar o planejamento após vivenciar novas experiências permite ajustar rotas e alinhar intenções e ações.",
+            question: "O que indica coerência entre o Projeto de Vida planejado e as escolhas recentes?",
+            options: [
+              "A repetição mecânica de metas que já perderam todo o sentido.",
+              "A recusa em avaliar os resultados e os acertos da trajetória.",
+              "O alinhamento entre os valores atuais e as decisões tomadas.",
+              "A ausência total de flexibilidade diante de mudanças novas.",
+              "O distanciamento constante entre a intenção e a prática diária."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: metas devem fazer sentido no momento presente.",
+              "Errou: avaliar resultados qualifica o aprendizado.",
+              "",
+              "Errou: flexibilidade é indispensável em transições.",
+              "Errou: coerência exige sintonia entre intenção e ação."
+            ]
+          },
+          {
+            statement: "A construção do futuro é um processo contínuo de autoconhecimento, escolhas e ajustes no percurso.",
+            question: "Qual é a principal conclusão sobre a revisão do Projeto de Vida?",
+            options: [
+              "O plano deve ser escrito uma única vez e nunca mais alterado.",
+              "Revisar o plano ajuda a adaptá-lo aos valores e mudanças atuais.",
+              "Ajustes no caminho demonstram fraqueza ou desistência fácil.",
+              "O futuro pode ser previsto hoje com exatidão matemática total.",
+              "Valores fixos impedem qualquer evolução pessoal ou escolar."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: revisões periódicas são essenciais na vida adulta e escolar.",
+              "",
+              "Errou: ajustar a rota demonstra maturidade e consciência.",
+              "Errou: o futuro envolve incertezas e adaptações.",
+              "Errou: flexibilidade e valores orientam o crescimento."
+            ]
+          }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 6C. CRIAÇÃO DOS ITENS E INIMIGOS (5 UNIDADES)
+    // ==========================================
+    let gamePhase = 1; // 1 = Coleta, 2 = Perseguição/Disparo
+    let isPaused = true;
+    let playerName = "Jogador";
+    let collectedCount = 0;
+    let defeatedEnemiesCount = 0;
+    const TOTAL_SECOND_PHASE_QUESTIONS = EXAM_QUESTIONS.length;
+    let availableExamQuestions = [...EXAM_QUESTIONS];
+
+    let questionTimerInterval = null;
+    let questionTimeRemaining = 0;
+    let activePenaltyCallback = null;
+
+    function clearQuestionTimer() {
+      if (questionTimerInterval) {
+        clearInterval(questionTimerInterval);
+        questionTimerInterval = null;
+      }
+      activePenaltyCallback = null;
+    }
+
+    function startQuestionTimer(seconds, onTimeoutOrCheat) {
+      clearQuestionTimer();
+      questionTimeRemaining = seconds;
+      activePenaltyCallback = onTimeoutOrCheat;
+
+      const timerEl = document.getElementById('modal-q-timer');
+      timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-slate-950 border border-amber-400/70 text-amber-300 whitespace-nowrap";
+      timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${questionTimeRemaining}s`;
+
+      questionTimerInterval = setInterval(() => {
+        if (modalQuestion.classList.contains('hidden')) {
+          clearQuestionTimer();
+          return;
+        }
+        questionTimeRemaining--;
+        if (questionTimeRemaining <= 5) {
+          timerEl.className = "text-xs font-extrabold px-2.5 py-1 rounded-lg bg-red-950 border border-red-400 text-red-200 whitespace-nowrap";
+        }
+        timerEl.innerHTML = `<i class="fa-regular fa-clock mr-1"></i>${Math.max(0, questionTimeRemaining)}s`;
+
+        if (questionTimeRemaining <= 0) {
+          const cb = activePenaltyCallback;
+          clearQuestionTimer();
+          if (cb) cb("Tempo esgotado!");
+        }
+      }, 1000);
+    }
+
+    function triggerAntiCheatPenalty(reasonLabel) {
+      if (modalQuestion.classList.contains('hidden')) return;
+      if (!activePenaltyCallback) return;
+      const cb = activePenaltyCallback;
+      clearQuestionTimer();
+      cb(reasonLabel);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        triggerAntiCheatPenalty("Saída da tela do jogo detectada!");
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      triggerAntiCheatPenalty("Perda de foco ou tentativa de captura de tela detectada!");
+    });
+
+    window.addEventListener('keydown', (e) => {
+      const isPrintKey = e.key === 'PrintScreen' || e.code === 'PrintScreen';
+      const isWinSnip = (e.metaKey || e.ctrlKey) && e.shiftKey && (e.key.toLowerCase() === 's' || e.key === '3' || e.key === '4');
+      if (isPrintKey || isWinSnip) {
+        triggerAntiCheatPenalty("Tentativa de captura de tela detectada!");
+      }
+    });
+
+    let isIntroDescent = false;
+    let introElapsed = 0;
+    const INTRO_DURATION = 5.0;
+    const INTRO_START_Y = 75.0;
+
+    const modalStart = document.getElementById('modal-start');
+    const playerNameInput = document.getElementById('player-name-input');
+    const btnStartGame = document.getElementById('btn-start-game');
+
+    function startGameWithPlayerName() {
+      const typed = playerNameInput.value.trim();
+      playerName = typed.length > 0 ? typed : "Jogador";
+      modalStart.classList.add('hidden');
+      characterGroup.position.set(0, INTRO_START_Y, 5);
+      isIntroDescent = true;
+      introElapsed = 0;
+      isPaused = true;
+      clock.getDelta();
+    }
+
+    btnStartGame.addEventListener('click', startGameWithPlayerName);
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startGameWithPlayerName();
+    });
+
+    function updatePhaseOneBadge() {
+      const currentTipNumber = Math.min(collectedCount + 1, CARTESIAN_ITEMS.length);
+      document.getElementById('phase-badge').textContent =
+        `Colete a dica ${currentTipNumber}. Cuidado com os inimigos!`;
+    }
+
+    function updatePhaseTwoBadge() {
+      const remainingQuestions = TOTAL_SECOND_PHASE_QUESTIONS - defeatedEnemiesCount;
+      const faltaText = remainingQuestions === 1
+        ? "Falta 1 questão."
+        : `Faltam ${remainingQuestions} questões.`;
+      document.getElementById('phase-badge').textContent =
+        `Atinja os inimigos e responda às questões! ${faltaText}`;
+    }
+
+    const sharedTipRingGeo = new THREE.RingGeometry(0.65, 0.9, 16);
+    const sharedTipRingMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+
+    function createTipItemMesh(tipNumber) {
+      const qGroup = new THREE.Group();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(6, 8, 244, 80, 16);
+      ctx.fill();
+
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 46px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Dica ${tipNumber}`, 128, 49);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(2.8, 1.05, 1);
+      sprite.position.set(0, 1.35, 0);
+      qGroup.add(sprite);
+
+      const ringMesh = new THREE.Mesh(sharedTipRingGeo, sharedTipRingMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.05;
+      qGroup.add(ringMesh);
+
+      return qGroup;
+    }
+
+    const safeRoadSpots = [
+      { x: -90, z: -90 }, { x: -45, z: -90 }, { x: 0, z: -90 }, { x: 45, z: -90 }, { x: 90, z: -90 },
+      { x: -90, z: -45 }, { x: -45, z: -45 }, { x: 0, z: -45 }, { x: 45, z: -45 }, { x: 90, z: -45 },
+      { x: -90, z: 0 },   { x: -45, z: 0 },                     { x: 45, z: 0 },   { x: 90, z: 0 },
+      { x: -90, z: 45 },  { x: -45, z: 45 },  { x: 0, z: 45 },  { x: 45, z: 45 },  { x: 90, z: 45 },
+      { x: -90, z: 90 },  { x: -45, z: 90 },  { x: 0, z: 90 },  { x: 45, z: 90 },  { x: 90, z: 90 }
+    ];
+
+    function getRandomFreeSpot(minDistFromPlayer = 18) {
+      const candidates = safeRoadSpots.filter(s => {
+        const dx = s.x - characterGroup.position.x;
+        const dz = s.z - characterGroup.position.z;
+        return Math.hypot(dx, dz) >= minDistFromPlayer;
+      });
+      const pool = candidates.length > 0 ? candidates : safeRoadSpots;
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    const collectibleEntities = [];
+    const initialItemSpots = [
+      { x: 0, z: -45 },
+      { x: 45, z: 0 },
+      { x: -45, z: 0 },
+      { x: 45, z: 45 },
+      { x: -45, z: -45 }
+    ];
+
+    CARTESIAN_ITEMS.forEach((data, idx) => {
+      const mesh = createTipItemMesh(data.id);
+      const pos = initialItemSpots[idx % initialItemSpots.length];
+      mesh.position.set(pos.x, 0, pos.z);
+      mesh.visible = idx === 0;
+      scene.add(mesh);
+      collectibleEntities.push({
+        data,
+        mesh,
+        collected: false,
+        cooldown: 0,
+        attemptIndex: 0
+      });
+    });
+
+    const enemyEntities = [];
+    const initialEnemySpots = [
+      { x: -90, z: -90 },
+      { x: 90, z: -90 },
+      { x: -90, z: 90 },
+      { x: 90, z: 90 },
+      { x: 0, z: -90 }
+    ];
+
+    const enemyPatrolRoutes = [
+      [ { x: -90, z: -90 }, { x: 0, z: -90 }, { x: 0, z: -45 }, { x: -90, z: -45 } ],
+      [ { x: 90, z: -90 }, { x: 90, z: 0 }, { x: 45, z: 0 }, { x: 45, z: -90 } ],
+      [ { x: -90, z: 90 }, { x: -90, z: 0 }, { x: -45, z: 0 }, { x: -45, z: 90 } ],
+      [ { x: 90, z: 90 }, { x: 0, z: 90 }, { x: 0, z: 45 }, { x: 90, z: 45 } ],
+      [ { x: 0, z: -90 }, { x: 45, z: -45 }, { x: -45, z: -45 }, { x: -45, z: 45 } ]
+    ];
+
+    function spawnEnemiesForCount(count) {
+      for (let i = 0; i < enemyEntities.length; i++) {
+        scene.remove(enemyEntities[i].rig.group);
+      }
+      enemyEntities.length = 0;
+
+      for (let idx = 0; idx < count; idx++) {
+        const spot = initialEnemySpots[idx % initialEnemySpots.length];
+        const rig = buildCharacterRig(enemyTorsoMats);
+        rig.group.position.set(spot.x, 0, spot.z);
+        scene.add(rig.group);
+        enemyEntities.push({
+          id: idx,
+          rig,
+          angle: (idx * Math.PI) / 2.5,
+          walkCycle: Math.random() * 10,
+          defeated: false,
+          explodingPending: false,
+          wanderTimer: 0.5 + idx * 0.4,
+          route: enemyPatrolRoutes[idx % enemyPatrolRoutes.length],
+          waypointIdx: 1,
+          turnBias: (idx % 2 === 0 ? 1 : -1) * (0.45 + idx * 0.08)
+        });
+      }
+    }
+
+    spawnEnemiesForCount(CARTESIAN_ITEMS.length);
+
+    const projectiles = [];
+    const explosionParticles = [];
+    const playerHeadRadius = 0.28;
+    const redBallGeometry = new THREE.SphereGeometry((playerHeadRadius / 3) * 2, 12, 12);
+    const redBallMaterial = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0x7f1d1d,
+      emissiveIntensity: 0.35,
+      roughness: 0.35
+    });
+    const sharedExplosionGeo = new THREE.SphereGeometry(0.18, 6, 6);
+
+    function createPVProjectileMesh() {
+      return new THREE.Mesh(redBallGeometry, redBallMaterial);
+    }
+
+    function spawnNonViolentExplosion(pos) {
+      const colors = [0xfacc15, 0x38bdf8, 0xffffff, 0x34d399];
+      for (let i = 0; i < 16; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: colors[i % colors.length],
+          transparent: true,
+          opacity: 1.0
+        });
+        const p = new THREE.Mesh(sharedExplosionGeo, mat);
+        p.position.set(pos.x, pos.y + 1.3, pos.z);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.08 + Math.random() * 0.18;
+        const vy = 0.12 + Math.random() * 0.22;
+        scene.add(p);
+        explosionParticles.push({
+          mesh: p,
+          vx: Math.cos(angle) * speed,
+          vy,
+          vz: Math.sin(angle) * speed,
+          life: 1.0
+        });
+      }
+    }
+
+    // ==========================================
+    // 7. FÍSICA E COLISÃO
+    // ==========================================
+    characterGroup.position.set(0, INTRO_START_Y, 5);
+    let characterAngle = Math.PI;
+
+    const playerRadius = 0.45;
+    const playerHeight = 2.3;
+    const moveSpeed = 0.44;
+    const turnSpeed = 0.048;
+
+    let verticalVelocity = 0;
+    let isGrounded = true;
+    const gravity = -0.022;
+
+    const dpadState = { left: false, right: false };
+    const handWorldPosVec = new THREE.Vector3();
+
+    function throwPVWord() {
+      if (isPaused || gamePhase !== 2) return;
+
+      armRightGroup.getWorldPosition(handWorldPosVec);
+      handWorldPosVec.y -= 0.35;
+
+      const dirX = Math.sin(characterAngle);
+      const dirZ = Math.cos(characterAngle);
+
+      const projectileMesh = createPVProjectileMesh();
+      projectileMesh.position.set(handWorldPosVec.x + dirX * 0.6, handWorldPosVec.y, handWorldPosVec.z + dirZ * 0.6);
+      scene.add(projectileMesh);
+
+      projectiles.push({
+        mesh: projectileMesh,
+        dirX,
+        dirZ,
+        traveled: 0,
+        maxDistance: 75
+      });
+    }
+
+    function resolveHorizontalCollisions(nextX, nextZ, currentY) {
+      const maxBound = CITY_LIMIT - playerRadius;
+      nextX = Math.max(-maxBound, Math.min(maxBound, nextX));
+      nextZ = Math.max(-maxBound, Math.min(maxBound, nextZ));
+
+      const pBottom = currentY + 0.08;
+      const pTop = currentY + playerHeight;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+
+        if (pTop > box.minY && pBottom < box.maxY) {
+          const closestX = Math.max(box.minX, Math.min(nextX, box.maxX));
+          const closestZ = Math.max(box.minZ, Math.min(nextZ, box.maxZ));
+
+          const distX = nextX - closestX;
+          const distZ = nextZ - closestZ;
+          const distSq = distX * distX + distZ * distZ;
+
+          if (distSq < playerRadius * playerRadius) {
+            const dist = Math.sqrt(distSq);
+            if (dist > 0.0001) {
+              const overlap = playerRadius - dist;
+              nextX += (distX / dist) * overlap;
+              nextZ += (distZ / dist) * overlap;
+            } else {
+              const penLeft = Math.abs(nextX - box.minX);
+              const penRight = Math.abs(box.maxX - nextX);
+              const penFront = Math.abs(nextZ - box.minZ);
+              const penBack = Math.abs(box.maxZ - nextZ);
+              const minPen = Math.min(penLeft, penRight, penFront, penBack);
+
+              if (minPen === penLeft) nextX = box.minX - playerRadius;
+              else if (minPen === penRight) nextX = box.maxX + playerRadius;
+              else if (minPen === penFront) nextZ = box.minZ - playerRadius;
+              else nextZ = box.maxZ + playerRadius;
+            }
+          }
+        }
+      }
+
+      return { x: nextX, z: nextZ };
+    }
+
+    function getSupportFloorHeight(x, z, currentY) {
+      let highestFloor = 0;
+
+      for (let i = 0; i < colliders.length; i++) {
+        const box = colliders[i];
+        const withinX = (x + playerRadius * 0.75) > box.minX && (x - playerRadius * 0.75) < box.maxX;
+        const withinZ = (z + playerRadius * 0.75) > box.minZ && (z - playerRadius * 0.75) < box.maxZ;
+
+        if (withinX && withinZ) {
+          if (currentY >= box.maxY - 0.35 && box.maxY > highestFloor) {
+            highestFloor = box.maxY;
+          }
+        }
+      }
+      return highestFloor;
+    }
+
+    // ==========================================
+    // 7B. INTERFACE PEDAGÓGICA
+    // ==========================================
+    const modalQuestion = document.getElementById('modal-question');
+    const modalQHeader = document.getElementById('modal-q-header');
+    const modalQBadge = document.getElementById('modal-q-badge');
+    const modalQSubtitle = document.getElementById('modal-q-subtitle');
+    const modalQTipsBox = document.getElementById('modal-q-tips-box');
+    const modalQTipsList = document.getElementById('modal-q-tips-list');
+    const modalQText = document.getElementById('modal-q-text');
+    const modalQPrompt = document.getElementById('modal-q-prompt');
+    const modalQOptions = document.getElementById('modal-q-options');
+    const modalQFeedback = document.getElementById('modal-q-feedback');
+    const btnContinueGame = document.getElementById('btn-continue-game');
+
+    const modalPhase2Intro = document.getElementById('modal-phase2-intro');
+    const btnProceedPhase2 = document.getElementById('btn-proceed-phase2');
+
+    const toastBanner = document.getElementById('toast-banner');
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 3500) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBanner.classList.add('hidden');
+      }, duration);
+    }
+
+    function resetMovementKeys() {
+      dpadState.left = false;
+      dpadState.right = false;
+      document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('active'));
+    }
+
+    function renderMatchingTipsInQuestionModal(relatedTipIds) {
+      const matchingItems = CARTESIAN_ITEMS.filter(item => relatedTipIds.includes(item.id));
+      modalQTipsList.innerHTML = matchingItems.map(item => `
+        <div class="text-slate-200 leading-relaxed">
+          <span class="font-bold text-amber-300">${item.tip}</span>
+        </div>
+      `).join('<div class="my-2 border-t border-amber-400/20"></div>');
+    }
+
+    function openPhaseTwoIntroModal() {
+      isPaused = true;
+      resetMovementKeys();
+      toastBanner.classList.add('hidden');
+      modalPhase2Intro.classList.remove('hidden');
+    }
+
+    btnProceedPhase2.addEventListener('click', () => {
+      modalPhase2Intro.classList.add('hidden');
+      gamePhase = 2;
+      spawnEnemiesForCount(TOTAL_SECOND_PHASE_QUESTIONS);
+
+      document.getElementById('btn-throw').classList.remove('hidden');
+
+      updatePhaseTwoBadge();
+      isPaused = false;
+      clock.getDelta();
+    });
+
+    function openItemQuestionModal(itemEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      const versions = itemEntity.data.verificationVersions;
+      const currentVersion = versions[itemEntity.attemptIndex % versions.length];
+
+      modalQHeader.classList.remove('hidden');
+      modalQTipsBox.classList.add('hidden');
+      modalQBadge.textContent = "Verificação de Leitura";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = itemEntity.data.title;
+      modalQText.textContent = itemEntity.data.readingText;
+      modalQPrompt.textContent = currentVersion.checkQuestion;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+
+      function applyItemWrongOutcome(customPrefix) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        itemEntity.attemptIndex = (itemEntity.attemptIndex + 1) % versions.length;
+
+        const newSpot = getRandomFreeSpot(25);
+        itemEntity.mesh.position.set(newSpot.x, 0, newSpot.z);
+        itemEntity.cooldown = 2.0;
+
+        const prefix = customPrefix || "Ops! Resposta incorreta.";
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = `${prefix} A Dica ${itemEntity.data.id} mudou para outro lugar da cidade. Procure-a e tente novamente!`;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      // Tempo dobrado para 16 segundos nas questões de verificação de leitura
+      startQuestionTimer(16, (reason) => applyItemWrongOutcome(reason));
+
+      currentVersion.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + idx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = idx === currentVersion.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+            itemEntity.collected = true;
+            itemEntity.mesh.visible = false;
+            collectedCount++;
+
+            if (collectedCount < collectibleEntities.length) {
+              collectibleEntities[collectedCount].mesh.visible = true;
+            }
+            updatePhaseOneBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Resposta correta! Você coletou a dica e ela ficará disponível para consulta na segunda parte do jogo.";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+            applyItemWrongOutcome("Ops! Resposta incorreta.");
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (collectedCount === CARTESIAN_ITEMS.length && gamePhase === 1) {
+          openPhaseTwoIntroModal();
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    function openEnemyExamModal(enemyEntity) {
+      isPaused = true;
+      resetMovementKeys();
+
+      if (availableExamQuestions.length === 0) {
+        availableExamQuestions = [...EXAM_QUESTIONS];
+      }
+      const qIndex = Math.floor(Math.random() * availableExamQuestions.length);
+      const examTopic = availableExamQuestions[qIndex];
+      const examQ = examTopic.versions[examTopic.attemptIndex % examTopic.versions.length];
+
+      modalQHeader.classList.remove('hidden');
+      modalQBadge.textContent = "Questão de Projeto de Vida";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = "Consulte a dica abaixo";
+
+      renderMatchingTipsInQuestionModal(examTopic.relatedTipIds);
+      modalQTipsBox.classList.remove('hidden');
+
+      modalQText.textContent = examQ.statement;
+      modalQPrompt.textContent = examQ.question;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+      let answeredCorrectly = false;
+
+      function applyExamWrongOutcome(customMessage) {
+        if (answered) return;
+        answered = true;
+        clearQuestionTimer();
+
+        examTopic.attemptIndex = (examTopic.attemptIndex + 1) % examTopic.versions.length;
+
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = customMessage;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      // Tempo dobrado para 30 segundos nas questões ao final
+      startQuestionTimer(30, (reason) => {
+        applyExamWrongOutcome(`${reason} A questão foi anulada e o oponente escapou. Leia a dica com atenção, persiga-o e tente novamente!`);
+      });
+
+      examQ.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + idx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = idx === examQ.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            answeredCorrectly = true;
+            clearQuestionTimer();
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+
+            availableExamQuestions.splice(qIndex, 1);
+            defeatedEnemiesCount++;
+            updatePhaseTwoBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Excelente! Resposta correta! O oponente foi superado!";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+
+            const reason = (examQ.errorReasons && examQ.errorReasons[idx])
+              ? examQ.errorReasons[idx]
+              : "A alternativa escolhida não corresponde aos conceitos de Projeto de Vida.";
+
+            applyExamWrongOutcome(`Resposta incorreta! Motivo: ${reason} Leia novamente a dica acima e tente acertá-lo novamente!`);
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        clearQuestionTimer();
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+        clock.getDelta();
+
+        if (answeredCorrectly) {
+          enemyEntity.explodingPending = true;
+          setTimeout(() => {
+            enemyEntity.defeated = true;
+            enemyEntity.rig.group.visible = false;
+            spawnNonViolentExplosion(enemyEntity.rig.group.position);
+
+            if (defeatedEnemiesCount >= TOTAL_SECOND_PHASE_QUESTIONS) {
+              setTimeout(() => {
+                isPaused = true;
+                document.getElementById('victory-message').textContent =
+                  `Parabéns, ${playerName}! Mostre esta tela para o professor e receba o seu ponto!`;
+                document.getElementById('modal-victory').classList.remove('hidden');
+              }, 600);
+            }
+          }, 500);
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 8. TRANSPARÊNCIA DE OBJETOS
+    // ==========================================
+    const raycaster = new THREE.Raycaster();
+    const currentlyFaded = new Set();
+    const targetPosVec = new THREE.Vector3();
+    const dirVec = new THREE.Vector3();
+    let occlusionFrameCounter = 0;
+
+    function setMeshOpacity(mesh, value) {
+      if (Array.isArray(mesh.material)) {
+        for (let i = 0; i < mesh.material.length; i++) {
+          mesh.material[i].opacity = value;
+        }
+      } else {
+        mesh.material.opacity = value;
+      }
+    }
+
+    function updateCameraOcclusion() {
+      occlusionFrameCounter++;
+      if (occlusionFrameCounter % 3 !== 0) return;
+
+      currentlyFaded.forEach(mesh => {
+        setMeshOpacity(mesh, 1.0);
+      });
+      currentlyFaded.clear();
+
+      targetPosVec.set(
+        characterGroup.position.x,
+        characterGroup.position.y + 1.4,
+        characterGroup.position.z
+      );
+
+      dirVec.subVectors(targetPosVec, camera.position);
+      const distToPlayer = dirVec.length();
+      dirVec.divideScalar(distToPlayer);
+
+      raycaster.set(camera.position, dirVec);
+      raycaster.far = distToPlayer - 0.4;
+
+      const hits = raycaster.intersectObjects(occludableMeshes, false);
+      for (let i = 0; i < hits.length; i++) {
+        const hitMesh = hits[i].object;
+        setMeshOpacity(hitMesh, 0.25);
+        currentlyFaded.add(hitMesh);
+      }
+    }
+
+    // ==========================================
+    // 9. CONTROLES
+    // ==========================================
+    function setupDpadButton(elementId, directionKey) {
+      const btn = document.getElementById(elementId);
+      const startPress = (e) => {
+        e.preventDefault();
+        if (isPaused) return;
+        dpadState[directionKey] = true;
+        btn.classList.add('active');
+      };
+      const endPress = (e) => {
+        e.preventDefault();
+        dpadState[directionKey] = false;
+        btn.classList.remove('active');
+      };
+      btn.addEventListener('pointerdown', startPress);
+      btn.addEventListener('pointerup', endPress);
+      btn.addEventListener('pointerleave', endPress);
+      btn.addEventListener('pointercancel', endPress);
+    }
+
+    setupDpadButton('btn-left', 'left');
+    setupDpadButton('btn-right', 'right');
+
+    document.getElementById('btn-throw').addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      throwPVWord();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (isPaused) return;
+      if (e.key === ' ' || e.code === 'Space') throwPVWord();
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = true;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = true;
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') dpadState.left = false;
+      if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') dpadState.right = false;
+    });
+
+    // ==========================================
+    // 10. LOOP PRINCIPAL DE ANIMAÇÃO
+    // ==========================================
+    const clock = new THREE.Clock();
+    let walkCycle = 0;
+
+    const cameraDistance = 13.5;
+    const cameraHeight = 6.8;
+    const cameraTargetHeight = 1.6;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min(clock.getDelta(), 0.05);
+      const time = clock.getElapsedTime();
+
+      if (isIntroDescent) {
+        introElapsed += delta;
+        const progress = Math.min(introElapsed / INTRO_DURATION, 1.0);
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        characterGroup.position.set(0, INTRO_START_Y * (1 - ease), 5);
+        characterGroup.rotation.y = characterAngle;
+
+        const normalCamX = characterGroup.position.x + Math.sin(characterAngle) * -cameraDistance;
+        const normalCamY = cameraHeight;
+        const normalCamZ = characterGroup.position.z + Math.cos(characterAngle) * -cameraDistance;
+
+        const topCamX = 0;
+        const topCamY = 128;
+        const topCamZ = -22;
+
+        camera.position.set(
+          topCamX + (normalCamX - topCamX) * ease,
+          topCamY + (normalCamY - topCamY) * ease,
+          topCamZ + (normalCamZ - topCamZ) * ease
+        );
+        camera.lookAt(
+          characterGroup.position.x,
+          characterGroup.position.y + cameraTargetHeight,
+          characterGroup.position.z
+        );
+
+        if (progress >= 1.0) {
+          characterGroup.position.set(0, 0, 5);
+          isIntroDescent = false;
+          isPaused = false;
+        }
+
+        renderer.render(scene, camera);
+        return;
+      }
+
+      if (!isPaused) {
+        if (dpadState.left) characterAngle += turnSpeed;
+        if (dpadState.right) characterAngle -= turnSpeed;
+        characterGroup.rotation.y = characterAngle;
+
+        const isMoving = true;
+        const currentMoveSpeed = gamePhase === 2 ? moveSpeed * 0.5 : moveSpeed;
+        const desiredX = characterGroup.position.x + Math.sin(characterAngle) * currentMoveSpeed;
+        const desiredZ = characterGroup.position.z + Math.cos(characterAngle) * currentMoveSpeed;
+
+        const resolvedPos = resolveHorizontalCollisions(desiredX, desiredZ, characterGroup.position.y);
+        characterGroup.position.x = resolvedPos.x;
+        characterGroup.position.z = resolvedPos.z;
+
+        const supportY = getSupportFloorHeight(
+          characterGroup.position.x,
+          characterGroup.position.z,
+          characterGroup.position.y
+        );
+
+        if (isGrounded && characterGroup.position.y > supportY + 0.01) {
+          isGrounded = false;
+          verticalVelocity = -0.05;
+        }
+
+        if (!isGrounded) {
+          characterGroup.position.y += verticalVelocity;
+          verticalVelocity += gravity;
+
+          if (characterGroup.position.y <= supportY) {
+            characterGroup.position.y = supportY;
+            isGrounded = true;
+            verticalVelocity = 0;
+          }
+        } else {
+          characterGroup.position.y = supportY;
+        }
+
+        if (isMoving) {
+          walkCycle += delta * (gamePhase === 2 ? 11 : 18);
+          const swingAngle = Math.sin(walkCycle) * 0.65;
+          legLeftGroup.rotation.x = swingAngle;
+          legRightGroup.rotation.x = -swingAngle;
+          armLeftGroup.rotation.x = -swingAngle * 0.85;
+          armRightGroup.rotation.x = swingAngle * 0.85;
+          torso.position.y = 1.35 + Math.abs(Math.sin(walkCycle * 2)) * 0.06;
+          head.rotation.z = Math.sin(walkCycle) * 0.04;
+        }
+
+        for (let i = 0; i < collectibleEntities.length; i++) {
+          const item = collectibleEntities[i];
+          if (item.collected || !item.mesh.visible) continue;
+          if (item.cooldown > 0) item.cooldown -= delta;
+
+          item.mesh.rotation.y += delta * 2.2;
+          item.mesh.position.y = Math.sin(time * 3 + i) * 0.18;
+
+          if (item.cooldown <= 0) {
+            const dist = Math.hypot(
+              characterGroup.position.x - item.mesh.position.x,
+              characterGroup.position.z - item.mesh.position.z
+            );
+            if (dist < 1.35) {
+              openItemQuestionModal(item);
+              break;
+            }
+          }
+        }
+
+        const enemySpeed = gamePhase === 1 ? 0.145 : 0.095;
+        const safeMargin = 3.0;
+        const innerLimit = CITY_LIMIT - safeMargin;
+
+        for (let i = 0; i < enemyEntities.length; i++) {
+          const enemy = enemyEntities[i];
+          if (enemy.defeated || enemy.explodingPending) continue;
+
+          const ePos = enemy.rig.group.position;
+          const toPlayerX = characterGroup.position.x - ePos.x;
+          const toPlayerZ = characterGroup.position.z - ePos.z;
+          const distToPlayer = Math.hypot(toPlayerX, toPlayerZ);
+
+          if (gamePhase === 1) {
+            if (distToPlayer < 26 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(toPlayerX, toPlayerZ);
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 3.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          } else {
+            if (distToPlayer < 38 && distToPlayer > 0.01) {
+              enemy.angle = Math.atan2(-toPlayerX, -toPlayerZ) + enemy.turnBias * 0.35;
+            } else {
+              const wp = enemy.route[enemy.waypointIdx];
+              const toWpX = wp.x - ePos.x;
+              const toWpZ = wp.z - ePos.z;
+              if (Math.hypot(toWpX, toWpZ) < 4.0) {
+                enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+              } else {
+                enemy.angle = Math.atan2(toWpX, toWpZ);
+              }
+            }
+          }
+
+          let dirEX = Math.sin(enemy.angle);
+          let dirEZ = Math.cos(enemy.angle);
+          let nextEX = ePos.x + dirEX * enemySpeed;
+          let nextEZ = ePos.z + dirEZ * enemySpeed;
+
+          let hitWallBorder = false;
+          if (nextEX >= innerLimit) {
+            nextEX = innerLimit - 0.3;
+            dirEX = -Math.abs(dirEX);
+            hitWallBorder = true;
+          } else if (nextEX <= -innerLimit) {
+            nextEX = -innerLimit + 0.3;
+            dirEX = Math.abs(dirEX);
+            hitWallBorder = true;
+          }
+
+          if (nextEZ >= innerLimit) {
+            nextEZ = innerLimit - 0.3;
+            dirEZ = -Math.abs(dirEZ);
+            hitWallBorder = true;
+          } else if (nextEZ <= -innerLimit) {
+            nextEZ = -innerLimit + 0.3;
+            dirEZ = Math.abs(dirEZ);
+            hitWallBorder = true;
+          }
+
+          if (hitWallBorder) {
+            const toCenterX = -ePos.x;
+            const toCenterZ = -ePos.z;
+            const centerLen = Math.hypot(toCenterX, toCenterZ) || 1;
+            dirEX = dirEX * 0.6 + (toCenterX / centerLen) * 0.4;
+            dirEZ = dirEZ * 0.6 + (toCenterZ / centerLen) * 0.4;
+            enemy.angle = Math.atan2(dirEX, dirEZ);
+            enemy.waypointIdx = (enemy.waypointIdx + 1) % enemy.route.length;
+            nextEX = ePos.x + Math.sin(enemy.angle) * enemySpeed;
+            nextEZ = ePos.z + Math.cos(enemy.angle) * enemySpeed;
+          }
+
+          const resolvedE = resolveHorizontalCollisions(nextEX, nextEZ, 0);
+
+          if (Math.hypot(resolvedE.x - nextEX, resolvedE.z - nextEZ) > 0.05) {
+            enemy.angle += enemy.turnBias * Math.PI * 0.9;
+          }
+
+          ePos.x = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.x));
+          ePos.z = Math.max(-innerLimit, Math.min(innerLimit, resolvedE.z));
+          enemy.rig.group.rotation.y = enemy.angle;
+
+          enemy.walkCycle += delta * 15;
+          const eSwing = Math.sin(enemy.walkCycle) * 0.6;
+          enemy.rig.legLeftGroup.rotation.x = eSwing;
+          enemy.rig.legRightGroup.rotation.x = -eSwing;
+          enemy.rig.armLeftGroup.rotation.x = -eSwing * 0.85;
+          enemy.rig.armRightGroup.rotation.x = eSwing * 0.85;
+
+          if (gamePhase === 1 && distToPlayer < 1.05) {
+            const teleportSpot = getRandomFreeSpot(35);
+            characterGroup.position.set(teleportSpot.x, 0, teleportSpot.z);
+            showToast("Um oponente encostou em você! Você foi teletransportado para outro ponto da cidade!");
+            break;
+          }
+        }
+
+        const projSpeed = 1.15;
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          const proj = projectiles[i];
+          proj.mesh.position.x += proj.dirX * projSpeed;
+          proj.mesh.position.z += proj.dirZ * projSpeed;
+          proj.traveled += projSpeed;
+
+          let hitEnemy = null;
+          for (let j = 0; j < enemyEntities.length; j++) {
+            const enemy = enemyEntities[j];
+            if (enemy.defeated || enemy.explodingPending) continue;
+            const d = Math.hypot(
+              proj.mesh.position.x - enemy.rig.group.position.x,
+              proj.mesh.position.z - enemy.rig.group.position.z
+            );
+            if (d < 1.45) {
+              hitEnemy = enemy;
+              break;
+            }
+          }
+
+          if (hitEnemy) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+            openEnemyExamModal(hitEnemy);
+            break;
+          }
+
+          if (proj.traveled >= proj.maxDistance) {
+            scene.remove(proj.mesh);
+            projectiles.splice(i, 1);
+          }
+        }
+
+      }
+
+      for (let i = explosionParticles.length - 1; i >= 0; i--) {
+        const pt = explosionParticles[i];
+        pt.mesh.position.x += pt.vx;
+        pt.mesh.position.y += pt.vy;
+        pt.mesh.position.z += pt.vz;
+        pt.vy -= 0.008;
+        pt.life -= delta * 1.4;
+        pt.mesh.material.opacity = Math.max(0, pt.life);
+
+        if (pt.life <= 0) {
+          scene.remove(pt.mesh);
+          pt.mesh.material.dispose();
+          explosionParticles.splice(i, 1);
+        }
+      }
+
+      const camOffsetX = Math.sin(characterAngle) * -cameraDistance;
+      const camOffsetZ = Math.cos(characterAngle) * -cameraDistance;
+      const targetCamX = characterGroup.position.x + camOffsetX;
+      const targetCamY = characterGroup.position.y + cameraHeight;
+      const targetCamZ = characterGroup.position.z + camOffsetZ;
+
+      camera.position.x += (targetCamX - camera.position.x) * 0.16;
+      camera.position.y += (targetCamY - camera.position.y) * 0.16;
+      camera.position.z += (targetCamZ - camera.position.z) * 0.16;
+      camera.lookAt(
+        characterGroup.position.x,
+        characterGroup.position.y + cameraTargetHeight,
+        characterGroup.position.z
+      );
+
+      updateCameraOcclusion();
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.onload = () => {
+      animate();
+    };
+  </script>
+</body>
+</html>
