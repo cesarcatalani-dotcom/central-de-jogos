@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Dino Filo Game</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #87ceeb;
+      touch-action: manipulation;
+    }
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- Bloqueio de Tela Dividida -->
+  <div id="modal-split-screen" class="hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 text-3xl">
+        <i class="fa-solid fa-expand"></i>
+      </div>
+      <h2 class="text-xl font-extrabold text-red-400">
+        Tela Dividida Detectada!
+      </h2>
+      <p class="text-sm text-slate-200 leading-relaxed">
+        Não é permitido jogar o <strong>Dino Filo Game</strong> com a tela dividida ou janela reduzida. Maximize o navegador para continuar jogando.
+      </p>
+    </div>
+  </div>
+
+  <!-- Tela Inicial -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-fire"></i>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Coloque seu nome abaixo para jogar o Dino Filo Game!
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-300">
+        Toque na tela para pular, desvie dos oponentes e colete as 5 dicas sobre Liberdade e Determinismo!
+      </p>
+      <div>
+        <input
+          id="player-name-input"
+          type="text"
+          placeholder="Digite seu nome aqui..."
+          class="w-full px-4 py-3 rounded-xl bg-slate-800 border-2 border-slate-600 focus:border-amber-400 focus:outline-none text-white text-center font-semibold text-base"
+        />
+      </div>
+      <button id="btn-start-game" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Começar
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas Principal 2D -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Interface HUD do Jogo -->
+  <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+    <div class="flex items-start justify-center w-full">
+      <div id="phase-badge" class="bg-slate-900/85 border border-amber-400/60 text-amber-300 px-4 py-2 rounded-xl text-sm sm:text-base font-bold shadow-lg text-center">
+        Toque na tela para pular e coletar a Dica 1!
+      </div>
+    </div>
+
+    <div class="flex justify-center pb-2">
+      <div id="bottom-hint" class="bg-slate-900/75 border border-slate-700/80 text-slate-200 px-4 py-1.5 rounded-full text-xs font-semibold shadow">
+        <i class="fa-solid fa-hand-pointer text-amber-400 mr-1.5"></i>Toque na tela (ou Espaço) para pular
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner rápido de feedback -->
+  <div id="toast-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-5 py-2 rounded-xl shadow-2xl text-xs sm:text-sm font-bold text-center max-w-md pointer-events-none"></div>
+
+  <!-- Modal de Transição para a Fase 2 -->
+  <div id="modal-phase2-intro" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-bolt"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-amber-300 leading-snug">
+        O jogo virou!
+      </h2>
+      <p class="text-sm text-slate-200 leading-relaxed">
+        Agora toque na tela para lançar esferas de luz nas esferas flutuantes acima. Cinco estão vazias e cinco guardam as questões finais!
+      </p>
+      <button id="btn-proceed-phase2" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Prosseguir
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Leitura e Pergunta (Sem cronômetro) -->
+  <div id="modal-question" class="hidden fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div id="modal-q-header" class="px-5 py-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between gap-2">
+        <span id="modal-q-badge" class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">
+          Leitura Filosófica
+        </span>
+        <span id="modal-q-subtitle" class="text-xs text-slate-300 font-semibold truncate">Liberdade ou Determinismo</span>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Dica correspondente (exibida na Fase 2) -->
+        <div id="modal-q-tips-box" class="hidden bg-slate-950/80 border border-amber-400/50 rounded-xl p-3.5">
+          <div id="modal-q-tips-list" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <!-- Texto base / enunciado -->
+        <div id="modal-q-text" class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 text-sm sm:text-base leading-relaxed text-slate-100"></div>
+
+        <!-- Pergunta -->
+        <p id="modal-q-prompt" class="font-bold text-amber-300 text-sm sm:text-base"></p>
+
+        <!-- Alternativas -->
+        <div id="modal-q-options" class="space-y-2.5"></div>
+
+        <!-- Feedback -->
+        <div id="modal-q-feedback" class="hidden rounded-xl p-3.5 text-sm font-semibold"></div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-800 border-t border-slate-700 flex justify-end">
+        <button id="btn-continue-game" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-sm shadow-lg transition">
+          CONTINUAR JOGO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Vitória Final -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 id="victory-message" class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Parabéns, Jogador! Mostre esta tela para o professor e receba o seu ponto!
+      </h2>
+      <button onclick="location.reload()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-sm shadow-lg transition">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONTEÚDO PEDAGÓGICO (LIBERDADE OU DETERMINISMO - SARTRE E ALTHUSSER)
+    // ==========================================
+    const CARTESIAN_ITEMS = [
+      {
+        id: 1,
+        title: "1. Percepção da Liberdade e Limites",
+        readingText: "Segundo o filósofo Silvio Gallo, percebemos o valor da liberdade quando enfrentamos limites, impedimentos ou a falta dela, assim como só notamos o ar quando ele nos falta. Pensar a liberdade exige reconhecer circunstâncias que condicionam nossas escolhas, como a necessidade e o determinismo.",
+        verificationVersions: [
+          {
+            checkQuestion: "De acordo com o texto, quando a ideia de liberdade torna-se perceptível?",
+            options: [
+              "Quando podemos realizar qualquer desejo sem enfrentar nenhuma barreira.",
+              "Quando experimentamos limites, impedimentos ou situações de falta dela.",
+              "Quando ignoramos todas as condições históricas e sociais ao nosso redor."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "O que significa o termo filosófico 'necessidade' no estudo da liberdade?",
+            options: [
+              "Uma força mística superior que controla o destino de cada indivíduo.",
+              "O desejo pessoal de agir sem pensar nas consequências dos nossos atos.",
+              "A realidade que independe da nossa ação e na qual estamos inseridos."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Como se define o determinismo nas ciências humanas?",
+            options: [
+              "São leis e causas sociais que condicionam nossas escolhas e ações.",
+              "É a ausência completa de qualquer regra na convivência em sociedade.",
+              "É a capacidade de mudar as leis físicas e químicas da natureza."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 1 — Percepção da liberdade: Percebemos a liberdade porque enfrentamos limites e condicionamentos (como a necessidade e o determinismo social ou natural)."
+      },
+      {
+        id: 2,
+        title: "2. Liberdade, Necessidade e Responsabilidade Moral",
+        readingText: "Para Adolfo Sánchez Vázquez, liberdade e necessidade se conciliam. Toda ação acontece dentro de condições naturais, históricas e sociais. Conhecendo essas condições, o sujeito pode agir para superá-las. Além disso, a responsabilidade moral só existe porque há certo grau de liberdade nas ações.",
+        verificationVersions: [
+          {
+            checkQuestion: "Por que existe responsabilidade moral nas ações humanas?",
+            options: [
+              "Porque existe certo grau de liberdade nas escolhas que realizamos.",
+              "Porque ninguém consegue compreender as condições da própria vida.",
+              "Porque todos os atos humanos são totalmente definidos pelo acaso."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Na visão de Vázquez, como o sujeito lida com as determinações sociais?",
+            options: [
+              "Aceitando passivamente que nada na sociedade pode ser transformado.",
+              "Ignorando os meios e as circunstâncias em que o ato moral acontece.",
+              "Compreendendo essas condições para poder superá-las por meio da ação."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Quais elementos estão ligados de forma inseparável no ato moral?",
+            options: [
+              "O medo de punição, o acaso biológico e a obediência sem reflexão.",
+              "A liberdade, a necessidade causal e a responsabilidade moral.",
+              "A fatalidade religiosa, o isolamento social e a ausência de escolhas."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 2 — Liberdade e responsabilidade: Liberdade e necessidade se conciliam; ao compreender as condições sociais, o sujeito pode agir e responde moralmente por seus atos."
+      },
+      {
+        id: 3,
+        title: "3. Liberdade na História da Filosofia",
+        readingText: "Ao longo da história, a liberdade ganhou diferentes sentidos: na Grécia Antiga (Sócrates, Platão e Aristóteles), era o domínio de si pela razão; na Idade Média (Santo Agostinho), o livre-arbítrio para escolher entre o bem e o mal; na Modernidade (Locke), os direitos políticos; e na Contemporaneidade (Merleau-Ponty), uma conquista pela ação no mundo.",
+        verificationVersions: [
+          {
+            checkQuestion: "Como Sócrates e Platão entendiam a liberdade na Filosofia Antiga?",
+            options: [
+              "Como a garantia estatal do direito à propriedade e à expressão.",
+              "Como a possibilidade de escolher entre o bem e o mal divinos.",
+              "Como o controle e o domínio das paixões por meio da razão."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Qual era o sentido de liberdade para Santo Agostinho na Idade Média?",
+            options: [
+              "O livre-arbítrio, ligado à escolha consciente entre o bem e o mal.",
+              "A conquista política obtida por meio da participação nas eleições.",
+              "A negação de qualquer regra moral na vida em comunidade."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Para o filósofo contemporâneo Merleau-Ponty, o que é a liberdade?",
+            options: [
+              "Um poder absoluto que permite fazer tudo sem nenhum limite.",
+              "Uma conquista realizada por meio da atuação concreta no mundo.",
+              "Uma ilusão criada apenas pelas leis físicas da natureza."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 3 — História da Filosofia: Grécia (domínio de si pela razão), Medieval (livre-arbítrio), Moderna (direitos individuais em Locke) e Contemporânea (conquista pela ação)."
+      },
+      {
+        id: 4,
+        title: "4. Existencialismo de Jean-Paul Sartre",
+        readingText: "Para o existencialista Jean-Paul Sartre, no ser humano 'a existência precede a essência': não nascemos com um destino pronto, mas nos construímos por nossas escolhas. Por isso, ele afirma que 'estamos condenados a ser livres', pois não podemos escapar de escolher e somos responsáveis pelo projeto que construímos.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que Sartre quer dizer ao afirmar que 'a existência precede a essência'?",
+            options: [
+              "Que o destino humano já nasce totalmente definido antes de agirmos.",
+              "Que primeiro existimos e depois nos construímos por nossas escolhas.",
+              "Que a natureza biológica determina todas as decisões de uma pessoa."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "O que significa a frase de Sartre 'estamos condenados a ser livres'?",
+            options: [
+              "Que a liberdade é uma condição humana inevitável da qual não escapamos.",
+              "Que apenas as pessoas que vivem isoladas conseguem tomar decisões.",
+              "Que a liberdade elimina toda a responsabilidade pelos nossos atos."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "No pensamento de Sartre, o que é o 'projeto' do ser humano?",
+            options: [
+              "Uma regra imposta pelo Estado que impede qualquer mudança social.",
+              "Um conjunto de instintos naturais que controlam o comportamento.",
+              "A orientação para o futuro construída continuamente pelas escolhas."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 4 — Jean-Paul Sartre: A existência precede a essência; estamos 'condenados a ser livres', construindo nosso projeto de futuro e sendo responsáveis por cada escolha."
+      },
+      {
+        id: 5,
+        title: "5. Aparelhos Ideológicos em Louis Althusser",
+        readingText: "O filósofo Louis Althusser via a liberdade plena no capitalismo como uma ilusão. Segundo ele, instituições como escolas, mídia, família e sindicatos funcionam como Aparelhos Ideológicos do Estado, moldando ideias e orientando as escolhas dos indivíduos para reproduzir a ideologia dominante.",
+        verificationVersions: [
+          {
+            checkQuestion: "Qual é a função dos Aparelhos Ideológicos segundo Louis Althusser?",
+            options: [
+              "Assegurar a reprodução das condições ideológicas e do controle social.",
+              "Garantir que cada pessoa crie sua essência sem influência externa.",
+              "Eliminar todas as regras sociais para promover o livre-arbítrio."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Quais instituições são exemplos de Aparelhos Ideológicos em Althusser?",
+            options: [
+              "Apenas as leis da física, da química e da biologia humana.",
+              "Escolas, mídia, igrejas e sindicatos que orientam nossas ações.",
+              "Somente os desejos individuais que nascem fora da sociedade."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Como Althusser avalia a liberdade individual na sociedade capitalista?",
+            options: [
+              "Como uma liberdade absoluta que não sofre nenhuma pressão social.",
+              "Como o domínio racional das paixões descrito na Grécia Antiga.",
+              "Como uma espécie de ilusão moldada pelas estruturas da sociedade."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 5 — Louis Althusser: As estruturas sociais e os Aparelhos Ideológicos (escola, mídia, igreja) moldam nossas escolhas, tornando a liberdade plena uma ilusão."
+      }
+    ];
+
+    const EXAM_QUESTIONS = [
+      {
+        id: 101,
+        relatedTipIds: [1],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Silvio Gallo compara a liberdade ao ar que respiramos: só percebemos sua importância quando ele nos falta ou quando encontramos barreiras.",
+            question: "Sobre a percepção da liberdade, podemos afirmar que ela se torna evidente quando:",
+            options: [
+              "vivemos sem encontrar nenhum tipo de limite ou regra.",
+              "experimentamos impedimentos ou situações de falta de liberdade.",
+              "fazemos absolutamente tudo o que desejamos sem obstáculos.",
+              "ignoramos as leis da natureza e as condições da sociedade.",
+              "deixamos de refletir sobre nossas próprias escolhas diárias."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: sem limites ou impedimentos, segundo Gallo, nem sequer pensaríamos na liberdade.",
+              "",
+              "Errou: fazer tudo sem obstáculos não nos faz notar o contraste da falta de liberdade.",
+              "Errou: ignorar as condições reais não explica como percebemos a liberdade.",
+              "Errou: a percepção da liberdade nasce justamente da experiência de restrição."
+            ]
+          },
+          {
+            statement: "Ao analisar o comportamento humano, a Filosofia diferencia conceitos como necessidade, fatalidade e determinismo.",
+            question: "O conceito filosófico de 'necessidade' refere-se à realidade que:",
+            options: [
+              "depende exclusivamente da vontade individual de cada pessoa.",
+              "é criada pela imaginação humana para evitar escolhas difíceis.",
+              "independe da nossa ação e na qual estamos inseridos.",
+              "pode ser alterada a qualquer momento por um simples desejo.",
+              "não exerce nenhuma influência sobre as decisões humanas."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: a necessidade é justamente aquilo que não depende da nossa vontade individual.",
+              "Errou: necessidade não é imaginação, mas a realidade objetiva em que vivemos.",
+              "",
+              "Errou: a necessidade não muda apenas pelo nosso desejo pessoal.",
+              "Errou: estamos inseridos na necessidade, que condiciona o contexto das nossas ações."
+            ]
+          },
+          {
+            statement: "Nas ciências humanas, estuda-se como o ambiente cultural, econômico e histórico influencia os indivíduos.",
+            question: "O determinismo nas ciências humanas caracteriza-se por analisar:",
+            options: [
+              "as forças místicas que governam o destino de forma mágica.",
+              "as reações químicas que ocorrem apenas no interior das estrelas.",
+              "a ausência total de regras na formação dos hábitos sociais.",
+              "as leis e causas sociais que condicionam escolhas e ações.",
+              "a liberdade absoluta de agir fora de qualquer contexto histórico."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: forças transcendentes ou místicas definem o conceito de fatalidade.",
+              "Errou: fenômenos físicos e químicos pertencem ao determinismo das ciências da natureza.",
+              "Errou: o determinismo estuda justamente as causas e regras que condicionam a ação.",
+              "",
+              "Errou: o determinismo humano aponta condicionamentos, não liberdade absoluta."
+            ]
+          }
+        ]
+      },
+      {
+        id: 102,
+        relatedTipIds: [2],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Segundo Adolfo Sánchez Vázquez, liberdade e necessidade não são opostas absolutas, mas se conciliam na prática humana.",
+            question: "Nessa perspectiva filosófica, o ser humano conquista sua liberdade ao:",
+            options: [
+              "compreender e assumir as determinações sociais para superá-las.",
+              "negar a existência de qualquer condição histórica ou natural.",
+              "aceitar que o comportamento humano nunca pode ser mudado.",
+              "agir por impulso sem considerar as circunstâncias da ação.",
+              "isolar-se completamente do convívio com outras pessoas."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: Vázquez afirma que as condições históricas e naturais existem e fazem parte da ação.",
+              "Errou: para o autor, compreender as determinações permite justamente transformá-las.",
+              "Errou: agir livremente exige considerar os meios e as circunstâncias.",
+              "Errou: a ação humana ocorre sempre dentro de condições sociais e coletivas."
+            ]
+          },
+          {
+            statement: "No estudo do ato moral, a Filosofia relaciona liberdade, necessidade causal e responsabilidade.",
+            question: "A responsabilidade moral só pode ser atribuída a uma pessoa porque:",
+            options: [
+              "todas as suas atitudes são controladas por forças externas.",
+              "ninguém consegue avaliar as consequências dos próprios atos.",
+              "o ser humano nunca enfrenta limites em suas decisões.",
+              "as leis da natureza impedem qualquer iniciativa criadora.",
+              "existe certo grau de liberdade nas escolhas que ela realiza."
+            ],
+            correctIndex: 4,
+            errorReasons: [
+              "Errou: se tudo fosse controlado externamente, não haveria responsabilidade moral.",
+              "Errou: a responsabilidade pressupõe consciência e possibilidade de escolha.",
+              "Errou: existem limites, mas dentro deles há espaço para escolha responsável.",
+              "Errou: há iniciativa criadora e liberdade relativa nas ações humanas.",
+              ""
+            ]
+          },
+          {
+            statement: "Toda escolha humana ocorre dentro de um contexto concreto, com recursos e limites específicos.",
+            question: "Para agir livremente no campo moral, o indivíduo precisa:",
+            options: [
+              "desprezar os meios e as circunstâncias em que o ato ocorre.",
+              "considerar as condições, os meios e as circunstâncias da ação.",
+              "esperar que o destino resolva todos os problemas sozinho.",
+              "eliminar qualquer relação entre causa e efeito na sociedade.",
+              "agir sempre da mesma forma sem refletir sobre a realidade."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: ignorar os meios e circunstâncias compromete a ação livre e responsável.",
+              "",
+              "Errou: esperar pelo destino é passividade, não exercício de liberdade.",
+              "Errou: a liberdade não existe separada da causalidade histórica.",
+              "Errou: agir sem refletir é repetir hábitos sem iniciativa criadora."
+            ]
+          }
+        ]
+      },
+      {
+        id: 103,
+        relatedTipIds: [3],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Na história da Filosofia, diferentes períodos formularam concepções próprias sobre o que significa ser livre.",
+            question: "Na Filosofia Moderna, o pensador John Locke associou a liberdade principalmente:",
+            options: [
+              "ao controle exclusivo dos desejos pela contemplação mística.",
+              "à escolha religiosa entre a salvação e o pecado original.",
+              "aos direitos individuais, como vida, propriedade e expressão.",
+              "à negação completa de qualquer lei ou organização política.",
+              "à impossibilidade de o cidadão participar da vida pública."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: o controle das paixões pela razão é característico da Grécia Antiga.",
+              "Errou: a escolha entre o bem e o mal é o livre-arbítrio em Santo Agostinho.",
+              "",
+              "Errou: Locke defende direitos políticos garantidos na sociedade civil.",
+              "Errou: a liberdade política em Locke valoriza os direitos do cidadão."
+            ]
+          },
+          {
+            statement: "Na Grécia Antiga, filósofos como Sócrates, Platão e Aristóteles refletiram sobre a liberdade interior e a decisão racional.",
+            question: "Para Sócrates e Platão, a verdadeira liberdade consiste em:",
+            options: [
+              "seguir todos os impulsos imediatos sem usar o pensamento.",
+              "garantir o direito de propriedade privada acima de tudo.",
+              "obedecer às opiniões da maioria sem questionar os motivos.",
+              "exercer o domínio de si controlando as paixões pela razão.",
+              "afirmar que a existência humana precede qualquer essência."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: seguir impulsos sem razão é escravidão às paixões para esses filósofos.",
+              "Errou: essa é uma concepção moderna ligada a John Locke.",
+              "Errou: Sócrates e Platão valorizavam o exame racional, não a opinião sem crítica.",
+              "",
+              "Errou: essa tese pertence ao existencialismo contemporâneo de Sartre."
+            ]
+          },
+          {
+            statement: "No século XX, Maurice Merleau-Ponty analisou a liberdade levando em conta a relação do sujeito com o mundo.",
+            question: "Segundo Merleau-Ponty, a liberdade deve ser compreendida como:",
+            options: [
+              "uma conquista realizada por meio da ação concreta no mundo.",
+              "um poder absoluto que ignora a situação histórica do sujeito.",
+              "uma ilusão criada apenas pelos aparelhos ideológicos estatais.",
+              "um dom natural que funciona sem nenhum esforço ou atuação.",
+              "uma regra fixa que impede qualquer transformação da realidade."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: Merleau-Ponty afirma expressamente que não existe liberdade absoluta.",
+              "Errou: a crítica aos aparelhos ideológicos é de Louis Althusser.",
+              "Errou: para o autor, a liberdade é conquistada pela ação situada no mundo.",
+              "Errou: a liberdade é justamente possibilidade de atuação e transformação."
+            ]
+          }
+        ]
+      },
+      {
+        id: 104,
+        relatedTipIds: [4],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Segundo Sartre, 'o homem está condenado a ser livre', pois, uma vez lançado no mundo, é responsável por tudo o que faz.",
+            question: "Com essa afirmação paradoxal, Sartre indica que a liberdade:",
+            options: [
+              "pode ser alcançada apenas por meio de práticas religiosas.",
+              "resulta na falta de responsabilização pelos próprios atos.",
+              "impede a construção de qualquer projeto para o futuro.",
+              "é uma condição inescapável da existência do ser humano.",
+              "elimina a necessidade de fazer escolhas no dia a dia."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: o existencialismo de Sartre não condiciona a liberdade à religião.",
+              "Errou: para Sartre, a liberdade traz total responsabilidade pelas escolhas.",
+              "Errou: a liberdade é justamente o que permite projetar o futuro.",
+              "",
+              "Errou: até mesmo não escolher já é uma forma de escolha para Sartre."
+            ]
+          },
+          {
+            statement: "No existencialismo sartreano, o ser humano não possui uma natureza fixa que determine previamente quem ele será.",
+            question: "Quando Sartre afirma que 'a existência precede a essência', ele defende que:",
+            options: [
+              "nascemos com um destino pronto que nunca pode ser alterado.",
+              "construímos quem somos ao longo da vida por nossas escolhas.",
+              "as instituições sociais definem totalmente a identidade humana.",
+              "a essência humana já existe antes mesmo de nascermos.",
+              "não temos nenhuma responsabilidade pelo futuro que criamos."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: Sartre rejeita a ideia de um destino fixo ou essência prévia.",
+              "",
+              "Errou: essa visão estruturalista aproxima-se mais de Althusser do que de Sartre.",
+              "Errou: essa era a visão da metafísica tradicional criticada por Sartre.",
+              "Errou: somos integralmente responsáveis por aquilo que fazemos de nós mesmos."
+            ]
+          },
+          {
+            statement: "Para Sartre, o ser humano está sempre agindo em direção ao futuro, construindo aquilo que ele chama de 'projeto'.",
+            question: "Na filosofia de Sartre, a noção de 'projeto' significa que:",
+            options: [
+              "nossas decisões presentes orientam e constroem nosso futuro.",
+              "o futuro já está escrito pelas leis biológicas da natureza.",
+              "devemos nos conformar passivamente com as circunstâncias.",
+              "a liberdade humana só existe quando não precisamos decidir.",
+              "os aparelhos do Estado escolhem todos os nossos caminhos."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: o projeto depende das escolhas livres, não de determinação biológica.",
+              "Errou: conformar-se também é uma escolha, mas o projeto aponta para a ação criadora.",
+              "Errou: a liberdade se realiza exatamente no ato de decidir e projetar.",
+              "Errou: essa é a tese de Louis Althusser, oposta à de Sartre."
+            ]
+          }
+        ]
+      },
+      {
+        id: 105,
+        relatedTipIds: [5],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Em oposição a Sartre, Louis Althusser analisa como as estruturas sociais condicionam o modo de pensar e agir dos indivíduos.",
+            question: "Para Althusser, instituições como escolas, mídia e igrejas atuam como:",
+            options: [
+              "espaços neutros que nunca influenciam as decisões humanas.",
+              "garantias de que cada sujeito possui liberdade absoluta.",
+              "aparelhos ideológicos que reproduzem a ideologia dominante.",
+              "elementos naturais que existem fora da história humana.",
+              "ferramentas que eliminam qualquer forma de controle social."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: Althusser destaca que essas instituições não são neutras.",
+              "Errou: para o filósofo, a liberdade plena dentro dessa estrutura é uma ilusão.",
+              "",
+              "Errou: são instituições históricas e sociais, não elementos da natureza.",
+              "Errou: segundo Althusser, elas asseguram a reprodução do controle social."
+            ]
+          },
+          {
+            statement: "Althusser questiona a ideia de que somos totalmente autônomos ao fazer nossas escolhas cotidianas de consumo, estudo e trabalho.",
+            question: "Segundo esse filósofo, a sensação de liberdade plena na sociedade atual é:",
+            options: [
+              "uma conquista definitiva já alcançada por todos os cidadãos.",
+              "uma ilusão, pois as estruturas moldam nossas decisões.",
+              "a prova de que a existência humana precede a essência.",
+              "um resultado natural do livre-arbítrio descrito na Idade Média.",
+              "uma condição inescapável que nos obriga a criar nosso destino."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: Althusser critica a ideia de que já somos plenamente livres.",
+              "",
+              "Errou: essa é a tese existencialista de Jean-Paul Sartre.",
+              "Errou: Althusser analisa as estruturas sociais modernas, não o livre-arbítrio medieval.",
+              "Errou: essa concepção pertence a Sartre, não a Althusser."
+            ]
+          },
+          {
+            statement: "Ao estudar os Aparelhos Ideológicos do Estado, alguns críticos apontaram limites na teoria de Louis Althusser.",
+            question: "Qual crítica costuma ser feita à teoria dos Aparelhos Ideológicos?",
+            options: [
+              "Ela afirma que as escolas nunca transmitem valores sociais.",
+              "Ela defende que os indivíduos ignoram todas as regras sociais.",
+              "Ela comprova que a mídia não exerce influência sobre os jovens.",
+              "Ela reduz instituições a reprodutoras, subestimando a crítica.",
+              "Ela sustenta que não existem desigualdades na sociedade atual."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: a teoria afirma exatamente o contrário, que a escola transmite ideologia.",
+              "Errou: Althusser mostra que os indivíduos internalizam normas sociais.",
+              "Errou: a mídia é apontada por Althusser como um aparelho ideológico central.",
+              "",
+              "Errou: a teoria analisa justamente a reprodução das desigualdades e do poder."
+            ]
+          }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 2. BLOQUEIO DE TELA DIVIDIDA E PENALIDADE AUTOMÁTICA
+    // ==========================================
+    const modalSplitScreen = document.getElementById('modal-split-screen');
+    let isSplitScreenBlocked = false;
+    let activeWrongQuestionHandler = null;
+
+    function checkSplitScreen() {
+      const screenW = window.screen.availWidth || window.screen.width;
+      const screenH = window.screen.availHeight || window.screen.height;
+      const winW = window.innerWidth;
+      const winH = window.innerHeight;
+
+      // Detecta se a janela ocupada está dividida horizontalmente ou verticalmente (< 80% da tela disponível)
+      const isNarrowed = winW < screenW * 0.80;
+      const isShortened = winH < screenH * 0.72;
+
+      if (isNarrowed || isShortened) {
+        if (!isSplitScreenBlocked) {
+          isSplitScreenBlocked = true;
+          modalSplitScreen.classList.remove('hidden');
+
+          // Se houver uma questão aberta no momento, marca como errada e segue o fluxo de erro
+          if (activeWrongQuestionHandler && !modalQuestion.classList.contains('hidden')) {
+            const handler = activeWrongQuestionHandler;
+            activeWrongQuestionHandler = null;
+            handler("Tela dividida detectada! A questão foi considerada errada.");
+          }
+        }
+      } else {
+        if (isSplitScreenBlocked) {
+          isSplitScreenBlocked = false;
+          modalSplitScreen.classList.add('hidden');
+        }
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      checkSplitScreen();
+    });
+    setInterval(checkSplitScreen, 600);
+
+    // ==========================================
+    // 3. SETUP DO CANVAS 2D E CENÁRIO DIURNO
+    // ==========================================
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    let groundY = H * 0.82;
+
+    function resizeCanvas() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+      groundY = H * 0.82;
+    }
+    resizeCanvas();
+    checkSplitScreen();
+
+    // Prédios de fundo (mesma paleta do cenário 3D original)
+    const buildingPalette = ['#e2e8f0', '#cbd5e1', '#f1f5f9', '#94a3b8', '#f8fafc'];
+    let bgBuildings = [];
+
+    function initBackgroundBuildings() {
+      bgBuildings = [];
+      let curX = -50;
+      let idx = 0;
+      while (curX < W + 600) {
+        const bw = 95 + (idx % 4) * 28;
+        const bh = 130 + ((idx * 37) % 140);
+        bgBuildings.push({
+          x: curX,
+          w: bw,
+          h: bh,
+          color: buildingPalette[idx % buildingPalette.length],
+          hasDoor: idx % 2 === 0
+        });
+        curX += bw + 18;
+        idx++;
+      }
+    }
+    initBackgroundBuildings();
+
+    // ==========================================
+    // 4. ESTADO DO JOGO, JOGADOR E ENTIDADES
+    // ==========================================
+    let gamePhase = 1; // 1 = Corrida estilo Dino, 2 = Tiro para cima nos 10 itens
+    let isPaused = true;
+    let playerName = "Jogador";
+    let collectedCount = 0;
+    let resolvedExamCount = 0;
+
+    // Estado do Tiranossauro Rex Filósofo 2D
+    const player = {
+      x: 110,
+      y: 0, // altura acima do chão (0 = no chão)
+      vy: 0,
+      w: 52,
+      h: 82,
+      grounded: true,
+      walkTimer: 0,
+      dir: 1 // usado na Fase 2 para patrulhar horizontalmente na base
+    };
+
+    const GRAVITY = 1950;
+    const JUMP_FORCE = 830;
+
+    // Fase 1: Velocidade controlada (aumenta gradualmente, sem ficar rápida demais)
+    function getPhase1Speed() {
+      return 265 + collectedCount * 22;
+    }
+
+    let itemAttemptCounters = [0, 0, 0, 0, 0];
+    let phase1Item = null;     // Placa "Dica X" flutuando para pegar pulando
+    let phase1Obstacles = [];  // Inimigos vermelhos correndo no chão
+    let obstacleSpawnTimer = 1.6;
+    let itemSpawnTimer = 0.8;
+
+    // Fase 2: 10 itens flutuando no topo (5 vazios + 5 questões) e projéteis de luz
+    let floatingTargets = [];
+    let lightProjectiles = [];
+    let sparkleParticles = [];
+    let activeTargetObj = null;
+
+    // ==========================================
+    // 5. DESENHO DO CENÁRIO E DOS PERSONAGENS
+    // ==========================================
+    function drawSkyAndCity(dt, scrollSpeed) {
+      // Céu azul diurno igual ao original
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+      skyGrad.addColorStop(0, '#7dd3fc');
+      skyGrad.addColorStop(1, '#bae6fd');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, groundY);
+
+      // Sol suave no canto superior direito
+      ctx.fillStyle = 'rgba(254, 249, 195, 0.85)';
+      ctx.beginPath();
+      ctx.arc(W - 95, 85, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Prédios ao fundo com efeito paralaxe
+      for (let i = 0; i < bgBuildings.length; i++) {
+        const b = bgBuildings[i];
+        if (!isPaused && !isSplitScreenBlocked && gamePhase === 1) {
+          b.x -= scrollSpeed * 0.35 * dt;
+        }
+        if (b.x + b.w < -40) {
+          let maxRight = 0;
+          for (let j = 0; j < bgBuildings.length; j++) {
+            if (bgBuildings[j].x + bgBuildings[j].w > maxRight) {
+              maxRight = bgBuildings[j].x + bgBuildings[j].w;
+            }
+          }
+          b.x = maxRight + 18;
+        }
+
+        const by = groundY - b.h;
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, by, b.w, b.h);
+
+        // Friso no topo e rodapé
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+        ctx.fillRect(b.x, by, b.w, 6);
+        ctx.fillRect(b.x, groundY - 10, b.w, 10);
+
+        // Janelas azuis reflexivas
+        const cols = Math.max(2, Math.floor(b.w / 28));
+        const rows = Math.max(2, Math.floor((b.h - 45) / 32));
+        const padX = b.w / cols;
+        const padY = (b.h - 42) / rows;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const wx = b.x + c * padX + padX * 0.24;
+            const wy = by + 14 + r * padY + padY * 0.18;
+            const ww = padX * 0.52;
+            const wh = Math.min(padY * 0.58, 18);
+
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(wx, wy, ww, wh);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.fillRect(wx + 1, wy + 1, ww * 0.35, wh - 2);
+          }
+        }
+
+        // Porta no térreo
+        if (b.hasDoor) {
+          const dw = 18;
+          const dh = 26;
+          const dx = b.x + (b.w - dw) / 2;
+          const dy = groundY - dh;
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(dx - 2, dy - 2, dw + 4, dh + 2);
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(dx, dy, dw, dh);
+          ctx.fillStyle = '#bae6fd';
+          ctx.fillRect(dx + 3, dy + 3, dw - 6, 11);
+        }
+      }
+
+      // Chão e Rua asfaltada (mesmas cores #475569 e #1e293b)
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, groundY, W, 16);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, groundY + 16, W, H - groundY - 16);
+    }
+
+    // Desenha o personagem: Tiranossauro Rex Filósofo (verde com Φ) ou Oponente vermelho com Φ
+    function drawCharacter2D(cx, bottomY, isEnemy, walkPhase, facingRight) {
+      ctx.save();
+      ctx.translate(cx, bottomY);
+      if (!facingRight) {
+        ctx.scale(-1, 1);
+      }
+
+      const swing = Math.sin(walkPhase) * 0.55;
+
+      // Sombra no chão
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 22, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (!isEnemy) {
+        // ==========================================
+        // PROTAGONISTA: TIRANOSSAURO REX FILÓSOFO
+        // ==========================================
+        const dinoDark = '#064e3b';
+        const dinoMid = '#047857';
+
+        // Cauda de T-Rex balançando levemente
+        const tailWag = Math.sin(walkPhase * 0.8) * 3;
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.moveTo(-10, -28);
+        ctx.lineTo(-34, -42 + tailWag);
+        ctx.lineTo(-10, -48);
+        ctx.closePath();
+        ctx.fill();
+
+        // Perna traseira robusta
+        ctx.save();
+        ctx.translate(-3, -24);
+        ctx.rotate(-swing);
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.roundRect(-5, 0, 10, 22, 3);
+        ctx.fill();
+        ctx.fillRect(-3, 19, 11, 5); // pé
+        ctx.restore();
+
+        // Corpo/Tronco de T-Rex inclinado
+        ctx.fillStyle = dinoMid;
+        ctx.beginPath();
+        ctx.roundRect(-14, -56, 28, 34, 9);
+        ctx.fill();
+
+        // Cristas dorsais nas costas
+        ctx.fillStyle = '#10b981';
+        for (let s = 0; s < 3; s++) {
+          ctx.beginPath();
+          ctx.moveTo(-14, -52 + s * 9);
+          ctx.lineTo(-19, -48 + s * 9);
+          ctx.lineTo(-14, -44 + s * 9);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Símbolo Φ branco no tronco do T-Rex
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', 0, -39);
+
+        // Perna dianteira robusta
+        ctx.save();
+        ctx.translate(3, -24);
+        ctx.rotate(swing);
+        ctx.fillStyle = '#065f46';
+        ctx.beginPath();
+        ctx.roundRect(-5, 0, 10, 22, 3);
+        ctx.fill();
+        ctx.fillRect(-3, 19, 11, 5); // pé
+        ctx.restore();
+
+        // Bracinho curto característico de T-Rex
+        ctx.save();
+        ctx.translate(12, -46);
+        ctx.rotate(-swing * 0.4);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(0, -2, 10, 5);
+        ctx.fillRect(8, -2, 3, 7); // garra
+        ctx.restore();
+
+        // Cabeça grande e alongada de T-Rex
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.roundRect(-6, -80, 32, 22, 7);
+        ctx.fill();
+
+        // Mandíbula inferior e boca com dentinhos
+        ctx.fillStyle = dinoMid;
+        ctx.beginPath();
+        ctx.roundRect(-4, -62, 26, 7, 3);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(10, -58);
+        ctx.lineTo(12, -54);
+        ctx.lineTo(14, -58);
+        ctx.moveTo(16, -58);
+        ctx.lineTo(18, -54);
+        ctx.lineTo(20, -58);
+        ctx.fill();
+
+        // Olho expressivo do T-Rex
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(8, -72, 3.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(9, -72, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+      } else {
+        // ==========================================
+        // OPONENTE VERMELHO (MANTIDO COMO NO ORIGINAL)
+        // ==========================================
+        // Perna de trás
+        ctx.save();
+        ctx.translate(0, -28);
+        ctx.rotate(-swing);
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(-4, 0, 8, 28);
+        ctx.restore();
+
+        // Braço de trás
+        ctx.save();
+        ctx.translate(0, -56);
+        ctx.rotate(swing * 0.8);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-3.5, 0, 7, 22);
+        ctx.restore();
+
+        // Tronco Vermelho #b91c1c
+        ctx.fillStyle = '#b91c1c';
+        ctx.beginPath();
+        ctx.roundRect(-13, -60, 26, 34, 5);
+        ctx.fill();
+
+        // Símbolo Φ branco no peito
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 21px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', 0, -43);
+
+        // Perna da frente
+        ctx.save();
+        ctx.translate(0, -28);
+        ctx.rotate(swing);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-4, 0, 8, 28);
+        ctx.restore();
+
+        // Braço da frente
+        ctx.save();
+        ctx.translate(0, -56);
+        ctx.rotate(-swing * 0.8);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-3.5, 0, 7, 22);
+        ctx.restore();
+
+        // Cabeça branca
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -72, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Olho e sorriso
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(4.5, -74, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(3.5, -70, 3.2, 0.1 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTipBadge(item, timeSec) {
+      const bob = Math.sin(timeSec * 5) * 6;
+      const x = item.x;
+      const y = item.y + bob;
+      const w = item.w;
+      const h = item.h;
+
+      // Brilho externo
+      ctx.save();
+      ctx.shadowColor = '#facc15';
+      ctx.shadowBlur = 14;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - h / 2, w, h, 10);
+      ctx.fill();
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 16px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Dica ${item.data.id}`, x, y);
+      ctx.restore();
+    }
+
+    // ==========================================
+    // 6. MECÂNICA DA FASE 1 (CORRIDA E PULO)
+    // ==========================================
+    function triggerPlayerJump() {
+      if (isPaused || isSplitScreenBlocked) return;
+      if (gamePhase === 1 && player.grounded) {
+        player.vy = JUMP_FORCE;
+        player.grounded = false;
+      } else if (gamePhase === 2) {
+        shootLightOrb();
+      }
+    }
+
+    function spawnPhase1TipItem() {
+      if (collectedCount >= CARTESIAN_ITEMS.length) return;
+      const tipData = CARTESIAN_ITEMS[collectedCount];
+      // Posiciona a placa no ar para ser pega apenas por meio de um pulo
+      phase1Item = {
+        data: tipData,
+        x: W + 90,
+        y: groundY - 145,
+        w: 88,
+        h: 38
+      };
+    }
+
+    function spawnPhase1Obstacle() {
+      phase1Obstacles.push({
+        x: W + 50,
+        y: groundY,
+        w: 32,
+        h: 74,
+        walkTimer: Math.random() * 6
+      });
+    }
+
+    function updatePhase1(dt, timeSec) {
+      const speed = getPhase1Speed();
+
+      // Física do pulo do jogador
+      if (!player.grounded) {
+        player.y += player.vy * dt;
+        player.vy -= GRAVITY * dt;
+        if (player.y <= 0) {
+          player.y = 0;
+          player.vy = 0;
+          player.grounded = true;
+        }
+      } else {
+        player.walkTimer += dt * (speed * 0.045);
+      }
+
+      // Gera o item da vez se não houver nenhum na tela
+      if (!phase1Item && collectedCount < CARTESIAN_ITEMS.length) {
+        itemSpawnTimer -= dt;
+        if (itemSpawnTimer <= 0) {
+          spawnPhase1TipItem();
+        }
+      }
+
+      // Gera oponentes no chão com espaçamento justo
+      obstacleSpawnTimer -= dt;
+      if (obstacleSpawnTimer <= 0) {
+        const farFromItem = !phase1Item || Math.abs(phase1Item.x - (W + 50)) > 210;
+        if (farFromItem) {
+          spawnPhase1Obstacle();
+          obstacleSpawnTimer = 2.0 + Math.random() * 1.1;
+        } else {
+          obstacleSpawnTimer = 0.45;
+        }
+      }
+
+      // Caixa de colisão do jogador
+      const pLeft = player.x - 14;
+      const pRight = player.x + 14;
+      const pBottom = groundY - player.y;
+      const pTop = pBottom - 76;
+
+      // Atualiza e verifica colisão com o item flutuante ("Dica X")
+      if (phase1Item) {
+        phase1Item.x -= speed * dt;
+
+        const iLeft = phase1Item.x - phase1Item.w / 2;
+        const iRight = phase1Item.x + phase1Item.w / 2;
+        const iTop = phase1Item.y - phase1Item.h / 2;
+        const iBottom = phase1Item.y + phase1Item.h / 2;
+
+        const hitItem = pRight > iLeft && pLeft < iRight && pBottom > iTop && pTop < iBottom;
+        if (hitItem) {
+          const collectedItem = phase1Item;
+          phase1Item = null;
+          openItemQuestionModal(collectedItem.data);
+          return;
+        }
+
+        // Se o jogador não pulou e deixou a dica passar, ela volta mais adiante
+        if (phase1Item.x + phase1Item.w < -30) {
+          phase1Item = null;
+          itemSpawnTimer = 0.7;
+        }
+      }
+
+      // Atualiza e verifica colisão com os oponentes vermelhos
+      for (let i = phase1Obstacles.length - 1; i >= 0; i--) {
+        const obs = phase1Obstacles[i];
+        obs.x -= (speed * 1.12) * dt;
+        obs.walkTimer += dt * 15;
+
+        const oLeft = obs.x - 11;
+        const oRight = obs.x + 11;
+        const oBottom = groundY;
+        const oTop = groundY - 68;
+
+        const hitObs = pRight > oLeft && pLeft < oRight && pBottom > oTop && pTop < oBottom;
+        if (hitObs) {
+          phase1Obstacles.splice(i, 1);
+          // Penalidade não violenta: tropeço e reinício da distância do item atual
+          if (phase1Item) {
+            phase1Item = null;
+            itemSpawnTimer = 1.0;
+          }
+          showToast("Você esbarrou em um oponente! Pule por cima deles para pegar a dica.");
+          continue;
+        }
+
+        if (obs.x < -50) {
+          phase1Obstacles.splice(i, 1);
+        }
+      }
+
+      // Desenha item, oponentes e jogador
+      if (phase1Item) drawTipBadge(phase1Item, timeSec);
+      for (let i = 0; i < phase1Obstacles.length; i++) {
+        const obs = phase1Obstacles[i];
+        drawCharacter2D(obs.x, obs.y, true, obs.walkTimer, false);
+      }
+      drawCharacter2D(player.x, groundY - player.y, false, player.walkTimer, true);
+    }
+
+    // ==========================================
+    // 7. MECÂNICA DA FASE 2 (TIRO PARA CIMA NOS 10 ITENS)
+    // ==========================================
+    function setupPhase2Targets() {
+      floatingTargets = [];
+      lightProjectiles = [];
+      player.x = W / 2;
+      player.y = 0;
+      player.vy = 0;
+      player.grounded = true;
+
+      // Cria 10 itens: 5 vazios e 5 com as questões finais, embaralhados
+      const pool = [
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        ...EXAM_QUESTIONS.map(q => ({ empty: false, questionData: q }))
+      ];
+
+      // Embaralha (Fisher-Yates)
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      // Organiza em 2 fileiras flutuando na parte superior da tela
+      const cols = 5;
+      const marginX = Math.max(55, W * 0.14);
+      const usableW = W - marginX * 2;
+      const stepX = usableW / (cols - 1);
+
+      pool.forEach((entry, idx) => {
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+        const baseX = marginX + col * stepX;
+        const baseY = row === 0 ? Math.max(105, H * 0.18) : Math.max(185, H * 0.31);
+
+        floatingTargets.push({
+          id: idx,
+          empty: entry.empty,
+          questionData: entry.questionData || null,
+          x: baseX,
+          baseX: baseX,
+          y: baseY,
+          baseY: baseY,
+          radius: Math.min(26, Math.max(20, W * 0.028)),
+          phaseOffset: idx * 0.85,
+          moveSpeed: (row === 0 ? 1 : -1) * (42 + (idx % 3) * 10),
+          active: true
+        });
+      });
+    }
+
+    function shootLightOrb() {
+      // Limita a 2 esferas simultâneas para manter precisão
+      if (lightProjectiles.length >= 2) return;
+      lightProjectiles.push({
+        x: player.x,
+        y: groundY - 68,
+        vy: 740,
+        radius: 9
+      });
+    }
+
+    function spawnSoftSparkles(x, y, colorList) {
+      for (let i = 0; i < 16; i++) {
+        const ang = (Math.PI * 2 * i) / 16 + Math.random() * 0.3;
+        const spd = 70 + Math.random() * 140;
+        sparkleParticles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 1.0,
+          color: colorList[i % colorList.length]
+        });
+      }
+    }
+
+    function updatePhase2(dt, timeSec) {
+      // Movimento automático suave do T-Rex na parte de baixo da tela para mirar nos 10 itens
+      const minX = 50;
+      const maxX = W - 50;
+      const patrolSpeed = Math.min(230, W * 0.26);
+
+      player.x += player.dir * patrolSpeed * dt;
+      if (player.x >= maxX) {
+        player.x = maxX;
+        player.dir = -1;
+      } else if (player.x <= minX) {
+        player.x = minX;
+        player.dir = 1;
+      }
+      player.walkTimer += dt * 10;
+
+      // Atualiza os 10 itens flutuantes no alto
+      for (let i = 0; i < floatingTargets.length; i++) {
+        const t = floatingTargets[i];
+        if (!t.active) continue;
+
+        t.x += t.moveSpeed * dt;
+        if (t.x > W - 45) {
+          t.x = W - 45;
+          t.moveSpeed = -Math.abs(t.moveSpeed);
+        } else if (t.x < 45) {
+          t.x = 45;
+          t.moveSpeed = Math.abs(t.moveSpeed);
+        }
+        t.y = t.baseY + Math.sin(timeSec * 2.8 + t.phaseOffset) * 10;
+
+        // Desenha a esfera flutuante (todas idênticas por fora para o aluno descobrir atirando)
+        ctx.save();
+        const grad = ctx.createRadialGradient(t.x - 6, t.y - 6, 4, t.x, t.y, t.radius);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.55, '#f59e0b');
+        grad.addColorStop(1, '#b45309');
+
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 18px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', t.x, t.y + 1);
+        ctx.restore();
+      }
+
+      // Atualiza os disparos de luz para cima
+      for (let i = lightProjectiles.length - 1; i >= 0; i--) {
+        const p = lightProjectiles[i];
+        p.y -= p.vy * dt;
+
+        // Desenha esfera de luz dourada (não violenta)
+        ctx.save();
+        ctx.shadowColor = '#fde047';
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Verifica colisão com os 10 itens flutuantes
+        let hitTarget = null;
+        for (let j = 0; j < floatingTargets.length; j++) {
+          const t = floatingTargets[j];
+          if (!t.active) continue;
+          const dist = Math.hypot(p.x - t.x, p.y - t.y);
+          if (dist <= p.radius + t.radius) {
+            hitTarget = t;
+            break;
+          }
+        }
+
+        if (hitTarget) {
+          lightProjectiles.splice(i, 1);
+          if (hitTarget.empty) {
+            hitTarget.active = false;
+            spawnSoftSparkles(hitTarget.x, hitTarget.y, ['#94a3b8', '#e2e8f0', '#38bdf8']);
+            showToast("Vazio!", 2200);
+          } else {
+            activeTargetObj = hitTarget;
+            openEnemyExamModal(hitTarget);
+            return;
+          }
+          continue;
+        }
+
+        if (p.y < -20) {
+          lightProjectiles.splice(i, 1);
+        }
+      }
+
+      // Desenha o T-Rex na parte de baixo
+      drawCharacter2D(player.x, groundY, false, player.walkTimer, player.dir === 1);
+    }
+
+    function updateSparkles(dt) {
+      for (let i = sparkleParticles.length - 1; i >= 0; i--) {
+        const sp = sparkleParticles[i];
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        sp.life -= dt * 1.8;
+
+        if (sp.life <= 0) {
+          sparkleParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, sp.life);
+        ctx.fillStyle = sp.color;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 8. MODAIS DE LEITURA, DICAS E QUESTÕES (SEM TEMPO)
+    // ==========================================
+    const modalStart = document.getElementById('modal-start');
+    const playerNameInput = document.getElementById('player-name-input');
+    const btnStartGame = document.getElementById('btn-start-game');
+
+    const modalQuestion = document.getElementById('modal-question');
+    const modalQBadge = document.getElementById('modal-q-badge');
+    const modalQSubtitle = document.getElementById('modal-q-subtitle');
+    const modalQTipsBox = document.getElementById('modal-q-tips-box');
+    const modalQTipsList = document.getElementById('modal-q-tips-list');
+    const modalQText = document.getElementById('modal-q-text');
+    const modalQPrompt = document.getElementById('modal-q-prompt');
+    const modalQOptions = document.getElementById('modal-q-options');
+    const modalQFeedback = document.getElementById('modal-q-feedback');
+    const btnContinueGame = document.getElementById('btn-continue-game');
+
+    const modalPhase2Intro = document.getElementById('modal-phase2-intro');
+    const btnProceedPhase2 = document.getElementById('btn-proceed-phase2');
+
+    const toastBanner = document.getElementById('toast-banner');
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 3000) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBanner.classList.add('hidden');
+      }, duration);
+    }
+
+    function updatePhaseOneBadge() {
+      const nextTip = Math.min(collectedCount + 1, CARTESIAN_ITEMS.length);
+      document.getElementById('phase-badge').textContent =
+        `Toque na tela para pular e coletar a Dica ${nextTip}! (${collectedCount}/${CARTESIAN_ITEMS.length})`;
+    }
+
+    function updatePhaseTwoBadge() {
+      const remaining = EXAM_QUESTIONS.length - resolvedExamCount;
+      const faltaText = remaining === 1 ? "Falta 1 questão." : `Faltam ${remaining} questões.`;
+      document.getElementById('phase-badge').textContent =
+        `Toque na tela para lançar luz nas esferas! ${faltaText}`;
+    }
+
+    function startGame() {
+      if (isSplitScreenBlocked) return;
+      const typed = playerNameInput.value.trim();
+      playerName = typed.length > 0 ? typed : "Jogador";
+      modalStart.classList.add('hidden');
+      isPaused = false;
+      updatePhaseOneBadge();
+    }
+
+    btnStartGame.addEventListener('click', startGame);
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startGame();
+    });
+
+    // Modal da Fase 1: Leitura e Verificação da Dica
+    function openItemQuestionModal(tipData) {
+      isPaused = true;
+      const idx = tipData.id - 1;
+      const versions = tipData.verificationVersions;
+      const currentVersion = versions[itemAttemptCounters[idx] % versions.length];
+
+      modalQTipsBox.classList.add('hidden');
+      modalQBadge.textContent = "Verificação de Leitura";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = tipData.title;
+      modalQText.textContent = tipData.readingText;
+      modalQPrompt.textContent = currentVersion.checkQuestion;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+
+      function applyItemWrongOutcome(customPrefix) {
+        if (answered) return;
+        answered = true;
+        activeWrongQuestionHandler = null;
+        itemAttemptCounters[idx] = (itemAttemptCounters[idx] + 1) % versions.length;
+
+        const prefix = customPrefix || "Ops! Resposta incorreta.";
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = `${prefix} A Dica ${tipData.id} aparecerá novamente mais à frente. Pule para pegá-la e tente outra vez!`;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      activeWrongQuestionHandler = applyItemWrongOutcome;
+
+      currentVersion.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + optIdx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = optIdx === currentVersion.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            activeWrongQuestionHandler = null;
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+            collectedCount++;
+            updatePhaseOneBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Resposta correta! Você coletou a dica e ela ficará disponível para consulta na segunda parte do jogo.";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+            applyItemWrongOutcome("Ops! Resposta incorreta.");
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        activeWrongQuestionHandler = null;
+        modalQuestion.classList.add('hidden');
+        itemSpawnTimer = 0.8;
+        isPaused = false;
+
+        if (collectedCount >= CARTESIAN_ITEMS.length && gamePhase === 1) {
+          isPaused = true;
+          toastBanner.classList.add('hidden');
+          modalPhase2Intro.classList.remove('hidden');
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    btnProceedPhase2.addEventListener('click', () => {
+      modalPhase2Intro.classList.add('hidden');
+      gamePhase = 2;
+      setupPhase2Targets();
+      updatePhaseTwoBadge();
+      document.getElementById('bottom-hint').innerHTML =
+        '<i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i>Toque na tela (ou Espaço) para lançar luz para cima';
+      isPaused = false;
+    });
+
+    // Modal da Fase 2: Questão Final correspondente ao item atingido
+    function openEnemyExamModal(targetObj) {
+      isPaused = true;
+      const examTopic = targetObj.questionData;
+      const examQ = examTopic.versions[examTopic.attemptIndex % examTopic.versions.length];
+
+      modalQBadge.textContent = "Questão Modelo Provão";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = "Consulte a dica abaixo";
+
+      // Mostra a dica correspondente
+      const matchingItems = CARTESIAN_ITEMS.filter(item => examTopic.relatedTipIds.includes(item.id));
+      modalQTipsList.innerHTML = matchingItems.map(item => `
+        <div class="text-slate-200 leading-relaxed">
+          <span class="font-bold text-amber-300">${item.tip}</span>
+        </div>
+      `).join('');
+      modalQTipsBox.classList.remove('hidden');
+
+      modalQText.textContent = examQ.statement;
+      modalQPrompt.textContent = examQ.question;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+      let answeredCorrectly = false;
+
+      function applyExamWrongOutcome(customMessage) {
+        if (answered) return;
+        answered = true;
+        activeWrongQuestionHandler = null;
+        examTopic.attemptIndex = (examTopic.attemptIndex + 1) % examTopic.versions.length;
+
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = customMessage;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      activeWrongQuestionHandler = (reason) => {
+        applyExamWrongOutcome(`${reason} Leia novamente a dica acima e acerte esta esfera novamente!`);
+      };
+
+      examQ.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + optIdx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = optIdx === examQ.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            answeredCorrectly = true;
+            activeWrongQuestionHandler = null;
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+
+            resolvedExamCount++;
+            updatePhaseTwoBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Excelente! Resposta correta! Você conquistou esta esfera do conhecimento!";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+
+            const reason = (examQ.errorReasons && examQ.errorReasons[optIdx])
+              ? examQ.errorReasons[optIdx]
+              : "A alternativa escolhida não corresponde aos conceitos estudados.";
+
+            applyExamWrongOutcome(`Resposta incorreta! Motivo: ${reason} Leia novamente a dica acima e acerte esta esfera novamente!`);
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        activeWrongQuestionHandler = null;
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+
+        if (answeredCorrectly && activeTargetObj) {
+          activeTargetObj.active = false;
+          spawnSoftSparkles(activeTargetObj.x, activeTargetObj.y, ['#facc15', '#38bdf8', '#ffffff', '#34d399']);
+          activeTargetObj = null;
+
+          if (resolvedExamCount >= EXAM_QUESTIONS.length) {
+            setTimeout(() => {
+              isPaused = true;
+              document.getElementById('victory-message').textContent =
+                `Parabéns, ${playerName}! Mostre esta tela para o professor e receba o seu ponto!`;
+              document.getElementById('modal-victory').classList.remove('hidden');
+            }, 550);
+          }
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 9. CONTROLES POR TOQUE NA TELA E TECLADO
+    // ==========================================
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      triggerPlayerJump();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        if (!isPaused && !isSplitScreenBlocked) {
+          e.preventDefault();
+          triggerPlayerJump();
+        }
+      }
+    });
+
+    // ==========================================
+    // 10. LOOP PRINCIPAL DE ANIMAÇÃO (2D)
+    // ==========================================
+    let lastTime = performance.now();
+
+    function gameLoop(now) {
+      requestAnimationFrame(gameLoop);
+
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const timeSec = now / 1000;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const currentSpeed = gamePhase === 1 ? getPhase1Speed() : 0;
+      drawSkyAndCity(dt, currentSpeed);
+
+      if (!isPaused && !isSplitScreenBlocked) {
+        if (gamePhase === 1) {
+          updatePhase1(dt, timeSec);
+        } else {
+          updatePhase2(dt, timeSec);
+        }
+      } else {
+        // Mantém os elementos visíveis em segundo plano enquanto um modal está aberto
+        if (gamePhase === 1) {
+          if (phase1Item) drawTipBadge(phase1Item, timeSec);
+          for (let i = 0; i < phase1Obstacles.length; i++) {
+            const obs = phase1Obstacles[i];
+            drawCharacter2D(obs.x, obs.y, true, obs.walkTimer, false);
+          }
+          drawCharacter2D(player.x, groundY - player.y, false, player.walkTimer, true);
+        } else {
+          for (let i = 0; i < floatingTargets.length; i++) {
+            const t = floatingTargets[i];
+            if (!t.active) continue;
+            ctx.save();
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+          }
+          drawCharacter2D(player.x, groundY, false, player.walkTimer, player.dir === 1);
+        }
+      }
+
+      updateSparkles(dt);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
