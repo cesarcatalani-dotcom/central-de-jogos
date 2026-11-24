@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hub-jogos-educativos-v22';
+const CACHE_NAME = 'hub-jogos-educativos-v23';
 
 // Lista exata de arquivos para armazenar em cache
 const ASSETS_TO_CACHE = [
@@ -23,6 +23,7 @@ const ASSETS_TO_CACHE = [
   'filo-fire.html',
   'dinofilogame.html',
   'teste.html',
+  'pvdinogame.html',
   'filofireacess.html',
   'mario-empatia.html',
   'revisao-provao-3.html',
