@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>Dino Filo Game</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background-color: #87ceeb;
+      touch-action: manipulation;
+    }
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    @media print {
+      body * {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- Bloqueio de Intervenção / Tela Dividida -->
+  <div id="modal-split-screen" class="hidden fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-red-500 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center text-red-400 text-3xl">
+        <i class="fa-solid fa-expand"></i>
+      </div>
+      <h2 class="text-xl font-extrabold text-red-400">
+        Intervenção na Tela Detectada!
+      </h2>
+      <p class="text-sm text-slate-200 leading-relaxed">
+        Não é permitido jogar o <strong>Dino Filo Game</strong> com tela dividida, troca de janela/aba ou qualquer sobreposição/intervenção na tela. Mantenha apenas a tela do jogo ativa para continuar.
+      </p>
+    </div>
+  </div>
+
+  <!-- Tela Inicial -->
+  <div id="modal-start" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-fire"></i>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Coloque seu nome abaixo para jogar o Dino Filo Game!
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-300">
+        Toque na tela para pular, desvie dos oponentes e colete as 5 dicas sobre o Conhece-te a ti mesmo!
+      </p>
+      <div>
+        <input
+          id="player-name-input"
+          type="text"
+          placeholder="Digite seu nome aqui..."
+          class="w-full px-4 py-3 rounded-xl bg-slate-800 border-2 border-slate-600 focus:border-amber-400 focus:outline-none text-white text-center font-semibold text-base"
+        />
+      </div>
+      <button id="btn-start-game" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Começar
+      </button>
+    </div>
+  </div>
+
+  <!-- Canvas Principal 2D -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Interface HUD do Jogo -->
+  <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
+    <div class="flex items-start justify-center w-full">
+      <div id="phase-badge" class="bg-slate-900/85 border border-amber-400/60 text-amber-300 px-4 py-2 rounded-xl text-sm sm:text-base font-bold shadow-lg text-center">
+        Toque na tela para pular e coletar a Dica 1!
+      </div>
+    </div>
+
+    <div class="flex justify-center pb-2">
+      <div id="bottom-hint" class="bg-slate-900/75 border border-slate-700/80 text-slate-200 px-4 py-1.5 rounded-full text-xs font-semibold shadow">
+        <i class="fa-solid fa-hand-pointer text-amber-400 mr-1.5"></i>Toque na tela (ou Espaço) para pular
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner rápido de feedback -->
+  <div id="toast-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border-2 border-amber-400 text-amber-200 px-5 py-2 rounded-xl shadow-2xl text-xs sm:text-sm font-bold text-center max-w-md pointer-events-none"></div>
+
+  <!-- Modal de Transição para a Fase 2 -->
+  <div id="modal-phase2-intro" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-5 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-bolt"></i>
+      </div>
+      <h2 class="text-2xl font-extrabold text-amber-300 leading-snug">
+        O jogo virou!
+      </h2>
+      <p class="text-sm text-slate-200 leading-relaxed">
+        Agora toque na tela para lançar esferas de luz nas esferas flutuantes acima. Cinco estão vazias e cinco guardam as questões finais!
+      </p>
+      <button id="btn-proceed-phase2" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-base shadow-lg transition">
+        Prosseguir
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Leitura e Pergunta (Sem cronômetro) -->
+  <div id="modal-question" class="hidden fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div id="modal-q-header" class="px-5 py-3.5 bg-slate-800 border-b border-slate-700 flex items-center justify-between gap-2">
+        <span id="modal-q-badge" class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950">
+          Leitura Filosófica
+        </span>
+        <span id="modal-q-subtitle" class="text-xs text-slate-300 font-semibold truncate">Conhece-te a ti mesmo</span>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Dica correspondente (exibida na Fase 2) -->
+        <div id="modal-q-tips-box" class="hidden bg-slate-950/80 border border-amber-400/50 rounded-xl p-3.5">
+          <div id="modal-q-tips-list" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></div>
+        </div>
+
+        <!-- Texto base / enunciado -->
+        <div id="modal-q-text" class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 text-sm sm:text-base leading-relaxed text-slate-100"></div>
+
+        <!-- Pergunta -->
+        <p id="modal-q-prompt" class="font-bold text-amber-300 text-sm sm:text-base"></p>
+
+        <!-- Alternativas -->
+        <div id="modal-q-options" class="space-y-2.5"></div>
+
+        <!-- Feedback -->
+        <div id="modal-q-feedback" class="hidden rounded-xl p-3.5 text-sm font-semibold"></div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-800 border-t border-slate-700 flex justify-end">
+        <button id="btn-continue-game" class="hidden bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold px-5 py-2 rounded-xl text-sm shadow-lg transition">
+          CONTINUAR JOGO
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Vitória Final -->
+  <div id="modal-victory" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-3xl">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h2 id="victory-message" class="text-xl sm:text-2xl font-extrabold text-amber-300 leading-snug">
+        Parabéns, Jogador! Mostre esta tela para o professor e receba o seu ponto!
+      </h2>
+      <button onclick="location.reload()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold py-3 rounded-xl text-sm shadow-lg transition">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. CONTEÚDO PEDAGÓGICO (CONHECE-TE A TI MESMO - SÓCRATES E PROJETO DE VIDA)
+    // ==========================================
+    const CARTESIAN_ITEMS = [
+      {
+        id: 1,
+        title: "1. O Convite de Sócrates",
+        readingText: "Na Grécia Antiga, o filósofo Sócrates adotou a frase 'Conhece-te a ti mesmo', escrita na entrada do Templo de Apolo. Para ele, antes de querer entender todo o universo, precisamos olhar para dentro e descobrir quem somos de verdade, quais são nossos valores, sentimentos e talentos.",
+        verificationVersions: [
+          {
+            checkQuestion: "O que Sócrates nos convida a fazer com a frase 'Conhece-te a ti mesmo'?",
+            options: [
+              "Olhar para dentro e descobrir nossos valores, talentos e sentimentos.",
+              "Decorar muitas informações difíceis para vencer todas as discussões.",
+              "Copiar exatamente o jeito de agir das pessoas famosas da nossa época."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Onde estava escrita a famosa frase adotada pelo filósofo Sócrates?",
+            options: [
+              "Na parede principal do estádio onde aconteciam os jogos olímpicos.",
+              "Na entrada do antigo Templo de Apolo, na cidade grega de Delfos.",
+              "Na capa do primeiro livro de matemática escrito na Grécia Antiga."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Para Sócrates, o que devemos buscar entender antes de querer explicar o universo?",
+            options: [
+              "A velocidade das estrelas e o movimento dos planetas no céu.",
+              "As regras de comércio e as moedas usadas pelos povos vizinhos.",
+              "A nós mesmos, compreendendo nossas atitudes e o que sentimos."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 1 — O convite de Sócrates: 'Conhece-te a ti mesmo' significa olhar para dentro e descobrir quem somos, nossos valores, talentos e sentimentos."
+      },
+      {
+        id: 2,
+        title: "2. Só Sei Que Nada Sei",
+        readingText: "Sócrates também ficou famoso por dizer: 'Só sei que nada sei'. Essa frase mostra humildade e curiosidade. Quando reconhecemos que ainda temos muito a aprender sobre nós mesmos e sobre o mundo, abrimos espaço para crescer, fazer perguntas e evoluir no nosso Projeto de Vida.",
+        verificationVersions: [
+          {
+            checkQuestion: "Qual atitude a frase 'Só sei que nada sei' nos ensina a ter?",
+            options: [
+              "Ter vergonha de fazer perguntas quando temos dúvida na escola.",
+              "Ter humildade e curiosidade para continuar aprendendo e crescendo.",
+              "Achar que já sabemos de tudo e não precisamos ouvir ninguém."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Por que reconhecer que não sabemos tudo ajuda no Projeto de Vida?",
+            options: [
+              "Porque nos impede de escolher qualquer profissão ou objetivo futuro.",
+              "Porque faz com que outras pessoas tomem todas as decisões por nós.",
+              "Porque abre espaço para fazermos descobertas e evoluirmos sempre."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Na visão de Sócrates, quem está mais preparado para aprender coisas novas?",
+            options: [
+              "Quem reconhece seus limites e mantém a curiosidade para perguntar.",
+              "Quem afirma ter certeza absoluta sobre todos os assuntos da vida.",
+              "Quem evita pensar sobre os próprios erros e acertos do dia a dia."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 2 — Humildade socrática: 'Só sei que nada sei' ensina que ter humildade e curiosidade abre espaço para aprender e evoluir."
+      },
+      {
+        id: 3,
+        title: "3. Eu Verdadeiro vs. Opinião dos Outros",
+        readingText: "No dia a dia, muitas vezes fazemos coisas apenas para agradar os colegas ou seguir modas das redes sociais. O autoconhecimento socrático ajuda a separar o que 'eu realmente sou e valorizo' daquilo que 'os outros esperam que eu seja', permitindo escolhas mais autênticas.",
+        verificationVersions: [
+          {
+            checkQuestion: "Como o autoconhecimento ajuda nas nossas escolhas do dia a dia?",
+            options: [
+              "Ajuda a seguir todas as modas da internet sem precisar refletir.",
+              "Ajuda a agradar todos os colegas mesmo quando não temos vontade.",
+              "Ajuda a separar nossos valores reais da pressão feita pelos outros."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "O que significa fazer uma escolha autêntica no Projeto de Vida?",
+            options: [
+              "Decidir com base no que realmente valorizamos e acreditamos ser bom.",
+              "Escolher o mesmo caminho dos amigos apenas para não ficar sozinho.",
+              "Mudar de opinião toda hora conforme os comentários das redes sociais."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Qual problema acontece quando vivemos apenas para agradar os outros?",
+            options: [
+              "Descobrimos rapidamente quais são os nossos maiores talentos pessoais.",
+              "Deixamos de lado quem realmente somos e perdemos nossa identidade.",
+              "Ficamos mais livres para construir nossos próprios sonhos e planos."
+            ],
+            correctIndex: 1
+          }
+        ],
+        tip: "Dica 3 — Autenticidade: O autoconhecimento ajuda a separar o que realmente valorizamos daquilo que fazemos só por pressão dos outros."
+      },
+      {
+        id: 4,
+        title: "4. A Arte de Fazer Boas Perguntas",
+        readingText: "Sócrates gostava de conversar fazendo perguntas simples que ajudavam as pessoas a pensarem por conta própria, método chamado de Maiêutica. No Projeto de Vida, fazer boas perguntas a si mesmo — como 'O que me faz bem?' e 'Quais são meus sonhos?' — ilumina o caminho.",
+        verificationVersions: [
+          {
+            checkQuestion: "Qual era o principal objetivo de Sócrates ao fazer perguntas às pessoas?",
+            options: [
+              "Ajudar cada pessoa a pensar por conta própria e encontrar respostas.",
+              "Deixar os colegas confusos para mostrar que ele era o mais sábio.",
+              "Evitar conversar sobre assuntos importantes da vida em sociedade."
+            ],
+            correctIndex: 0
+          },
+          {
+            checkQuestion: "Como o método de fazer perguntas ajuda a construir o Projeto de Vida?",
+            options: [
+              "Fazendo com que a gente desista dos sonhos diante de qualquer dúvida.",
+              "Iluminando nossos objetivos ao perguntarmos o que nos faz bem.",
+              "Substituindo o esforço pessoal por respostas prontas da internet."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "Como é chamado o método socrático de ajudar a pessoa a 'dar à luz' suas próprias ideias?",
+            options: [
+              "Retórica, que serve para convencer o público usando palavras difíceis.",
+              "Mitologia, que explica o mundo por meio de lendas e seres mágicos.",
+              "Maiêutica, que usa o diálogo e perguntas para despertar o pensamento."
+            ],
+            correctIndex: 2
+          }
+        ],
+        tip: "Dica 4 — Boas perguntas (Maiêutica): Fazer perguntas sinceras a si mesmo ajuda a pensar por conta própria e ilumina nossos sonhos."
+      },
+      {
+        id: 5,
+        title: "5. A Bússola do Projeto de Vida",
+        readingText: "Construir um Projeto de Vida não é adivinhar o futuro, mas escolher para onde queremos caminhar hoje. Quando conhecemos nossos pontos fortes, nossos limites e o que nos deixa felizes, o autoconhecimento funciona como uma bússola que guia nossas decisões na escola e na vida.",
+        verificationVersions: [
+          {
+            checkQuestion: "Por que o autoconhecimento funciona como uma bússola no Projeto de Vida?",
+            options: [
+              "Porque garante que nunca vamos cometer nenhum erro durante a vida.",
+              "Porque orienta nossas escolhas de acordo com nossos sonhos e valores.",
+              "Porque adivinha exatamente tudo o que vai acontecer no próximo ano."
+            ],
+            correctIndex: 1
+          },
+          {
+            checkQuestion: "O que significa construir um Projeto de Vida desde a escola?",
+            options: [
+              "Esperar ficar adulto para começar a pensar no que gostamos de fazer.",
+              "Seguir um roteiro obrigatório igual para todos os alunos da turma.",
+              "Refletir sobre quem somos hoje para guiar nossos passos e objetivos."
+            ],
+            correctIndex: 2
+          },
+          {
+            checkQuestion: "Além dos nossos talentos, o que mais o autoconhecimento nos ajuda a perceber?",
+            options: [
+              "Nossos limites e aquilo que precisamos melhorar com calma e dedicação.",
+              "Os segredos particulares de todas as pessoas que estudam conosco.",
+              "Um jeito mágico de conseguir resultados sem precisar se esforçar."
+            ],
+            correctIndex: 0
+          }
+        ],
+        tip: "Dica 5 — Bússola interna: Conhecer nossos talentos, limites e sonhos funciona como uma bússola que orienta nossas decisões no Projeto de Vida."
+      }
+    ];
+
+    const EXAM_QUESTIONS = [
+      {
+        id: 101,
+        relatedTipIds: [1],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Na entrada do Templo de Apolo, na Grécia Antiga, havia a inscrição 'Conhece-te a ti mesmo', que se tornou o lema principal do filósofo Sócrates.",
+            question: "Para Sócrates, colocar em prática o 'Conhece-te a ti mesmo' significa:",
+            options: [
+              "descobrir apenas quais são as matérias mais fáceis da escola.",
+              "imitar as atitudes das pessoas mais populares da nossa cidade.",
+              "olhar para dentro e compreender nossos valores, emoções e talentos.",
+              "memorizar respostas prontas sem refletir sobre o que sentimos.",
+              "evitar pensar sobre nossas atitudes para não sentir tristeza."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: o autoconhecimento vai muito além de notas escolares, envolve entender quem somos.",
+              "Errou: imitar os outros afasta você da sua própria identidade.",
+              "",
+              "Errou: Sócrates defendia a reflexão pessoal, nunca respostas decoradas.",
+              "Errou: examinar nossas atitudes e emoções é essencial para crescer."
+            ]
+          },
+          {
+            statement: "Sócrates dizia que 'uma vida não examinada não vale a pena ser vivida', convidando cada pessoa a refletir sobre suas próprias ações.",
+            question: "Examinar a própria vida, segundo a filosofia socrática, ajuda o estudante a:",
+            options: [
+              "perceber suas qualidades, sentimentos e o sentido das suas escolhas.",
+              "julgar os defeitos dos colegas sem olhar para os próprios erros.",
+              "desistir de planejar o futuro porque tudo acontece por acaso.",
+              "aceitar qualquer opinião sem perguntar se ela faz sentido.",
+              "esconder seus verdadeiros sentimentos para parecer mais forte."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: o exame socrático começa olhando para si mesmo, não julgando os colegas.",
+              "Errou: refletir sobre si ajuda justamente a planejar melhor o futuro.",
+              "Errou: Sócrates incentivava questionar e refletir, nunca aceitar tudo sem pensar.",
+              "Errou: reconhecer nossos sentimentos faz parte do verdadeiro autoconhecimento."
+            ]
+          },
+          {
+            statement: "Antes de tentar explicar a origem das estrelas ou a natureza do universo, Sócrates preferia conversar com as pessoas nas praças de Atenas.",
+            question: "O foco principal das conversas filosóficas de Sócrates era:",
+            options: [
+              "ensinar técnicas de construção de templos e monumentos gregos.",
+              "levar cada pessoa a refletir sobre si mesma e sobre como viver bem.",
+              "convencer os jovens a abandonarem os estudos e a convivência.",
+              "descobrir receitas secretas para enriquecer rapidamente no comércio.",
+              "provar que os sentimentos humanos não têm nenhuma importância."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: Sócrates não ensinava arquitetura, mas sim a reflexão sobre a vida humana.",
+              "",
+              "Errou: Sócrates incentivava os jovens a buscarem sabedoria e diálogo.",
+              "Errou: a filosofia socrática valoriza a sabedoria e a ética, não o lucro.",
+              "Errou: compreender o interior humano era o centro da filosofia de Sócrates."
+            ]
+          }
+        ]
+      },
+      {
+        id: 102,
+        relatedTipIds: [2],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Quando lhe disseram que era o homem mais sábio de Atenas, Sócrates respondeu com a célebre frase: 'Só sei que nada sei'.",
+            question: "Essa afirmação de Sócrates demonstra que a verdadeira sabedoria começa quando:",
+            options: [
+              "temos vergonha de tirar dúvidas com os professores e colegas.",
+              "acreditamos que já aprendemos tudo e não precisamos mudar.",
+              "fingimos saber todas as respostas para impressionar a turma.",
+              "reconhecemos o que não sabemos e mantemos a curiosidade para aprender.",
+              "deixamos de estudar porque o conhecimento é impossível de alcançar."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: Sócrates valorizava justamente a coragem de perguntar e tirar dúvidas.",
+              "Errou: achar que já sabe tudo fecha as portas para o aprendizado.",
+              "Errou: fingir saber é o oposto da humildade socrática.",
+              "",
+              "Errou: reconhecer que não sabemos nos motiva a buscar conhecimento, não a desistir."
+            ]
+          },
+          {
+            statement: "No Projeto de Vida, nenhum estudante nasce sabendo tudo sobre si mesmo ou sobre o futuro que deseja construir.",
+            question: "Aplicar a humildade socrática ('Só sei que nada sei') no Projeto de Vida significa:",
+            options: [
+              "estar aberto a experimentar, aprender e descobrir novas habilidades.",
+              "ter medo de tentar atividades novas por receio de errar no começo.",
+              "esperar que o futuro chegue sem fazer nenhum planejamento hoje.",
+              "copiar o projeto de vida de um amigo para não ter trabalho.",
+              "achar que nossos gostos e interesses nunca mudam com o tempo."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: a postura socrática encoraja a descoberta sem medo de aprender.",
+              "Errou: o Projeto de Vida pede atitude curiosa e reflexão no presente.",
+              "Errou: cada pessoa precisa construir seu próprio caminho autenticamente.",
+              "Errou: ao longo da vida estamos sempre aprendendo e nos transformando."
+            ]
+          },
+          {
+            statement: "Para Sócrates, o maior obstáculo para aprender algo novo é a arrogância de achar que já somos donos de toda a verdade.",
+            question: "Por que a curiosidade é tão importante para o autoconhecimento?",
+            options: [
+              "Porque nos permite cuidar apenas da vida dos outros ao redor.",
+              "Porque nos leva a investigar nossos talentos, gostos e valores.",
+              "Porque elimina a necessidade de ouvir conselhos de quem tem experiência.",
+              "Porque garante que nunca precisaremos nos esforçar na escola.",
+              "Porque transforma todas as nossas dúvidas em certezas imediatas."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: no autoconhecimento, a curiosidade é voltada para descobrir quem nós somos.",
+              "",
+              "Errou: ouvir e dialogar faz parte da busca socrática pelo saber.",
+              "Errou: a curiosidade estimula o estudo e a dedicação, não a preguiça.",
+              "Errou: o aprendizado é um processo contínuo de perguntas e descobertas."
+            ]
+          }
+        ]
+      },
+      {
+        id: 103,
+        relatedTipIds: [3],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Muitas vezes, escolhemos roupas, opiniões ou atitudes apenas para sermos aceitos em um grupo ou ganharmos curtidas nas redes sociais.",
+            question: "Com ajuda do autoconhecimento socrático, o estudante consegue:",
+            options: [
+              "seguir todas as tendências da internet sem pensar nas consequências.",
+              "fazer sempre a vontade da maioria para evitar qualquer conversa.",
+              "mudar de personalidade toda semana para agradar pessoas diferentes.",
+              "ignorar os sentimentos próprios para cumprir expectativas externas.",
+              "diferenciar seus valores verdadeiros da pressão feita pelos outros."
+            ],
+            correctIndex: 4,
+            errorReasons: [
+              "Errou: seguir tendências sem refletir é agir no piloto automático.",
+              "Errou: o autoconhecimento fortalece sua voz própria diante do grupo.",
+              "Errou: mudar só para agradar afasta você da sua essência.",
+              "Errou: conhecer-se exige escutar seus próprios sentimentos e valores.",
+              ""
+            ]
+          },
+          {
+            statement: "Ser autêntico não significa ignorar as outras pessoas, mas sim agir de acordo com aquilo que realmente acreditamos e valorizamos.",
+            question: "Qual atitude demonstra autenticidade nas escolhas de um jovem?",
+            options: [
+              "Escolher uma atividade porque realmente gosta, mesmo sem ser moda.",
+              "Zombar de um colega apenas porque o resto do grupo está rindo.",
+              "Esconder seus sonhos reais por medo do que os outros vão falar.",
+              "Fazer tudo igual aos influenciadores digitais sem questionar nada.",
+              "Aceitar fazer algo errado só para provar coragem aos amigos."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: agir por efeito de manada é o oposto da autenticidade.",
+              "Errou: esconder seus sonhos por medo mostra submissão à opinião alheia.",
+              "Errou: copiar sem refletir impede você de desenvolver seu próprio estilo.",
+              "Errou: ceder à pressão do grupo para fazer algo errado nega seus valores."
+            ]
+          },
+          {
+            statement: "Na filosofia, distinguir entre 'essência' (quem somos por dentro) e 'aparência' (o que mostramos para agradar) é um passo fundamental.",
+            question: "Quando priorizamos o autoconhecimento acima das aparências, nós:",
+            options: [
+              "perdemos a capacidade de fazer amizades verdadeiras na escola.",
+              "construímos escolhas mais firmes, sinceras e ligadas aos nossos valores.",
+              "passamos a nos importar apenas com bens materiais e fama.",
+              "deixamos de respeitar as diferenças entre as pessoas da turma.",
+              "ficamos presos ao passado sem conseguir imaginar o futuro."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: ser verdadeiro atrai amizades muito mais sinceras e saudáveis.",
+              "",
+              "Errou: bens materiais e fama pertencem ao mundo das aparências.",
+              "Errou: quem se conhece bem respeita melhor a identidade dos outros.",
+              "Errou: conhecer nossos valores dá segurança para construir o futuro."
+            ]
+          }
+        ]
+      },
+      {
+        id: 104,
+        relatedTipIds: [4],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "O método de Sócrates, conhecido como Maiêutica, consistia em fazer perguntas inteligentes para ajudar cada pessoa a descobrir a verdade dentro de si.",
+            question: "No Projeto de Vida, usar o método das perguntas socráticas significa:",
+            options: [
+              "pedir que outras pessoas escrevam nossos objetivos por nós.",
+              "evitar pensar sobre dúvidas difíceis para não perder tempo.",
+              "fazer perguntas sinceras a si mesmo para clarear sonhos e metas.",
+              "responder tudo rápido sem refletir sobre o que realmente queremos.",
+              "procurar respostas prontas em vez de ouvir a própria consciência."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: ninguém pode construir o seu Projeto de Vida no seu lugar.",
+              "Errou: encarar boas perguntas é justamente o que faz a gente crescer.",
+              "",
+              "Errou: a filosofia pede calma e reflexão, não respostas apressadas.",
+              "Errou: a Maiêutica valoriza as respostas que nascem da própria reflexão."
+            ]
+          },
+          {
+            statement: "Perguntas como 'O que eu gosto de fazer?', 'Em que sou bom?' e 'Como posso ajudar os outros?' são ferramentas poderosas de autoconhecimento.",
+            question: "Qual é o resultado de fazer essas perguntas a si mesmo com frequência?",
+            options: [
+              "Ficar cada vez mais perdido e sem vontade de estudar.",
+              "Achar que não temos nenhuma qualidade ou talento especial.",
+              "Desistir dos nossos planos sempre que surgir um desafio.",
+              "Compreender melhor nossos interesses e definir passos para o futuro.",
+              "Passar a exigir que todos pensem exatamente do mesmo jeito."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: boas perguntas trazem clareza e direção, não confusão.",
+              "Errou: refletir sobre si ajuda a descobrir qualidades que você nem notava.",
+              "Errou: o autoconhecimento fortalece a determinação diante dos desafios.",
+              "",
+              "Errou: o diálogo socrático respeita o pensamento individual de cada um."
+            ]
+          },
+          {
+            statement: "Em vez de entregar discursos prontos, Sócrates preferia dialogar perguntando, pois acreditava que o verdadeiro aprendizado vem da reflexão ativa.",
+            question: "Quando conversamos com um amigo usando perguntas abertas sobre o futuro, nós:",
+            options: [
+              "ajudamos o colega a refletir e organizar suas próprias ideias.",
+              "obrigamos o colega a seguir a profissão que achamos melhor.",
+              "impedimos que o colega descubra seus próprios talentos.",
+              "mostramos que não temos interesse nos sonhos das outras pessoas.",
+              "encerramos a conversa sem dar espaço para o outro pensar."
+            ],
+            correctIndex: 0,
+            errorReasons: [
+              "",
+              "Errou: perguntas abertas dão liberdade para o outro pensar, sem impor nada.",
+              "Errou: perguntar estimula a descoberta dos talentos pessoais.",
+              "Errou: saber perguntar e ouvir demonstra grande empatia e interesse.",
+              "Errou: perguntas abertas ampliam o diálogo e a reflexão."
+            ]
+          }
+        ]
+      },
+      {
+        id: 105,
+        relatedTipIds: [5],
+        attemptIndex: 0,
+        versions: [
+          {
+            statement: "Assim como um navegador precisa de uma bússola para não se perder no mar, o jovem precisa do autoconhecimento para guiar seu Projeto de Vida.",
+            question: "Por que o autoconhecimento é comparado a uma bússola?",
+            options: [
+              "Porque aponta sempre para o caminho mais fácil e sem esforço.",
+              "Porque orienta nossas decisões de acordo com nossos valores e sonhos.",
+              "Porque adivinha magicamente tudo o que vai acontecer amanhã.",
+              "Porque impede que a gente mude de ideia ao longo da vida.",
+              "Porque serve apenas para escolher uma profissão no último ano."
+            ],
+            correctIndex: 1,
+            errorReasons: [
+              "Errou: o caminho dos nossos sonhos exige dedicação, não facilidade mágica.",
+              "",
+              "Errou: a bússola orienta a direção hoje, não é bola de cristal.",
+              "Errou: podemos ajustar nossa rota sempre que aprendemos algo novo.",
+              "Errou: o Projeto de Vida começa agora e vale para toda a vida."
+            ]
+          },
+          {
+            statement: "Conhecer a si mesmo envolve reconhecer tanto nossas qualidades (pontos fortes) quanto aquilo que ainda precisamos melhorar (limites).",
+            question: "Quando reconhecemos um limite ou dificuldade pessoal, a melhor atitude é:",
+            options: [
+              "esconder a dificuldade e fingir que somos perfeitos em tudo.",
+              "desistir de tentar melhorar porque ninguém consegue mudar.",
+              "encarar o limite com calma e buscar formas de evoluir aos poucos.",
+              "culpar os colegas e professores pelos nossos próprios erros.",
+              "comparar-se o tempo todo com os outros para se sentir inferior."
+            ],
+            correctIndex: 2,
+            errorReasons: [
+              "Errou: fingir perfeição impede o verdadeiro crescimento pessoal.",
+              "Errou: reconhecer um limite é o primeiro passo para superá-lo.",
+              "",
+              "Errou: assumir responsabilidade por si mesmo faz parte da maturidade.",
+              "Errou: cada pessoa tem seu próprio ritmo de aprendizado e evolução."
+            ]
+          },
+          {
+            statement: "O Projeto de Vida conecta quem somos hoje (nossa identidade) com quem queremos nos tornar no futuro (nossos objetivos e valores).",
+            question: "Qual é o primeiro passo indispensável para construir um Projeto de Vida sólido?",
+            options: [
+              "Esperar ganhar na loteria para começar a fazer planos.",
+              "Copiar os sonhos de pessoas famosas da televisão.",
+              "Evitar pensar sobre sentimentos, valores e objetivos pessoais.",
+              "Conhecer a si mesmo, descobrindo o que tem sentido para sua vida.",
+              "Escolher um caminho apenas pelo dinheiro, sem gostar do que faz."
+            ],
+            correctIndex: 3,
+            errorReasons: [
+              "Errou: o Projeto de Vida se constrói com planejamento e atitude, não sorte.",
+              "Errou: seus sonhos devem nascer da sua própria história e valores.",
+              "Errou: refletir sobre valores e sentimentos é a base do Projeto de Vida.",
+              "",
+              "Errou: realização pessoal exige alinhar escolhas aos nossos valores e interesses."
+            ]
+          }
+        ]
+      }
+    ];
+
+    // ==========================================
+    // 2. BLOQUEIO DE TELA DIVIDIDA E PENALIDADE AUTOMÁTICA
+    // ==========================================
+    const modalSplitScreen = document.getElementById('modal-split-screen');
+    let isSplitScreenBlocked = false;
+    let activeWrongQuestionHandler = null;
+    let hasStartedGame = false;
+
+    function triggerInterventionPenalty(reasonText) {
+      if (!isSplitScreenBlocked) {
+        isSplitScreenBlocked = true;
+        modalSplitScreen.classList.remove('hidden');
+      }
+
+      if (activeWrongQuestionHandler && !modalQuestion.classList.contains('hidden')) {
+        const handler = activeWrongQuestionHandler;
+        activeWrongQuestionHandler = null;
+        handler(reasonText);
+      }
+    }
+
+    function checkSplitScreen() {
+      const screenW = window.screen.availWidth || window.screen.width;
+      const screenH = window.screen.availHeight || window.screen.height;
+      const winW = window.innerWidth;
+      const winH = window.innerHeight;
+      const outerW = window.outerWidth || winW;
+      const outerH = window.outerHeight || winH;
+
+      // Detecta se a janela ocupada está dividida horizontalmente ou verticalmente (< 80% da tela disponível)
+      // ou se há inspeção/ferramenta acoplada (diferença grande entre outer e inner)
+      const isNarrowed = winW < screenW * 0.80 || outerW < screenW * 0.80;
+      const isShortened = winH < screenH * 0.72 || outerH < screenH * 0.72;
+      const hasDockedDevTools = (outerW - winW > 180) || (outerH - winH > 180);
+
+      const hasFocusOrVisibilityLoss = hasStartedGame && (
+        document.hidden ||
+        document.visibilityState !== 'visible' ||
+        !document.hasFocus()
+      );
+
+      if (isNarrowed || isShortened || hasDockedDevTools || hasFocusOrVisibilityLoss) {
+        let reason = "Intervenção na tela detectada! A questão foi considerada errada.";
+        if (hasFocusOrVisibilityLoss) {
+          reason = "Saída da janela/aba ou perda de foco detectada! A questão foi considerada errada.";
+        } else if (hasDockedDevTools) {
+          reason = "Ferramenta ou painel lateral detectado na tela! A questão foi considerada errada.";
+        }
+        triggerInterventionPenalty(reason);
+      } else {
+        if (isSplitScreenBlocked) {
+          isSplitScreenBlocked = false;
+          modalSplitScreen.classList.add('hidden');
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', checkSplitScreen);
+    window.addEventListener('blur', checkSplitScreen);
+    window.addEventListener('focus', checkSplitScreen);
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (hasStartedGame) {
+        triggerInterventionPenalty("Menu de contexto / clique direito detectado! A questão foi considerada errada.");
+      }
+    });
+    document.addEventListener('copy', (e) => {
+      e.preventDefault();
+      if (hasStartedGame) {
+        triggerInterventionPenalty("Tentativa de cópia detectada! A questão foi considerada errada.");
+      }
+    });
+    document.addEventListener('cut', (e) => {
+      e.preventDefault();
+      if (hasStartedGame) {
+        triggerInterventionPenalty("Tentativa de recorte detectada! A questão foi considerada errada.");
+      }
+    });
+    document.addEventListener('paste', (e) => {
+      e.preventDefault();
+      if (hasStartedGame) {
+        triggerInterventionPenalty("Tentativa de colagem detectada! A questão foi considerada errada.");
+      }
+    });
+    window.addEventListener('beforeprint', () => {
+      if (hasStartedGame) {
+        triggerInterventionPenalty("Tentativa de impressão/captura detectada! A questão foi considerada errada.");
+      }
+    });
+    window.addEventListener('keydown', (e) => {
+      const key = (e.key || '').toLowerCase();
+      const isPrintScreen = e.key === 'PrintScreen' || e.code === 'PrintScreen';
+      const isDevToolsShortcut =
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key)) ||
+        (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key));
+      const isCopyOrPrintShortcut =
+        ((e.ctrlKey || e.metaKey) && ['c', 'u', 's', 'p', 'a'].includes(key)) ||
+        (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(key));
+
+      if (hasStartedGame && (isPrintScreen || isDevToolsShortcut || isCopyOrPrintShortcut)) {
+        e.preventDefault();
+        triggerInterventionPenalty("Atalho de captura, cópia ou inspeção detectado! A questão foi considerada errada.");
+      }
+    }, true);
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      checkSplitScreen();
+    });
+    setInterval(checkSplitScreen, 300);
+
+    // ==========================================
+    // 3. SETUP DO CANVAS 2D E CENÁRIO DIURNO
+    // ==========================================
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    let groundY = H * 0.82;
+
+    function resizeCanvas() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+      groundY = H * 0.82;
+    }
+    resizeCanvas();
+    checkSplitScreen();
+
+    // Prédios de fundo (mesma paleta do cenário 3D original)
+    const buildingPalette = ['#e2e8f0', '#cbd5e1', '#f1f5f9', '#94a3b8', '#f8fafc'];
+    let bgBuildings = [];
+
+    function initBackgroundBuildings() {
+      bgBuildings = [];
+      let curX = -50;
+      let idx = 0;
+      while (curX < W + 600) {
+        const bw = 95 + (idx % 4) * 28;
+        const bh = 130 + ((idx * 37) % 140);
+        bgBuildings.push({
+          x: curX,
+          w: bw,
+          h: bh,
+          color: buildingPalette[idx % buildingPalette.length],
+          hasDoor: idx % 2 === 0
+        });
+        curX += bw + 18;
+        idx++;
+      }
+    }
+    initBackgroundBuildings();
+
+    // ==========================================
+    // 4. ESTADO DO JOGO, JOGADOR E ENTIDADES
+    // ==========================================
+    let gamePhase = 1; // 1 = Corrida estilo Dino, 2 = Tiro para cima nos 10 itens
+    let isPaused = true;
+    let playerName = "Jogador";
+    let collectedCount = 0;
+    let resolvedExamCount = 0;
+
+    // Estado do Tiranossauro Rex Filósofo 2D
+    const player = {
+      x: 110,
+      y: 0, // altura acima do chão (0 = no chão)
+      vy: 0,
+      w: 52,
+      h: 82,
+      grounded: true,
+      walkTimer: 0,
+      dir: 1 // usado na Fase 2 para patrulhar horizontalmente na base
+    };
+
+    const GRAVITY = 1950;
+    const JUMP_FORCE = 830;
+
+    // Fase 1: Velocidade controlada (aumenta gradualmente, sem ficar rápida demais)
+    function getPhase1Speed() {
+      return 265 + collectedCount * 22;
+    }
+
+    let itemAttemptCounters = [0, 0, 0, 0, 0];
+    let phase1Item = null;     // Placa "Dica X" flutuando para pegar pulando
+    let phase1Obstacles = [];  // Inimigos vermelhos correndo no chão
+    let obstacleSpawnTimer = 1.6;
+    let itemSpawnTimer = 0.8;
+
+    // Fase 2: 10 itens flutuando no topo (5 vazios + 5 questões) e projéteis de luz
+    let floatingTargets = [];
+    let lightProjectiles = [];
+    let sparkleParticles = [];
+    let activeTargetObj = null;
+
+    // ==========================================
+    // 5. DESENHO DO CENÁRIO E DOS PERSONAGENS
+    // ==========================================
+    function drawSkyAndCity(dt, scrollSpeed) {
+      // Céu azul diurno igual ao original
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, groundY);
+      skyGrad.addColorStop(0, '#7dd3fc');
+      skyGrad.addColorStop(1, '#bae6fd');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, W, groundY);
+
+      // Sol suave no canto superior direito
+      ctx.fillStyle = 'rgba(254, 249, 195, 0.85)';
+      ctx.beginPath();
+      ctx.arc(W - 95, 85, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Prédios ao fundo com efeito paralaxe
+      for (let i = 0; i < bgBuildings.length; i++) {
+        const b = bgBuildings[i];
+        if (!isPaused && !isSplitScreenBlocked && gamePhase === 1) {
+          b.x -= scrollSpeed * 0.35 * dt;
+        }
+        if (b.x + b.w < -40) {
+          let maxRight = 0;
+          for (let j = 0; j < bgBuildings.length; j++) {
+            if (bgBuildings[j].x + bgBuildings[j].w > maxRight) {
+              maxRight = bgBuildings[j].x + bgBuildings[j].w;
+            }
+          }
+          b.x = maxRight + 18;
+        }
+
+        const by = groundY - b.h;
+        ctx.fillStyle = b.color;
+        ctx.fillRect(b.x, by, b.w, b.h);
+
+        // Friso no topo e rodapé
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.14)';
+        ctx.fillRect(b.x, by, b.w, 6);
+        ctx.fillRect(b.x, groundY - 10, b.w, 10);
+
+        // Janelas azuis reflexivas
+        const cols = Math.max(2, Math.floor(b.w / 28));
+        const rows = Math.max(2, Math.floor((b.h - 45) / 32));
+        const padX = b.w / cols;
+        const padY = (b.h - 42) / rows;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const wx = b.x + c * padX + padX * 0.24;
+            const wy = by + 14 + r * padY + padY * 0.18;
+            const ww = padX * 0.52;
+            const wh = Math.min(padY * 0.58, 18);
+
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(wx - 1, wy - 1, ww + 2, wh + 2);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(wx, wy, ww, wh);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.fillRect(wx + 1, wy + 1, ww * 0.35, wh - 2);
+          }
+        }
+
+        // Porta no térreo
+        if (b.hasDoor) {
+          const dw = 18;
+          const dh = 26;
+          const dx = b.x + (b.w - dw) / 2;
+          const dy = groundY - dh;
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(dx - 2, dy - 2, dw + 4, dh + 2);
+          ctx.fillStyle = '#78350f';
+          ctx.fillRect(dx, dy, dw, dh);
+          ctx.fillStyle = '#bae6fd';
+          ctx.fillRect(dx + 3, dy + 3, dw - 6, 11);
+        }
+      }
+
+      // Chão e Rua asfaltada (mesmas cores #475569 e #1e293b)
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(0, groundY, W, 16);
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, groundY + 16, W, H - groundY - 16);
+    }
+
+    // Desenha o personagem: Tiranossauro Rex Filósofo (verde com Φ) ou Oponente vermelho com Φ
+    function drawCharacter2D(cx, bottomY, isEnemy, walkPhase, facingRight) {
+      ctx.save();
+      ctx.translate(cx, bottomY);
+      if (!facingRight) {
+        ctx.scale(-1, 1);
+      }
+
+      const swing = Math.sin(walkPhase) * 0.55;
+
+      // Sombra no chão
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 22, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (!isEnemy) {
+        // ==========================================
+        // PROTAGONISTA: TIRANOSSAURO REX FILÓSOFO
+        // ==========================================
+        const dinoDark = '#064e3b';
+        const dinoMid = '#047857';
+
+        // Cauda de T-Rex balançando levemente
+        const tailWag = Math.sin(walkPhase * 0.8) * 3;
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.moveTo(-10, -28);
+        ctx.lineTo(-34, -42 + tailWag);
+        ctx.lineTo(-10, -48);
+        ctx.closePath();
+        ctx.fill();
+
+        // Perna traseira robusta
+        ctx.save();
+        ctx.translate(-3, -24);
+        ctx.rotate(-swing);
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.roundRect(-5, 0, 10, 22, 3);
+        ctx.fill();
+        ctx.fillRect(-3, 19, 11, 5); // pé
+        ctx.restore();
+
+        // Corpo/Tronco de T-Rex inclinado
+        ctx.fillStyle = dinoMid;
+        ctx.beginPath();
+        ctx.roundRect(-14, -56, 28, 34, 9);
+        ctx.fill();
+
+        // Cristas dorsais nas costas
+        ctx.fillStyle = '#10b981';
+        for (let s = 0; s < 3; s++) {
+          ctx.beginPath();
+          ctx.moveTo(-14, -52 + s * 9);
+          ctx.lineTo(-19, -48 + s * 9);
+          ctx.lineTo(-14, -44 + s * 9);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Símbolo Φ branco no tronco do T-Rex
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', 0, -39);
+
+        // Perna dianteira robusta
+        ctx.save();
+        ctx.translate(3, -24);
+        ctx.rotate(swing);
+        ctx.fillStyle = '#065f46';
+        ctx.beginPath();
+        ctx.roundRect(-5, 0, 10, 22, 3);
+        ctx.fill();
+        ctx.fillRect(-3, 19, 11, 5); // pé
+        ctx.restore();
+
+        // Bracinho curto característico de T-Rex
+        ctx.save();
+        ctx.translate(12, -46);
+        ctx.rotate(-swing * 0.4);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(0, -2, 10, 5);
+        ctx.fillRect(8, -2, 3, 7); // garra
+        ctx.restore();
+
+        // Cabeça grande e alongada de T-Rex
+        ctx.fillStyle = dinoDark;
+        ctx.beginPath();
+        ctx.roundRect(-6, -80, 32, 22, 7);
+        ctx.fill();
+
+        // Mandíbula inferior e boca com dentinhos
+        ctx.fillStyle = dinoMid;
+        ctx.beginPath();
+        ctx.roundRect(-4, -62, 26, 7, 3);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(10, -58);
+        ctx.lineTo(12, -54);
+        ctx.lineTo(14, -58);
+        ctx.moveTo(16, -58);
+        ctx.lineTo(18, -54);
+        ctx.lineTo(20, -58);
+        ctx.fill();
+
+        // Olho expressivo do T-Rex
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(8, -72, 3.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(9, -72, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+      } else {
+        // ==========================================
+        // OPONENTE VERMELHO (MANTIDO COMO NO ORIGINAL)
+        // ==========================================
+        // Perna de trás
+        ctx.save();
+        ctx.translate(0, -28);
+        ctx.rotate(-swing);
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(-4, 0, 8, 28);
+        ctx.restore();
+
+        // Braço de trás
+        ctx.save();
+        ctx.translate(0, -56);
+        ctx.rotate(swing * 0.8);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-3.5, 0, 7, 22);
+        ctx.restore();
+
+        // Tronco Vermelho #b91c1c
+        ctx.fillStyle = '#b91c1c';
+        ctx.beginPath();
+        ctx.roundRect(-13, -60, 26, 34, 5);
+        ctx.fill();
+
+        // Símbolo Φ branco no peito
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 21px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', 0, -43);
+
+        // Perna da frente
+        ctx.save();
+        ctx.translate(0, -28);
+        ctx.rotate(swing);
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-4, 0, 8, 28);
+        ctx.restore();
+
+        // Braço da frente
+        ctx.save();
+        ctx.translate(0, -56);
+        ctx.rotate(-swing * 0.8);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-3.5, 0, 7, 22);
+        ctx.restore();
+
+        // Cabeça branca
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -72, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Olho e sorriso
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(4.5, -74, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(3.5, -70, 3.2, 0.1 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTipBadge(item, timeSec) {
+      const bob = Math.sin(timeSec * 5) * 6;
+      const x = item.x;
+      const y = item.y + bob;
+      const w = item.w;
+      const h = item.h;
+
+      // Brilho externo
+      ctx.save();
+      ctx.shadowColor = '#facc15';
+      ctx.shadowBlur = 14;
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - h / 2, w, h, 10);
+      ctx.fill();
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#facc15';
+      ctx.stroke();
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 16px "Inter", Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Dica ${item.data.id}`, x, y);
+      ctx.restore();
+    }
+
+    // ==========================================
+    // 6. MECÂNICA DA FASE 1 (CORRIDA E PULO)
+    // ==========================================
+    function triggerPlayerJump() {
+      if (isPaused || isSplitScreenBlocked) return;
+      if (gamePhase === 1 && player.grounded) {
+        player.vy = JUMP_FORCE;
+        player.grounded = false;
+      } else if (gamePhase === 2) {
+        shootLightOrb();
+      }
+    }
+
+    function spawnPhase1TipItem() {
+      if (collectedCount >= CARTESIAN_ITEMS.length) return;
+      const tipData = CARTESIAN_ITEMS[collectedCount];
+      // Posiciona a placa no ar para ser pega apenas por meio de um pulo
+      phase1Item = {
+        data: tipData,
+        x: W + 90,
+        y: groundY - 145,
+        w: 88,
+        h: 38
+      };
+    }
+
+    function spawnPhase1Obstacle() {
+      phase1Obstacles.push({
+        x: W + 50,
+        y: groundY,
+        w: 32,
+        h: 74,
+        walkTimer: Math.random() * 6
+      });
+    }
+
+    function updatePhase1(dt, timeSec) {
+      const speed = getPhase1Speed();
+
+      // Física do pulo do jogador
+      if (!player.grounded) {
+        player.y += player.vy * dt;
+        player.vy -= GRAVITY * dt;
+        if (player.y <= 0) {
+          player.y = 0;
+          player.vy = 0;
+          player.grounded = true;
+        }
+      } else {
+        player.walkTimer += dt * (speed * 0.045);
+      }
+
+      // Gera o item da vez se não houver nenhum na tela
+      if (!phase1Item && collectedCount < CARTESIAN_ITEMS.length) {
+        itemSpawnTimer -= dt;
+        if (itemSpawnTimer <= 0) {
+          spawnPhase1TipItem();
+        }
+      }
+
+      // Gera oponentes no chão com espaçamento justo
+      obstacleSpawnTimer -= dt;
+      if (obstacleSpawnTimer <= 0) {
+        const farFromItem = !phase1Item || Math.abs(phase1Item.x - (W + 50)) > 210;
+        if (farFromItem) {
+          spawnPhase1Obstacle();
+          obstacleSpawnTimer = 2.0 + Math.random() * 1.1;
+        } else {
+          obstacleSpawnTimer = 0.45;
+        }
+      }
+
+      // Caixa de colisão do jogador
+      const pLeft = player.x - 14;
+      const pRight = player.x + 14;
+      const pBottom = groundY - player.y;
+      const pTop = pBottom - 76;
+
+      // Atualiza e verifica colisão com o item flutuante ("Dica X")
+      if (phase1Item) {
+        phase1Item.x -= speed * dt;
+
+        const iLeft = phase1Item.x - phase1Item.w / 2;
+        const iRight = phase1Item.x + phase1Item.w / 2;
+        const iTop = phase1Item.y - phase1Item.h / 2;
+        const iBottom = phase1Item.y + phase1Item.h / 2;
+
+        const hitItem = pRight > iLeft && pLeft < iRight && pBottom > iTop && pTop < iBottom;
+        if (hitItem) {
+          const collectedItem = phase1Item;
+          phase1Item = null;
+          openItemQuestionModal(collectedItem.data);
+          return;
+        }
+
+        // Se o jogador não pulou e deixou a dica passar, ela volta mais adiante
+        if (phase1Item.x + phase1Item.w < -30) {
+          phase1Item = null;
+          itemSpawnTimer = 0.7;
+        }
+      }
+
+      // Atualiza e verifica colisão com os oponentes vermelhos
+      for (let i = phase1Obstacles.length - 1; i >= 0; i--) {
+        const obs = phase1Obstacles[i];
+        obs.x -= (speed * 1.12) * dt;
+        obs.walkTimer += dt * 15;
+
+        const oLeft = obs.x - 11;
+        const oRight = obs.x + 11;
+        const oBottom = groundY;
+        const oTop = groundY - 68;
+
+        const hitObs = pRight > oLeft && pLeft < oRight && pBottom > oTop && pTop < oBottom;
+        if (hitObs) {
+          phase1Obstacles.splice(i, 1);
+          // Penalidade não violenta: tropeço e reinício da distância do item atual
+          if (phase1Item) {
+            phase1Item = null;
+            itemSpawnTimer = 1.0;
+          }
+          showToast("Você esbarrou em um oponente! Pule por cima deles para pegar a dica.");
+          continue;
+        }
+
+        if (obs.x < -50) {
+          phase1Obstacles.splice(i, 1);
+        }
+      }
+
+      // Desenha item, oponentes e jogador
+      if (phase1Item) drawTipBadge(phase1Item, timeSec);
+      for (let i = 0; i < phase1Obstacles.length; i++) {
+        const obs = phase1Obstacles[i];
+        drawCharacter2D(obs.x, obs.y, true, obs.walkTimer, false);
+      }
+      drawCharacter2D(player.x, groundY - player.y, false, player.walkTimer, true);
+    }
+
+    // ==========================================
+    // 7. MECÂNICA DA FASE 2 (TIRO PARA CIMA NOS 10 ITENS)
+    // ==========================================
+    function setupPhase2Targets() {
+      floatingTargets = [];
+      lightProjectiles = [];
+      player.x = W / 2;
+      player.y = 0;
+      player.vy = 0;
+      player.grounded = true;
+
+      // Cria 10 itens: 5 vazios e 5 com as questões finais, embaralhados
+      const pool = [
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        { empty: true },
+        ...EXAM_QUESTIONS.map(q => ({ empty: false, questionData: q }))
+      ];
+
+      // Embaralha (Fisher-Yates)
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      // Organiza em 2 fileiras flutuando na parte superior da tela
+      const cols = 5;
+      const marginX = Math.max(55, W * 0.14);
+      const usableW = W - marginX * 2;
+      const stepX = usableW / (cols - 1);
+
+      pool.forEach((entry, idx) => {
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+        const baseX = marginX + col * stepX;
+        const baseY = row === 0 ? Math.max(105, H * 0.18) : Math.max(185, H * 0.31);
+
+        floatingTargets.push({
+          id: idx,
+          empty: entry.empty,
+          questionData: entry.questionData || null,
+          x: baseX,
+          baseX: baseX,
+          y: baseY,
+          baseY: baseY,
+          radius: Math.min(26, Math.max(20, W * 0.028)),
+          phaseOffset: idx * 0.85,
+          moveSpeed: (row === 0 ? 1 : -1) * (42 + (idx % 3) * 10),
+          active: true
+        });
+      });
+    }
+
+    function shootLightOrb() {
+      // Limita a 2 esferas simultâneas para manter precisão
+      if (lightProjectiles.length >= 2) return;
+      lightProjectiles.push({
+        x: player.x,
+        y: groundY - 68,
+        vy: 740,
+        radius: 9
+      });
+    }
+
+    function spawnSoftSparkles(x, y, colorList) {
+      for (let i = 0; i < 16; i++) {
+        const ang = (Math.PI * 2 * i) / 16 + Math.random() * 0.3;
+        const spd = 70 + Math.random() * 140;
+        sparkleParticles.push({
+          x,
+          y,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          life: 1.0,
+          color: colorList[i % colorList.length]
+        });
+      }
+    }
+
+    function updatePhase2(dt, timeSec) {
+      // Movimento automático suave do T-Rex na parte de baixo da tela para mirar nos 10 itens
+      const minX = 50;
+      const maxX = W - 50;
+      const patrolSpeed = Math.min(230, W * 0.26);
+
+      player.x += player.dir * patrolSpeed * dt;
+      if (player.x >= maxX) {
+        player.x = maxX;
+        player.dir = -1;
+      } else if (player.x <= minX) {
+        player.x = minX;
+        player.dir = 1;
+      }
+      player.walkTimer += dt * 10;
+
+      // Atualiza os 10 itens flutuantes no alto
+      for (let i = 0; i < floatingTargets.length; i++) {
+        const t = floatingTargets[i];
+        if (!t.active) continue;
+
+        t.x += t.moveSpeed * dt;
+        if (t.x > W - 45) {
+          t.x = W - 45;
+          t.moveSpeed = -Math.abs(t.moveSpeed);
+        } else if (t.x < 45) {
+          t.x = 45;
+          t.moveSpeed = Math.abs(t.moveSpeed);
+        }
+        t.y = t.baseY + Math.sin(timeSec * 2.8 + t.phaseOffset) * 10;
+
+        // Desenha a esfera flutuante (todas idênticas por fora para o aluno descobrir atirando)
+        ctx.save();
+        const grad = ctx.createRadialGradient(t.x - 6, t.y - 6, 4, t.x, t.y, t.radius);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.55, '#f59e0b');
+        grad.addColorStop(1, '#b45309');
+
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 18px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Φ', t.x, t.y + 1);
+        ctx.restore();
+      }
+
+      // Atualiza os disparos de luz para cima
+      for (let i = lightProjectiles.length - 1; i >= 0; i--) {
+        const p = lightProjectiles[i];
+        p.y -= p.vy * dt;
+
+        // Desenha esfera de luz dourada (não violenta)
+        ctx.save();
+        ctx.shadowColor = '#fde047';
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = '#fef08a';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Verifica colisão com os 10 itens flutuantes
+        let hitTarget = null;
+        for (let j = 0; j < floatingTargets.length; j++) {
+          const t = floatingTargets[j];
+          if (!t.active) continue;
+          const dist = Math.hypot(p.x - t.x, p.y - t.y);
+          if (dist <= p.radius + t.radius) {
+            hitTarget = t;
+            break;
+          }
+        }
+
+        if (hitTarget) {
+          lightProjectiles.splice(i, 1);
+          if (hitTarget.empty) {
+            hitTarget.active = false;
+            spawnSoftSparkles(hitTarget.x, hitTarget.y, ['#94a3b8', '#e2e8f0', '#38bdf8']);
+            showToast("Vazio!", 2200);
+          } else {
+            activeTargetObj = hitTarget;
+            openEnemyExamModal(hitTarget);
+            return;
+          }
+          continue;
+        }
+
+        if (p.y < -20) {
+          lightProjectiles.splice(i, 1);
+        }
+      }
+
+      // Desenha o T-Rex na parte de baixo
+      drawCharacter2D(player.x, groundY, false, player.walkTimer, player.dir === 1);
+    }
+
+    function updateSparkles(dt) {
+      for (let i = sparkleParticles.length - 1; i >= 0; i--) {
+        const sp = sparkleParticles[i];
+        sp.x += sp.vx * dt;
+        sp.y += sp.vy * dt;
+        sp.life -= dt * 1.8;
+
+        if (sp.life <= 0) {
+          sparkleParticles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, sp.life);
+        ctx.fillStyle = sp.color;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // ==========================================
+    // 8. MODAIS DE LEITURA, DICAS E QUESTÕES (SEM TEMPO)
+    // ==========================================
+    const modalStart = document.getElementById('modal-start');
+    const playerNameInput = document.getElementById('player-name-input');
+    const btnStartGame = document.getElementById('btn-start-game');
+
+    const modalQuestion = document.getElementById('modal-question');
+    const modalQBadge = document.getElementById('modal-q-badge');
+    const modalQSubtitle = document.getElementById('modal-q-subtitle');
+    const modalQTipsBox = document.getElementById('modal-q-tips-box');
+    const modalQTipsList = document.getElementById('modal-q-tips-list');
+    const modalQText = document.getElementById('modal-q-text');
+    const modalQPrompt = document.getElementById('modal-q-prompt');
+    const modalQOptions = document.getElementById('modal-q-options');
+    const modalQFeedback = document.getElementById('modal-q-feedback');
+    const btnContinueGame = document.getElementById('btn-continue-game');
+
+    const modalPhase2Intro = document.getElementById('modal-phase2-intro');
+    const btnProceedPhase2 = document.getElementById('btn-proceed-phase2');
+
+    const toastBanner = document.getElementById('toast-banner');
+    let toastTimeout = null;
+
+    function showToast(msg, duration = 3000) {
+      toastBanner.textContent = msg;
+      toastBanner.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toastBanner.classList.add('hidden');
+      }, duration);
+    }
+
+    function updatePhaseOneBadge() {
+      const nextTip = Math.min(collectedCount + 1, CARTESIAN_ITEMS.length);
+      document.getElementById('phase-badge').textContent =
+        `Toque na tela para pular e coletar a Dica ${nextTip}! (${collectedCount}/${CARTESIAN_ITEMS.length})`;
+    }
+
+    function updatePhaseTwoBadge() {
+      const remaining = EXAM_QUESTIONS.length - resolvedExamCount;
+      const faltaText = remaining === 1 ? "Falta 1 questão." : `Faltam ${remaining} questões.`;
+      document.getElementById('phase-badge').textContent =
+        `Toque na tela para lançar luz nas esferas! ${faltaText}`;
+    }
+
+    function startGame() {
+      checkSplitScreen();
+      if (isSplitScreenBlocked) return;
+      const typed = playerNameInput.value.trim();
+      playerName = typed.length > 0 ? typed : "Jogador";
+      hasStartedGame = true;
+      modalStart.classList.add('hidden');
+      isPaused = false;
+      updatePhaseOneBadge();
+    }
+
+    btnStartGame.addEventListener('click', startGame);
+    playerNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') startGame();
+    });
+
+    // Modal da Fase 1: Leitura e Verificação da Dica
+    function openItemQuestionModal(tipData) {
+      isPaused = true;
+      const idx = tipData.id - 1;
+      const versions = tipData.verificationVersions;
+      const currentVersion = versions[itemAttemptCounters[idx] % versions.length];
+
+      modalQTipsBox.classList.add('hidden');
+      modalQBadge.textContent = "Verificação de Leitura";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = tipData.title;
+      modalQText.textContent = tipData.readingText;
+      modalQPrompt.textContent = currentVersion.checkQuestion;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+
+      function applyItemWrongOutcome(customPrefix) {
+        if (answered) return;
+        answered = true;
+        activeWrongQuestionHandler = null;
+        itemAttemptCounters[idx] = (itemAttemptCounters[idx] + 1) % versions.length;
+
+        const prefix = customPrefix || "Ops! Resposta incorreta.";
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = `${prefix} A Dica ${tipData.id} aparecerá novamente mais à frente. Pule para pegá-la e tente outra vez!`;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      activeWrongQuestionHandler = applyItemWrongOutcome;
+
+      currentVersion.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + optIdx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = optIdx === currentVersion.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            activeWrongQuestionHandler = null;
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+            collectedCount++;
+            updatePhaseOneBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Resposta correta! Você coletou a dica e ela ficará disponível para consulta na segunda parte do jogo.";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+            applyItemWrongOutcome("Ops! Resposta incorreta.");
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        activeWrongQuestionHandler = null;
+        modalQuestion.classList.add('hidden');
+        itemSpawnTimer = 0.8;
+        isPaused = false;
+
+        if (collectedCount >= CARTESIAN_ITEMS.length && gamePhase === 1) {
+          isPaused = true;
+          toastBanner.classList.add('hidden');
+          modalPhase2Intro.classList.remove('hidden');
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    btnProceedPhase2.addEventListener('click', () => {
+      modalPhase2Intro.classList.add('hidden');
+      gamePhase = 2;
+      setupPhase2Targets();
+      updatePhaseTwoBadge();
+      document.getElementById('bottom-hint').innerHTML =
+        '<i class="fa-solid fa-bolt text-amber-400 mr-1.5"></i>Toque na tela (ou Espaço) para lançar luz para cima';
+      isPaused = false;
+    });
+
+    // Modal da Fase 2: Questão Final correspondente ao item atingido
+    function openEnemyExamModal(targetObj) {
+      isPaused = true;
+      const examTopic = targetObj.questionData;
+      const examQ = examTopic.versions[examTopic.attemptIndex % examTopic.versions.length];
+
+      modalQBadge.textContent = "Questão Modelo Provão";
+      modalQBadge.className = "text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950";
+      modalQSubtitle.textContent = "Consulte a dica abaixo";
+
+      // Mostra a dica correspondente
+      const matchingItems = CARTESIAN_ITEMS.filter(item => examTopic.relatedTipIds.includes(item.id));
+      modalQTipsList.innerHTML = matchingItems.map(item => `
+        <div class="text-slate-200 leading-relaxed">
+          <span class="font-bold text-amber-300">${item.tip}</span>
+        </div>
+      `).join('');
+      modalQTipsBox.classList.remove('hidden');
+
+      modalQText.textContent = examQ.statement;
+      modalQPrompt.textContent = examQ.question;
+      modalQFeedback.classList.add('hidden');
+      btnContinueGame.classList.add('hidden');
+      modalQOptions.innerHTML = '';
+
+      let answered = false;
+      let answeredCorrectly = false;
+
+      function applyExamWrongOutcome(customMessage) {
+        if (answered) return;
+        answered = true;
+        activeWrongQuestionHandler = null;
+        examTopic.attemptIndex = (examTopic.attemptIndex + 1) % examTopic.versions.length;
+
+        modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-red-950/90 border border-red-400 text-red-200";
+        modalQFeedback.textContent = customMessage;
+        modalQFeedback.classList.remove('hidden');
+        btnContinueGame.classList.remove('hidden');
+      }
+
+      activeWrongQuestionHandler = (reason) => {
+        applyExamWrongOutcome(`${reason} Leia novamente a dica acima e acerte esta esfera novamente!`);
+      };
+
+      examQ.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sm text-slate-100 transition font-medium";
+        btn.textContent = `${String.fromCharCode(65 + optIdx)}) ${optText}`;
+
+        btn.addEventListener('click', () => {
+          if (answered) return;
+
+          const isCorrect = optIdx === examQ.correctIndex;
+          if (isCorrect) {
+            answered = true;
+            answeredCorrectly = true;
+            activeWrongQuestionHandler = null;
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-emerald-900/80', 'border-emerald-400', 'text-emerald-100');
+
+            resolvedExamCount++;
+            updatePhaseTwoBadge();
+
+            modalQFeedback.className = "rounded-xl p-3.5 text-sm font-semibold bg-emerald-950/90 border border-emerald-400 text-emerald-200";
+            modalQFeedback.textContent = "Excelente! Resposta correta! Você conquistou esta esfera do conhecimento!";
+            modalQFeedback.classList.remove('hidden');
+            btnContinueGame.classList.remove('hidden');
+          } else {
+            btn.classList.remove('bg-slate-800', 'border-slate-600');
+            btn.classList.add('bg-red-900/80', 'border-red-400', 'text-red-100');
+
+            const reason = (examQ.errorReasons && examQ.errorReasons[optIdx])
+              ? examQ.errorReasons[optIdx]
+              : "A alternativa escolhida não corresponde aos conceitos estudados.";
+
+            applyExamWrongOutcome(`Resposta incorreta! Motivo: ${reason} Leia novamente a dica acima e acerte esta esfera novamente!`);
+          }
+        });
+
+        modalQOptions.appendChild(btn);
+      });
+
+      btnContinueGame.onclick = () => {
+        activeWrongQuestionHandler = null;
+        modalQuestion.classList.add('hidden');
+        isPaused = false;
+
+        if (answeredCorrectly && activeTargetObj) {
+          activeTargetObj.active = false;
+          spawnSoftSparkles(activeTargetObj.x, activeTargetObj.y, ['#facc15', '#38bdf8', '#ffffff', '#34d399']);
+          activeTargetObj = null;
+
+          if (resolvedExamCount >= EXAM_QUESTIONS.length) {
+            setTimeout(() => {
+              isPaused = true;
+              document.getElementById('victory-message').textContent =
+                `Parabéns, ${playerName}! Mostre esta tela para o professor e receba o seu ponto!`;
+              document.getElementById('modal-victory').classList.remove('hidden');
+            }, 550);
+          }
+        }
+      };
+
+      modalQuestion.classList.remove('hidden');
+    }
+
+    // ==========================================
+    // 9. CONTROLES POR TOQUE NA TELA E TECLADO
+    // ==========================================
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      triggerPlayerJump();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        if (!isPaused && !isSplitScreenBlocked) {
+          e.preventDefault();
+          triggerPlayerJump();
+        }
+      }
+    });
+
+    // ==========================================
+    // 10. LOOP PRINCIPAL DE ANIMAÇÃO (2D)
+    // ==========================================
+    let lastTime = performance.now();
+
+    function gameLoop(now) {
+      requestAnimationFrame(gameLoop);
+
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+      const timeSec = now / 1000;
+
+      ctx.clearRect(0, 0, W, H);
+
+      const currentSpeed = gamePhase === 1 ? getPhase1Speed() : 0;
+      drawSkyAndCity(dt, currentSpeed);
+
+      if (!isPaused && !isSplitScreenBlocked) {
+        if (gamePhase === 1) {
+          updatePhase1(dt, timeSec);
+        } else {
+          updatePhase2(dt, timeSec);
+        }
+      } else {
+        // Mantém os elementos visíveis em segundo plano enquanto um modal está aberto
+        if (gamePhase === 1) {
+          if (phase1Item) drawTipBadge(phase1Item, timeSec);
+          for (let i = 0; i < phase1Obstacles.length; i++) {
+            const obs = phase1Obstacles[i];
+            drawCharacter2D(obs.x, obs.y, true, obs.walkTimer, false);
+          }
+          drawCharacter2D(player.x, groundY - player.y, false, player.walkTimer, true);
+        } else {
+          for (let i = 0; i < floatingTargets.length; i++) {
+            const t = floatingTargets[i];
+            if (!t.active) continue;
+            ctx.save();
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+          }
+          drawCharacter2D(player.x, groundY, false, player.walkTimer, player.dir === 1);
+        }
+      }
+
+      updateSparkles(dt);
+    }
+
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
